@@ -312,6 +312,20 @@ main {
   text-overflow: ellipsis;
 }
 
+.btn-card-copy {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-card-copy:hover { background: var(--surface2); color: var(--text); }
+
 .btn-card-dl {
   flex-shrink: 0;
   padding: 4px 10px;

@@ -135,6 +135,9 @@ function renderGrid(items) {
               <span>${fmtSize(item.size)}</span>
               <span>${fmtDate(item.date)} · ${esc(item.feeder)}</span>
             </div>
+            <button class="btn-card-copy"
+               onclick="event.stopPropagation(); copyLink('${esc(item.url)}')"
+               title="Copier le lien">⎘</button>
             <a class="btn-card-dl"
                href="${mediaUrl}"
                download="${name}"
@@ -234,6 +237,21 @@ function closeOverlay() {
   });
   if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }
   document.body.style.overflow = '';
+}
+
+// ── Copy link ─────────────────────────────────────────────────────────────────
+function copyLink(url) {
+  const full = location.origin + url;
+  navigator.clipboard.writeText(full).then(() => {
+    // Feedback visuel rapide
+    const btn = event.target.closest('.btn-card-copy');
+    if (btn) {
+      const prev = btn.textContent;
+      btn.textContent = '✓';
+      btn.style.color = '#63d28c';
+      setTimeout(() => { btn.textContent = prev; btn.style.color = ''; }, 1500);
+    }
+  });
 }
 
 // ── Tag update ────────────────────────────────────────────────────────────────
