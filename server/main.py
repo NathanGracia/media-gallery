@@ -65,7 +65,7 @@ class Media(SQLModel, table=True):
     extension:     str
     size_bytes:    int
     feeder_name:   str
-    tag:           str                 = Field(default="osef")  # "osef" | "react"
+    tag:           str                 = Field(default="todo")  # "osef" | "react" | "todo"
     uploaded_at:   datetime.datetime  = Field(default_factory=datetime.datetime.utcnow)
 
 
@@ -75,7 +75,7 @@ SQLModel.metadata.create_all(engine)
 with engine.connect() as _conn:
     try:
         _conn.execute(text("ALTER TABLE media ADD COLUMN tag VARCHAR DEFAULT 'osef'"))
-        _conn.execute(text("UPDATE media SET tag = 'osef' WHERE tag IS NULL"))
+        _conn.execute(text("UPDATE media SET tag = 'todo' WHERE tag IS NULL"))
         _conn.commit()
         log.info("Migration : colonne 'tag' ajoutée.")
     except Exception:

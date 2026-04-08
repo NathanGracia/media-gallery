@@ -106,7 +106,7 @@ function renderGrid(items) {
     const thumbUrl = esc(item.thumbnail);
     const mediaUrl = esc(item.url);
     const name     = esc(item.original_name);
-    const tag      = item.tag || 'osef';
+    const tag      = item.tag || 'todo';
 
     return `
       <div class="card"
