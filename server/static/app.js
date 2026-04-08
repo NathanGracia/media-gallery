@@ -128,6 +128,8 @@ function renderGrid(items) {
                     onclick="setTag(event, '${esc(item.id)}', 'react')">React</button>
             <button class="tag-opt ${tag === 'osef' ? 'active-osef' : ''}" data-tag="osef"
                     onclick="setTag(event, '${esc(item.id)}', 'osef')">Osef</button>
+            <button class="tag-opt ${tag === 'todo' ? 'active-todo' : ''}" data-tag="todo"
+                    onclick="setTag(event, '${esc(item.id)}', 'todo')">Todo</button>
           </div>
         </div>
         <div class="card-body">
@@ -338,6 +340,7 @@ async function setTag(event, id, tag) {
     const isActive = btn.dataset.tag === tag;
     btn.classList.toggle('active-react', isActive && tag === 'react');
     btn.classList.toggle('active-osef',  isActive && tag === 'osef');
+    btn.classList.toggle('active-todo',  isActive && tag === 'todo');
   });
 }
 

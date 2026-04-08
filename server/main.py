@@ -251,8 +251,8 @@ def list_media(
 
 @app.patch("/api/media/{media_uuid}/tag")
 def update_tag(media_uuid: str, tag: str = Query(...)):
-    if tag not in ("osef", "react"):
-        raise HTTPException(400, "Tag invalide (osef | react)")
+    if tag not in ("osef", "react", "todo"):
+        raise HTTPException(400, "Tag invalide (osef | react | todo)")
     with Session(engine) as session:
         media = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
         if not media:
