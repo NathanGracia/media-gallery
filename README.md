@@ -1,6 +1,6 @@
 # Media Gallery v3
 
-Système d'upload automatique de médias (vidéos & images) depuis plusieurs machines vers un VPS, avec galerie web.
+Système d'upload automatique de médias (vidéos & images) depuis plusieurs machines Windows vers un VPS, avec galerie web.
 
 **Évolution depuis v2** — v2 envoyait les fichiers sur Discord via webhook. v3 envoie sur ton propre VPS avec une galerie web dédiée, multi-feeders, et gestion de quota.
 
@@ -27,7 +27,9 @@ Système d'upload automatique de médias (vidéos & images) depuis plusieurs mac
 | Quota total | 40 GB (configurable) avec alerte Discord à 80% |
 | Taille max par fichier | 25 MB |
 | Galerie | Miniatures, lecture vidéo inline, lightbox image, téléchargement 1 clic |
-| Filtres | Par type (vidéo / image) et par feeder |
+| Tags | `cinema` / `osef` / `todo` — filtrables dans la galerie |
+| Crop vidéo | Rognage haut/bas depuis l'interface web (FFmpeg) — crée un nouveau média |
+| Filtres | Par type (vidéo / image), par tag, par feeder |
 | Multi-feeders | Plusieurs machines vers le même VPS, chacune identifiée |
 | Déduplication | Hash MD5 — un fichier n'est jamais envoyé deux fois |
 | Déploiement | Push `main` → GitHub Actions → deploy Docker automatique |
@@ -39,7 +41,7 @@ Système d'upload automatique de médias (vidéos & images) depuis plusieurs mac
 ```
 ├── .github/workflows/deploy.yml   ← CI/CD : push → deploy VPS
 ├── server/
-│   ├── main.py                    ← API FastAPI (upload, galerie, storage)
+│   ├── main.py                    ← API FastAPI (upload, galerie, crop, storage)
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   ├── config.yaml.example        ← Template de config (copier en config.yaml)
@@ -59,6 +61,25 @@ Système d'upload automatique de médias (vidéos & images) depuis plusieurs mac
 
 ---
 
+## Développement local
+
+```bash
+# Installer les dépendances serveur
+pip install fastapi uvicorn sqlmodel pyyaml aiofiles requests Pillow python-multipart
+
+# Copier la config
+cp server/config.yaml.example server/config.yaml
+# Éditer config.yaml : renseigner api_keys
+
+# Lancer le serveur local
+cd server && python main.py
+# → http://127.0.0.1:8000
+```
+
+Le serveur local utilise SQLite (`db.sqlite`) et stocke les médias dans `server/media/`.
+
+---
+
 ## Déploiement VPS
 
 ### Prérequis
@@ -70,7 +91,7 @@ Système d'upload automatique de médias (vidéos & images) depuis plusieurs mac
 
 ```bash
 # Sur le VPS en root
-curl -O https://raw.githubusercontent.com/NathanGracia/media-gallery-v3/main/server/vps-setup.sh
+curl -O https://raw.githubusercontent.com/NathanGracia/media-gallery/main/server/vps-setup.sh
 bash vps-setup.sh
 ```
 
@@ -155,18 +176,46 @@ build.bat
 ### Utilisation
 
 1. Copier `MediaFeeder_v3.exe` sur la machine à superviser
-2. Double-cliquer — une fenêtre de configuration s'ouvre
+2. Double-cliquer — une fenêtre de configuration s'ouvre au premier lancement
 3. Renseigner :
    - **URL du serveur** : `http://ton-vps:8000` ou `https://ton-domaine.com`
    - **Clé API** : la clé configurée dans `config.yaml`
-   - **Nom du feeder** : identifiant de cette machine (ex: `PC-Bureau`)
+   - **Nom du feeder** : identifiant de cette machine (ex: `Bureau`)
    - **Dossier** : dossier local à surveiller
 4. Cliquer **Enregistrer & Démarrer**
-5. Le feeder se configure en démarrage automatique Windows (Task Scheduler)
+5. Le feeder se configure en démarrage automatique (Task Scheduler Windows)
 
 Les lancements suivants démarrent directement sans UI.
 
+Pour lancer manuellement sans build :
+```bash
+pip install requests watchdog
+python feeder/main.py
+```
+
 > Logs dans `feeder.log` à côté de l'exécutable.
+
+---
+
+## Tags
+
+Les médias peuvent être tagués depuis la galerie (hover sur la miniature) ou depuis le player :
+
+| Tag | Usage |
+|---|---|
+| `todo` | Tag par défaut — média à traiter (rogner, etc.) |
+| `cinema` | Média à garder / partager |
+| `osef` | Média sans intérêt particulier |
+
+---
+
+## Crop vidéo
+
+Depuis le player vidéo, le bouton **✂ Rogner** permet de supprimer des bandes en haut et/ou en bas de la vidéo (typiquement pour retirer le texte des mèmes).
+
+- Ajuster les pourcentages Haut / Bas — un aperçu semi-transparent s'affiche en temps réel
+- **Sauvegarder** crée un nouveau média indépendant (l'original est conservé)
+- Le nouveau média s'ouvre automatiquement dans le player
 
 ---
 

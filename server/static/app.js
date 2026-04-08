@@ -124,8 +124,8 @@ function renderGrid(items) {
           </div>
           <span class="card-badge badge-${item.type}">${item.type}</span>
           <div class="card-tag-bar" onclick="event.stopPropagation()">
-            <button class="tag-opt ${tag === 'react' ? 'active-react' : ''}" data-tag="react"
-                    onclick="setTag(event, '${esc(item.id)}', 'react')">React</button>
+            <button class="tag-opt ${tag === 'cinema' ? 'active-cinema' : ''}" data-tag="cinema"
+                    onclick="setTag(event, '${esc(item.id)}', 'cinema')">Cinema</button>
             <button class="tag-opt ${tag === 'osef' ? 'active-osef' : ''}" data-tag="osef"
                     onclick="setTag(event, '${esc(item.id)}', 'osef')">Osef</button>
             <button class="tag-opt ${tag === 'todo' ? 'active-todo' : ''}" data-tag="todo"
@@ -249,6 +249,18 @@ function vpInit(url) {
       autoplay: true,
       resetOnEnd: true,
     });
+    player.on('volumechange', () => {
+      sessionStorage.setItem('plyr-volume', player.volume);
+      sessionStorage.setItem('plyr-muted',  player.muted);
+    });
+  }
+
+  // Restaure le volume de la session
+  const savedVolume = sessionStorage.getItem('plyr-volume');
+  const savedMuted  = sessionStorage.getItem('plyr-muted');
+  if (savedVolume !== null) {
+    player.volume = parseFloat(savedVolume);
+    player.muted  = savedMuted === 'true';
   }
 
   player.off('loadedmetadata');
@@ -268,16 +280,25 @@ function vpInit(url) {
 
 // ── Overlays ──────────────────────────────────────────────────────────────────
 function openMediaFromCard(el) {
-  openMedia(el.dataset.id, el.dataset.type, el.dataset.url, el.dataset.name);
+  openMedia(el.dataset.id, el.dataset.type, el.dataset.url, el.dataset.name, el.dataset.tag);
 }
 
-function openMedia(id, type, url, name) {
+function updateOverlayTagBar(tag) {
+  document.querySelectorAll('#video-tag-bar .overlay-tag-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tag === tag);
+    btn.dataset.active = btn.dataset.tag === tag ? '1' : '0';
+  });
+}
+
+function openMedia(id, type, url, name, tag = '') {
   _currentMediaUrl = url;
   _currentMediaId  = id;
+  _currentMediaTag = tag;
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
     dl.href = url; dl.download = name;
+    updateOverlayTagBar(tag);
     document.getElementById('video-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => vpInit(url));
@@ -292,10 +313,27 @@ function openMedia(id, type, url, name) {
 }
 
 // ── Crop ──────────────────────────────────────────────────────────────────────
+function toggleCropBar() {
+  const panel = document.querySelector('.video-panel');
+  const open  = panel.classList.toggle('crop-open');
+  if (!open) {
+    document.getElementById('crop-top').value    = 0;
+    document.getElementById('crop-bottom').value = 0;
+    updateCropPreview();
+  }
+}
+
+function updateCropPreview() {
+  const top = Math.min(49, Math.max(0, parseInt(document.getElementById('crop-top').value)    || 0));
+  const bot = Math.min(49, Math.max(0, parseInt(document.getElementById('crop-bottom').value) || 0));
+  document.getElementById('crop-overlay-top').style.height = top + '%';
+  document.getElementById('crop-overlay-bot').style.height = bot + '%';
+}
+
 async function cropVideo() {
-  const top    = Math.max(0, parseInt(document.getElementById('crop-top').value)    || 0);
-  const bottom = Math.max(0, parseInt(document.getElementById('crop-bottom').value) || 0);
-  if (top + bottom === 0) return;
+  const top = Math.max(0, parseInt(document.getElementById('crop-top').value)    || 0);
+  const bot = Math.max(0, parseInt(document.getElementById('crop-bottom').value) || 0);
+  if (top + bot === 0) return;
 
   const btn = document.getElementById('btn-crop');
   btn.disabled    = true;
@@ -303,22 +341,25 @@ async function cropVideo() {
 
   try {
     const r = await fetch(
-      `/api/media/${_currentMediaId}/crop?top_pct=${top}&bottom_pct=${bottom}`,
+      `/api/media/${_currentMediaId}/crop?top_pct=${top}&bottom_pct=${bot}`,
       { method: 'POST' }
     );
     if (r.ok) {
+      const { id: newId } = await r.json();
+      btn.textContent = 'Sauvegarder';
+      btn.disabled    = false;
+      loadMedia(); // refresh grille en arrière-plan
+      // Fetch le nouveau média et l'ouvre directement
+      const meta = await fetch(`/api/media/${newId}`).then(x => x.json());
       closeOverlay();
-      document.getElementById('crop-top').value    = 0;
-      document.getElementById('crop-bottom').value = 0;
-      loadMedia();
+      openMedia(meta.id, meta.type, meta.url, meta.original_name, meta.tag);
     } else {
-      const d = await r.json().catch(() => ({}));
       btn.textContent = '✗ Erreur';
-      setTimeout(() => { btn.textContent = 'Appliquer'; btn.disabled = false; }, 2000);
+      setTimeout(() => { btn.textContent = 'Sauvegarder'; btn.disabled = false; }, 2000);
     }
   } catch (_) {
     btn.textContent = '✗ Erreur';
-    setTimeout(() => { btn.textContent = 'Appliquer'; btn.disabled = false; }, 2000);
+    setTimeout(() => { btn.textContent = 'Sauvegarder'; btn.disabled = false; }, 2000);
   }
 }
 
@@ -330,11 +371,18 @@ function closeOverlay() {
   });
   if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }
   document.body.style.overflow = '';
+  // Reset crop
+  const panel = document.querySelector('.video-panel');
+  if (panel) panel.classList.remove('crop-open');
+  document.getElementById('crop-top').value    = 0;
+  document.getElementById('crop-bottom').value = 0;
+  updateCropPreview();
 }
 
 // ── Copy link ─────────────────────────────────────────────────────────────────
 let _currentMediaUrl = '';
 let _currentMediaId  = '';
+let _currentMediaTag = '';
 
 function copyLink(e, url) {
   const full = location.origin + url;
@@ -361,6 +409,23 @@ function copyModalLink() {
 }
 
 // ── Tag update ────────────────────────────────────────────────────────────────
+async function setTagFromOverlay(tag) {
+  const r = await fetch(`/api/media/${_currentMediaId}/tag?tag=${tag}`, { method: 'PATCH' });
+  if (!r.ok) return;
+  _currentMediaTag = tag;
+  updateOverlayTagBar(tag);
+  // Met aussi à jour la card dans la grille si elle est visible
+  const card = document.querySelector(`.card[data-id="${_currentMediaId}"]`);
+  if (card) {
+    card.dataset.tag = tag;
+    card.querySelectorAll('.tag-opt').forEach(btn => {
+      btn.classList.toggle('active-cinema', btn.dataset.tag === 'cinema' && tag === 'cinema');
+      btn.classList.toggle('active-osef',  btn.dataset.tag === 'osef'  && tag === 'osef');
+      btn.classList.toggle('active-todo',  btn.dataset.tag === 'todo'  && tag === 'todo');
+    });
+  }
+}
+
 async function setTag(event, id, tag) {
   event.stopPropagation();
   const card = event.target.closest('.card');
@@ -371,7 +436,7 @@ async function setTag(event, id, tag) {
   card.dataset.tag = tag;
   card.querySelectorAll('.tag-opt').forEach(btn => {
     const isActive = btn.dataset.tag === tag;
-    btn.classList.toggle('active-react', isActive && tag === 'react');
+    btn.classList.toggle('active-cinema', isActive && tag === 'cinema');
     btn.classList.toggle('active-osef',  isActive && tag === 'osef');
     btn.classList.toggle('active-todo',  isActive && tag === 'todo');
   });

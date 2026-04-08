@@ -65,7 +65,7 @@ class Media(SQLModel, table=True):
     extension:     str
     size_bytes:    int
     feeder_name:   str
-    tag:           str                 = Field(default="todo")  # "osef" | "react" | "todo"
+    tag:           str                 = Field(default="todo")  # "osef" | "cinema" | "todo"
     uploaded_at:   datetime.datetime  = Field(default_factory=datetime.datetime.utcnow)
 
 
@@ -220,7 +220,7 @@ def list_media(
             q = q.where(Media.media_type == type)
         if feeder:
             q = q.where(Media.feeder_name == feeder)
-        if tag in ("osef", "react"):
+        if tag in ("osef", "cinema", "todo"):
             q = q.where(Media.tag == tag)
 
         all_rows = session.exec(q).all()
@@ -249,10 +249,30 @@ def list_media(
         }
 
 
+@app.get("/api/media/{media_uuid}")
+def get_media_meta(media_uuid: str):
+    with Session(engine) as session:
+        m = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
+        if not m:
+            raise HTTPException(404, "Media introuvable")
+        return {
+            "id":            m.uuid,
+            "original_name": m.original_name,
+            "type":          m.media_type,
+            "extension":     m.extension,
+            "size":          m.size_bytes,
+            "feeder":        m.feeder_name,
+            "tag":           m.tag or "todo",
+            "date":          m.uploaded_at.isoformat(),
+            "url":           f"/media/{m.filename}",
+            "thumbnail":     f"/thumbnail/{m.uuid}.jpg",
+        }
+
+
 @app.patch("/api/media/{media_uuid}/tag")
 def update_tag(media_uuid: str, tag: str = Query(...)):
-    if tag not in ("osef", "react", "todo"):
-        raise HTTPException(400, "Tag invalide (osef | react | todo)")
+    if tag not in ("osef", "cinema", "todo"):
+        raise HTTPException(400, "Tag invalide (osef | cinema | todo)")
     with Session(engine) as session:
         media = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
         if not media:
@@ -298,18 +318,21 @@ def crop_media(
             raise HTTPException(404, "Media introuvable")
         if media.media_type != "video":
             raise HTTPException(400, "Crop disponible uniquement pour les vidéos")
+        src_filename    = media.filename
+        src_original    = media.original_name
+        src_extension   = media.extension
+        src_feeder      = media.feeder_name
 
-    file_path = MEDIA_DIR / media.filename
+    src_path = MEDIA_DIR / src_filename
 
     # Récupérer les dimensions via ffprobe
     probe = subprocess.run(
         ["ffprobe", "-v", "error", "-select_streams", "v:0",
-         "-show_entries", "stream=width,height", "-of", "csv=p=0", str(file_path)],
+         "-show_entries", "stream=width,height", "-of", "csv=p=0", str(src_path)],
         capture_output=True, text=True, timeout=15,
     )
     if probe.returncode != 0 or not probe.stdout.strip():
         raise HTTPException(500, "Impossible de lire les dimensions de la vidéo")
-
     try:
         w, h = map(int, probe.stdout.strip().split(","))
     except ValueError:
@@ -319,36 +342,44 @@ def crop_media(
     bottom_px = round(h * bottom_pct / 100)
     new_h     = h - top_px - bottom_px
     if new_h % 2 != 0:
-        new_h -= 1  # FFmpeg exige une hauteur paire pour H.264
+        new_h -= 1
     if new_h <= 0:
         raise HTTPException(400, "Zone de crop invalide")
 
-    tmp_path = file_path.with_suffix(".crop_tmp" + file_path.suffix)
+    # Nouveau fichier indépendant
+    new_uuid     = str(uuid.uuid4())
+    new_filename = f"{new_uuid}{src_extension}"
+    new_path     = MEDIA_DIR / new_filename
+
     r = subprocess.run(
-        ["ffmpeg", "-y", "-i", str(file_path),
+        ["ffmpeg", "-y", "-i", str(src_path),
          "-vf", f"crop={w}:{new_h}:0:{top_px}",
-         "-c:a", "copy", str(tmp_path)],
+         "-c:a", "copy", str(new_path)],
         capture_output=True, timeout=300,
     )
-    if r.returncode != 0 or not tmp_path.exists():
-        tmp_path.unlink(missing_ok=True)
+    if r.returncode != 0 or not new_path.exists():
+        new_path.unlink(missing_ok=True)
         raise HTTPException(500, f"FFmpeg échoué: {r.stderr[-300:].decode(errors='replace')}")
 
-    tmp_path.replace(file_path)
-
-    new_size = file_path.stat().st_size
+    new_original = Path(src_original).stem + f"_crop{src_extension}"
     with Session(engine) as session:
-        m = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
-        m.size_bytes = new_size
-        session.add(m)
+        session.add(Media(
+            uuid          = new_uuid,
+            filename      = new_filename,
+            original_name = new_original,
+            media_type    = "video",
+            extension     = src_extension,
+            size_bytes    = new_path.stat().st_size,
+            feeder_name   = src_feeder,
+            tag           = "osef",
+        ))
         session.commit()
 
-    thumb_path = THUMB_DIR / f"{media_uuid}.jpg"
-    thumb_path.unlink(missing_ok=True)
-    gen_video_thumb(file_path, thumb_path)
+    thumb_path = THUMB_DIR / f"{new_uuid}.jpg"
+    gen_video_thumb(new_path, thumb_path)
 
-    log.info(f"Crop: {media_uuid} top={top_pct}% bottom={bottom_pct}%")
-    return {"ok": True}
+    log.info(f"Crop: {media_uuid} → {new_uuid} top={top_pct}% bottom={bottom_pct}%")
+    return {"ok": True, "id": new_uuid}
 
 
 @app.delete("/api/media/{media_uuid}")
@@ -405,4 +436,4 @@ app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host=cfg.get("host", "0.0.0.0"), port=int(cfg.get("port", 8000)), reload=False)
+    uvicorn.run(app, host=cfg.get("host", "0.0.0.0"), port=int(cfg.get("port", 8000)))
