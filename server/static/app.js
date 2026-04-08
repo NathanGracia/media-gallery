@@ -118,9 +118,9 @@ function renderGrid(items) {
           <span class="card-badge badge-${item.type}">${item.type}</span>
           <div class="card-tag-bar" onclick="event.stopPropagation()">
             <button class="tag-opt ${tag === 'react' ? 'active-react' : ''}" data-tag="react"
-                    onclick="setTag(event, '${esc(item.id)}', 'react')">⚡ React</button>
+                    onclick="setTag(event, '${esc(item.id)}', 'react')">React</button>
             <button class="tag-opt ${tag === 'osef' ? 'active-osef' : ''}" data-tag="osef"
-                    onclick="setTag(event, '${esc(item.id)}', 'osef')">💤 Osef</button>
+                    onclick="setTag(event, '${esc(item.id)}', 'osef')">Osef</button>
           </div>
         </div>
         <div class="card-body">

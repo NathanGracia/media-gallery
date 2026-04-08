@@ -339,32 +339,34 @@ main {
   left: 0;
   right: 0;
   display: flex;
-  gap: 6px;
-  padding: 8px 8px;
-  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+  gap: 5px;
+  padding: 20px 8px 8px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.18s;
   justify-content: flex-end;
 }
 
 .card:hover .card-tag-bar { opacity: 1; }
 
 .tag-opt {
-  padding: 3px 10px;
-  border: none;
+  padding: 3px 11px;
+  border: 1.5px solid transparent;
   border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   cursor: pointer;
-  background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.7);
-  backdrop-filter: blur(4px);
-  transition: background 0.12s, color 0.12s, transform 0.1s;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.45);
+  backdrop-filter: blur(6px);
+  transition: all 0.14s;
 }
 
-.tag-opt:hover        { background: rgba(255,255,255,0.25); color: #fff; transform: scale(1.05); }
-.tag-opt.active-react { background: rgba(123,107,255,0.85); color: #fff; }
-.tag-opt.active-osef  { background: rgba(100,100,120,0.7);  color: #ccc; }
+.tag-opt:hover             { background: rgba(255,255,255,0.18); color: #fff; }
+.tag-opt.active-react      { background: rgba(99,210,140,0.2); color: #63d28c; border-color: rgba(99,210,140,0.5); }
+.tag-opt.active-osef       { background: rgba(120,120,160,0.2); color: #9898b8; border-color: rgba(120,120,160,0.35); }
 
 /* Séparateur entre groupes de tabs */
 .filter-sep {
@@ -375,9 +377,33 @@ main {
   margin: 0 4px;
 }
 
-/* Couleur spécifique aux tabs react/osef */
-.tab-react.active { color: var(--accent); border-bottom-color: var(--accent); }
-.tab-osef.active  { color: var(--text-dim); border-bottom-color: var(--text-dim); }
+/* ── Tag chips (filtre toolbar) ───────────────────────────────────────────── */
+.tag-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.chip {
+  padding: 4px 14px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.chip:hover { border-color: var(--text-dim); color: var(--text); }
+
+.chip.active            { background: var(--surface2); color: var(--text); border-color: var(--surface3); }
+.chip-react.active      { background: rgba(99,210,140,0.15); color: #63d28c; border-color: rgba(99,210,140,0.4); }
+.chip-osef.active       { background: rgba(120,120,160,0.15); color: var(--text-dim); border-color: rgba(120,120,160,0.3); }
+.chip-react:hover       { border-color: #63d28c; color: #63d28c; }
+.chip-osef:hover        { border-color: var(--text-dim); }
 
 /* ── Empty state ───────────────────────────────────────────────────────────── */
 .empty {
