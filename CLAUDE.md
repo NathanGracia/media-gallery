@@ -29,7 +29,7 @@ Filtre dans `list_media` : pensez à inclure les 3 dans la condition.
 
 Les fichiers statiques sont référencés avec `?v=N` dans `index.html`.  
 **Bumper la version à chaque modification de `app.js` ou `style.css`.**  
-Version actuelle : `v=11`.
+Version actuelle : `v=12`.
 
 ## API endpoints
 
