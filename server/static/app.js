@@ -6,6 +6,7 @@ let state = {
   perPage: 30,
   type:    '',
   feeder:  '',
+  tag:     '',
   total:   0,
 };
 
@@ -67,6 +68,7 @@ async function loadMedia() {
   });
   if (state.type)   params.set('type',   state.type);
   if (state.feeder) params.set('feeder', state.feeder);
+  if (state.tag)    params.set('tag',    state.tag);
 
   try {
     const r = await fetch('/api/media?' + params);
@@ -99,13 +101,14 @@ function renderGrid(items) {
   }
 
   grid.innerHTML = items.map(item => {
-    const isVideo = item.type === 'video';
+    const isVideo  = item.type === 'video';
     const thumbUrl = esc(item.thumbnail);
     const mediaUrl = esc(item.url);
     const name     = esc(item.original_name);
+    const tag      = item.tag || 'osef';
 
     return `
-      <div class="card"
+      <div class="card" data-id="${esc(item.id)}" data-tag="${tag}"
            onclick="openMedia(${JSON.stringify(item.id)}, ${JSON.stringify(item.type)}, ${JSON.stringify(item.url)}, ${JSON.stringify(item.original_name)})">
         <div class="card-thumb-wrap">
           <img class="card-thumb" src="${thumbUrl}" loading="lazy" alt="${name}" onerror="this.style.opacity=0.2">
@@ -113,6 +116,12 @@ function renderGrid(items) {
             <div class="play-ring">${isVideo ? '▶' : '⤢'}</div>
           </div>
           <span class="card-badge badge-${item.type}">${item.type}</span>
+          <div class="card-tag-bar" onclick="event.stopPropagation()">
+            <button class="tag-opt ${tag === 'react' ? 'active-react' : ''}" data-tag="react"
+                    onclick="setTag(event, '${esc(item.id)}', 'react')">⚡ React</button>
+            <button class="tag-opt ${tag === 'osef' ? 'active-osef' : ''}" data-tag="osef"
+                    onclick="setTag(event, '${esc(item.id)}', 'osef')">💤 Osef</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="card-title" title="${name}">${name}</div>
@@ -204,6 +213,22 @@ function closeOverlay() {
   document.body.style.overflow = '';
 }
 
+// ── Tag update ────────────────────────────────────────────────────────────────
+async function setTag(event, id, tag) {
+  event.stopPropagation();
+  const card = event.target.closest('.card');
+  const r = await fetch(`/api/media/${id}/tag?tag=${tag}`, { method: 'PATCH' });
+  if (!r.ok) return;
+
+  // Mise à jour visuelle immédiate sans reload
+  card.dataset.tag = tag;
+  card.querySelectorAll('.tag-opt').forEach(btn => {
+    const isActive = btn.dataset.tag === tag;
+    btn.classList.toggle('active-react', isActive && tag === 'react');
+    btn.classList.toggle('active-osef',  isActive && tag === 'osef');
+  });
+}
+
 // ── Event listeners ───────────────────────────────────────────────────────────
 document.getElementById('filter-tabs').addEventListener('click', e => {
   const btn = e.target.closest('.tab');
@@ -211,6 +236,16 @@ document.getElementById('filter-tabs').addEventListener('click', e => {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   state.type = btn.dataset.type;
+  state.page = 1;
+  loadMedia();
+});
+
+document.getElementById('tag-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  document.querySelectorAll('#tag-tabs .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  state.tag  = btn.dataset.tag;
   state.page = 1;
   loadMedia();
 });

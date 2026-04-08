@@ -332,6 +332,53 @@ main {
   color: #fff;
 }
 
+/* ── Tag bar (au survol de la carte) ──────────────────────────────────────── */
+.card-tag-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 6px;
+  padding: 8px 8px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.15s;
+  justify-content: flex-end;
+}
+
+.card:hover .card-tag-bar { opacity: 1; }
+
+.tag-opt {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  backdrop-filter: blur(4px);
+  transition: background 0.12s, color 0.12s, transform 0.1s;
+}
+
+.tag-opt:hover        { background: rgba(255,255,255,0.25); color: #fff; transform: scale(1.05); }
+.tag-opt.active-react { background: rgba(123,107,255,0.85); color: #fff; }
+.tag-opt.active-osef  { background: rgba(100,100,120,0.7);  color: #ccc; }
+
+/* Séparateur entre groupes de tabs */
+.filter-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  align-self: center;
+  margin: 0 4px;
+}
+
+/* Couleur spécifique aux tabs react/osef */
+.tab-react.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-osef.active  { color: var(--text-dim); border-bottom-color: var(--text-dim); }
+
 /* ── Empty state ───────────────────────────────────────────────────────────── */
 .empty {
   grid-column: 1 / -1;

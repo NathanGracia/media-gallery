@@ -14,6 +14,7 @@ from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Q
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel, Field, Session, create_engine, select, col
+from sqlalchemy import text
 from PIL import Image
 
 # ── Logging ────────────────────────────────────────────────────────────────────
@@ -64,10 +65,21 @@ class Media(SQLModel, table=True):
     extension:     str
     size_bytes:    int
     feeder_name:   str
+    tag:           str                 = Field(default="osef")  # "osef" | "react"
     uploaded_at:   datetime.datetime  = Field(default_factory=datetime.datetime.utcnow)
 
 
 SQLModel.metadata.create_all(engine)
+
+# Migration : ajoute la colonne tag si elle n'existe pas encore (DB existante)
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE media ADD COLUMN tag VARCHAR DEFAULT 'osef'"))
+        _conn.execute(text("UPDATE media SET tag = 'osef' WHERE tag IS NULL"))
+        _conn.commit()
+        log.info("Migration : colonne 'tag' ajoutée.")
+    except Exception:
+        pass  # Colonne déjà présente
 
 # ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Media Gallery v3", docs_url=None, redoc_url=None)
@@ -198,6 +210,7 @@ async def upload(
 def list_media(
     type:     Optional[str] = Query(None),
     feeder:   Optional[str] = Query(None),
+    tag:      Optional[str] = Query(None),
     page:     int           = Query(1, ge=1),
     per_page: int           = Query(30, ge=1, le=100),
 ):
@@ -207,6 +220,8 @@ def list_media(
             q = q.where(Media.media_type == type)
         if feeder:
             q = q.where(Media.feeder_name == feeder)
+        if tag in ("osef", "react"):
+            q = q.where(Media.tag == tag)
 
         all_rows = session.exec(q).all()
         total    = len(all_rows)
@@ -224,6 +239,7 @@ def list_media(
                     "extension":     m.extension,
                     "size":          m.size_bytes,
                     "feeder":        m.feeder_name,
+                    "tag":           m.tag or "osef",
                     "date":          m.uploaded_at.isoformat(),
                     "url":           f"/media/{m.filename}",
                     "thumbnail":     f"/thumbnail/{m.uuid}.jpg",
@@ -231,6 +247,20 @@ def list_media(
                 for m in rows
             ],
         }
+
+
+@app.patch("/api/media/{media_uuid}/tag")
+def update_tag(media_uuid: str, tag: str = Query(...)):
+    if tag not in ("osef", "react"):
+        raise HTTPException(400, "Tag invalide (osef | react)")
+    with Session(engine) as session:
+        media = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
+        if not media:
+            raise HTTPException(404, "Media introuvable")
+        media.tag = tag
+        session.add(media)
+        session.commit()
+    return {"ok": True, "tag": tag}
 
 
 @app.get("/api/storage")
