@@ -294,9 +294,9 @@ document.getElementById('filter-tabs').addEventListener('click', e => {
 });
 
 document.getElementById('tag-tabs').addEventListener('click', e => {
-  const btn = e.target.closest('.tab');
+  const btn = e.target.closest('.chip');
   if (!btn) return;
-  document.querySelectorAll('#tag-tabs .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#tag-tabs .chip').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   state.tag  = btn.dataset.tag;
   state.page = 1;
