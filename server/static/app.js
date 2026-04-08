@@ -206,11 +206,40 @@ function goPage(p) {
 // ── Plyr video player ─────────────────────────────────────────────────────────
 let player = null;
 
+const FOOTER_H  = 80;   // hauteur footer en px (inclut padding + border)
+const MAX_VH    = 0.92; // 92vh
+const MAX_VW    = 0.92; // 92vw
+const MAX_PX    = 960;  // largeur max panel horizontal
+
+function vpApplyRatio(vw, vh) {
+  const wrap  = document.getElementById('vp-wrap');
+  const panel = document.querySelector('.video-panel');
+  const maxH  = window.innerHeight * MAX_VH - FOOTER_H;
+  const maxW  = Math.min(window.innerWidth * MAX_VW, MAX_PX);
+  const ratio = vw / vh;
+
+  let w, h;
+  if (ratio >= 1) {
+    // Horizontal : partir de la largeur max
+    w = maxW;
+    h = w / ratio;
+    if (h > maxH) { h = maxH; w = h * ratio; }
+  } else {
+    // Vertical : partir de la hauteur max
+    h = maxH;
+    w = h * ratio;
+    if (w > maxW) { w = maxW; h = w / ratio; }
+  }
+
+  wrap.style.width  = `${Math.round(w)}px`;
+  wrap.style.height = `${Math.round(h)}px`;
+  if (panel) panel.style.width = `${Math.round(w)}px`;
+}
+
 function vpInit(url) {
   const wrap = document.getElementById('vp-wrap');
-
-  // Reset au ratio par défaut pendant le chargement
-  wrap.style.aspectRatio = '16 / 9';
+  // Taille par défaut 16:9 pendant le chargement
+  vpApplyRatio(16, 9);
 
   if (!player) {
     player = new Plyr('#modal-video', {
@@ -218,22 +247,15 @@ function vpInit(url) {
       autoplay: true,
       resetOnEnd: true,
     });
-
-    // Appliquer le ratio natif dès que les métadonnées sont connues
-    player.on('loadedmetadata', () => {
-      const v = player.media;
-      if (v && v.videoWidth && v.videoHeight) {
-        wrap.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
-      }
-    });
-  } else {
-    player.on('loadedmetadata', () => {
-      const v = player.media;
-      if (v && v.videoWidth && v.videoHeight) {
-        wrap.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
-      }
-    });
   }
+
+  player.off('loadedmetadata');
+  player.on('loadedmetadata', () => {
+    const v = player.media;
+    if (v && v.videoWidth && v.videoHeight) {
+      vpApplyRatio(v.videoWidth, v.videoHeight);
+    }
+  });
 
   player.source = {
     type: 'video',

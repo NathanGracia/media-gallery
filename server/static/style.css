@@ -599,7 +599,6 @@ main {
   display: flex;
   flex-direction: column;
   max-width: 92vw;
-  max-height: 92vh;
   animation: panelIn 0.25s cubic-bezier(.4,0,.2,1);
 }
 
@@ -631,14 +630,11 @@ main {
 
 .overlay-close:hover { background: rgba(248,113,113,0.2); border-color: rgba(248,113,113,0.4); color: var(--red); }
 
-/* Video wrap — ratio natif appliqué via JS */
+/* Video wrap — dimensions gérées par JS selon le ratio réel */
 .vp-wrap {
   background: #000;
-  aspect-ratio: 16 / 9;    /* défaut, écrasé par JS dès que la vidéo charge */
-  max-height: calc(92vh - 60px);   /* 60px = footer */
-  max-width: 92vw;
-  width: 100%;
   overflow: hidden;
+  /* width/height/aspect-ratio injectés par vpInit() */
 }
 
 #modal-video {
