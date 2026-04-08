@@ -108,8 +108,13 @@ function renderGrid(items) {
     const tag      = item.tag || 'osef';
 
     return `
-      <div class="card" data-id="${esc(item.id)}" data-tag="${tag}"
-           onclick="openMedia(${JSON.stringify(item.id)}, ${JSON.stringify(item.type)}, ${JSON.stringify(item.url)}, ${JSON.stringify(item.original_name)})">
+      <div class="card"
+           data-id="${esc(item.id)}"
+           data-type="${esc(item.type)}"
+           data-url="${esc(item.url)}"
+           data-name="${esc(item.original_name)}"
+           data-tag="${tag}"
+           onclick="openMediaFromCard(this)">
         <div class="card-thumb-wrap">
           <img class="card-thumb" src="${thumbUrl}" loading="lazy" alt="${name}" onerror="this.style.opacity=0.2">
           <div class="card-play">
@@ -198,8 +203,11 @@ function vpInit(url) {
 }
 
 // ── Overlays ──────────────────────────────────────────────────────────────────
+function openMediaFromCard(el) {
+  openMedia(el.dataset.id, el.dataset.type, el.dataset.url, el.dataset.name);
+}
+
 function openMedia(id, type, url, name) {
-  console.log('openMedia called', type, url);
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
