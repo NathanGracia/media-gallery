@@ -136,13 +136,13 @@ function renderGrid(items) {
               <span>${fmtDate(item.date)} · ${esc(item.feeder)}</span>
             </div>
             <button class="btn-card-copy"
-               onclick="event.stopPropagation(); copyLink('${esc(item.url)}')"
+               onclick="event.stopPropagation(); copyLink(event, '${esc(item.url)}')"
                title="Copier le lien">⎘</button>
             <a class="btn-card-dl"
                href="${mediaUrl}"
                download="${name}"
                onclick="event.stopPropagation()"
-               title="Télécharger">⬇</a>
+               title="Télécharger">↓</a>
           </div>
         </div>
       </div>`;
@@ -211,13 +211,13 @@ function openMediaFromCard(el) {
 }
 
 function openMedia(id, type, url, name) {
+  _currentMediaUrl = url;
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
     dl.href = url; dl.download = name;
     document.getElementById('video-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
-    // Init player AFTER overlay is visible (avoids autoplay policy issues)
     requestAnimationFrame(() => vpInit(url));
   } else {
     document.getElementById('modal-img').src = url;
@@ -240,17 +240,29 @@ function closeOverlay() {
 }
 
 // ── Copy link ─────────────────────────────────────────────────────────────────
-function copyLink(url) {
+let _currentMediaUrl = '';
+
+function copyLink(e, url) {
   const full = location.origin + url;
   navigator.clipboard.writeText(full).then(() => {
-    // Feedback visuel rapide
-    const btn = event.target.closest('.btn-card-copy');
-    if (btn) {
-      const prev = btn.textContent;
-      btn.textContent = '✓';
-      btn.style.color = '#63d28c';
-      setTimeout(() => { btn.textContent = prev; btn.style.color = ''; }, 1500);
-    }
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const prev = btn.textContent;
+    btn.textContent = '✓';
+    btn.style.color = '#4ade80';
+    setTimeout(() => { btn.textContent = prev; btn.style.color = ''; }, 1500);
+  });
+}
+
+function copyModalLink() {
+  if (!_currentMediaUrl) return;
+  const full = location.origin + _currentMediaUrl;
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.querySelector('.overlay.open .btn-copy-modal');
+    if (!btn) return;
+    btn.textContent = '✓ Copié !';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copier le lien'; btn.classList.remove('copied'); }, 2000);
   });
 }
 

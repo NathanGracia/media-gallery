@@ -3,23 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Media Gallery v3 — BUILD 4</title>
+  <title>Media Gallery v3 — BUILD 5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
   <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
+<!-- Animated background orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+<div class="noise"></div>
+
 <header>
-  <div class="header-top">
+  <div class="header-inner">
     <div class="brand">
-      <span class="brand-icon">◈</span>
-      <span class="brand-name">Media Gallery</span>
-      <span class="brand-version">v3</span>
+      <span class="brand-mark"></span>
+      <span class="brand-name">Memoss</span>
     </div>
+
     <div class="storage-widget">
-      <div class="storage-label">
-        <span id="storage-text">—</span>
-      </div>
+      <span class="storage-label" id="storage-text">—</span>
       <div class="storage-track">
         <div class="storage-bar" id="storage-bar"></div>
       </div>
@@ -32,12 +39,15 @@
       <button class="tab" data-type="video">Vidéos</button>
       <button class="tab" data-type="image">Images</button>
     </div>
+
     <div class="filter-sep"></div>
+
     <div class="tag-chips" id="tag-tabs">
       <button class="chip active" data-tag="">Tous</button>
       <button class="chip chip-react" data-tag="react">React</button>
       <button class="chip chip-osef" data-tag="osef">Osef</button>
     </div>
+
     <div class="toolbar-right">
       <select id="feeder-select" class="feeder-select">
         <option value="">Tous les feeders</option>
@@ -55,7 +65,6 @@
       <div class="skeleton-card"></div><div class="skeleton-card"></div>
     </div>
   </div>
-
   <div class="pagination" id="pagination"></div>
 </main>
 
@@ -64,14 +73,15 @@
   <div class="overlay-backdrop" onclick="closeOverlay()"></div>
   <div class="overlay-panel video-panel">
     <button class="overlay-close" onclick="closeOverlay()" aria-label="Fermer">✕</button>
-
     <div class="vp-wrap">
       <video id="modal-video" playsinline controls></video>
     </div>
-
     <div class="overlay-footer">
       <span class="overlay-name" id="video-name"></span>
-      <a class="btn-dl" id="video-dl" download>Télécharger</a>
+      <div class="overlay-actions">
+        <button class="btn-copy-modal" id="video-copy" onclick="copyModalLink()" title="Copier le lien">Copier le lien</button>
+        <a class="btn-dl" id="video-dl" download>Télécharger</a>
+      </div>
     </div>
   </div>
 </div>
@@ -84,7 +94,10 @@
     <img id="modal-img" src="" alt="">
     <div class="overlay-footer">
       <span class="overlay-name" id="image-name"></span>
-      <a class="btn-dl" id="image-dl" download>⬇ Télécharger</a>
+      <div class="overlay-actions">
+        <button class="btn-copy-modal" id="image-copy" onclick="copyModalLink()" title="Copier le lien">Copier le lien</button>
+        <a class="btn-dl" id="image-dl" download>Télécharger</a>
+      </div>
     </div>
   </div>
 </div>
