@@ -599,7 +599,7 @@ main {
   display: flex;
   flex-direction: column;
   max-width: 92vw;
-  height: 90vh;        /* hauteur fixe : footer toujours visible */
+  max-height: 92vh;
   animation: panelIn 0.25s cubic-bezier(.4,0,.2,1);
 }
 
@@ -608,7 +608,7 @@ main {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.video-panel { width: min(960px, 92vw); }
+.video-panel { width: auto; min-width: 320px; }
 .image-panel { width: min(1000px, 92vw); }
 
 .overlay-close {
@@ -631,28 +631,31 @@ main {
 
 .overlay-close:hover { background: rgba(248,113,113,0.2); border-color: rgba(248,113,113,0.4); color: var(--red); }
 
-/* Video wrap — flex: 1 pour laisser le footer toujours visible */
+/* Video wrap — ratio natif appliqué via JS */
 .vp-wrap {
   background: #000;
-  flex: 1;
-  min-height: 0;
+  aspect-ratio: 16 / 9;    /* défaut, écrasé par JS dès que la vidéo charge */
+  max-height: calc(92vh - 60px);   /* 60px = footer */
+  max-width: 92vw;
+  width: 100%;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 #modal-video {
   display: block;
   width: 100%;
-  max-height: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
-/* Plyr s'adapte au conteneur */
-.plyr { width: 100% !important; }
+/* Plyr remplit le wrap, désactiver son propre padding-bottom hack */
+.plyr { width: 100% !important; height: 100% !important; }
 .plyr--video { background: #000; }
-.plyr__video-wrapper { background: #000 !important; }
+.plyr__video-wrapper {
+  background: #000 !important;
+  height: 100% !important;
+  padding-bottom: 0 !important;
+}
 
 #modal-img {
   max-width: 100%;

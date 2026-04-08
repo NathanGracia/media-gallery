@@ -207,13 +207,34 @@ function goPage(p) {
 let player = null;
 
 function vpInit(url) {
+  const wrap = document.getElementById('vp-wrap');
+
+  // Reset au ratio par défaut pendant le chargement
+  wrap.style.aspectRatio = '16 / 9';
+
   if (!player) {
     player = new Plyr('#modal-video', {
-      controls: ['play-large','play','progress','current-time','mute','volume','fullscreen'],
+      controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
       autoplay: true,
       resetOnEnd: true,
     });
+
+    // Appliquer le ratio natif dès que les métadonnées sont connues
+    player.on('loadedmetadata', () => {
+      const v = player.media;
+      if (v && v.videoWidth && v.videoHeight) {
+        wrap.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
+      }
+    });
+  } else {
+    player.on('loadedmetadata', () => {
+      const v = player.media;
+      if (v && v.videoWidth && v.videoHeight) {
+        wrap.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
+      }
+    });
   }
+
   player.source = {
     type: 'video',
     sources: [{ src: url, type: 'video/mp4' }],
