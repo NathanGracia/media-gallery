@@ -207,12 +207,24 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
     })
     await manager.broadcast(code, {"type": "room_update", "players": players_list(state)})
 
+    async def heartbeat():
+        while True:
+            await asyncio.sleep(30)
+            try:
+                await websocket.send_json({"type": "ping"})
+            except Exception:
+                break
+
+    hb_task = asyncio.create_task(heartbeat())
     try:
         while True:
             data  = await websocket.receive_json()
             event = data.get("type")
 
-            if event == "start_game":
+            if event == "pong":
+                pass
+
+            elif event == "start_game":
                 if player_id == state["host_id"] and state["status"] == "lobby":
                     await start_game(code)
 
@@ -232,6 +244,8 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
             await check_all_submitted(code)
         elif state["status"] == "revealing":
             await check_all_voted(code)
+    finally:
+        hb_task.cancel()
 
 
 # ── Phase 1 : Soumission ───────────────────────────────────────────────────────

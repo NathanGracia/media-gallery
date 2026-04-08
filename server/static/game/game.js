@@ -494,6 +494,10 @@ function connectWS() {
 function handleMsg(msg) {
   switch (msg.type) {
 
+    case 'ping':
+      S.ws.send(JSON.stringify({ type: 'pong' }));
+      return;
+
     case 'connected':
       S.isHost  = msg.is_host;
       S.players = msg.players;
