@@ -506,6 +506,26 @@ async def end_game(code: str):
 
     await _save_to_db(code)
 
+    # Retour au lobby après 10s pour une nouvelle partie
+    await asyncio.sleep(10)
+
+    for pid in state["players"]:
+        state["players"][pid]["score"] = 0
+    state["status"]          = "lobby"
+    state["pick_round"]      = 0
+    state["reveal_round"]    = 0
+    state["submissions"]     = {}
+    state["all_submissions"] = {}
+    state["reveal_queue"]    = []
+    state["reveal_index"]    = 0
+    state["current_votes"]   = {}
+    state["all_answers"]     = []
+
+    await manager.broadcast(code, {
+        "type":    "back_to_lobby",
+        "players": players_list(state),
+    })
+
 
 async def _save_to_db(code: str):
     state = game_states[code]

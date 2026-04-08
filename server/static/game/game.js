@@ -447,7 +447,7 @@ function renderGameEnd() {
       <div class="winner-banner">
         <div class="winner-trophy">🏆</div>
         <div class="winner-name">${winner ? esc(winner.pseudo) : '—'}</div>
-        <div class="winner-label">${winner ? `${winner.score} étoiles · Champion Memoss` : 'Fin de partie'}</div>
+        <div class="winner-label">${winner ? `${winner.score} pts · Champion Memoss` : 'Fin de partie'}</div>
       </div>
 
       <div class="podium">
@@ -459,10 +459,10 @@ function renderGameEnd() {
           </div>`).join('')}
       </div>
 
-      <button class="btn btn-ghost" onclick="location.href='/game/'" style="width:100%;margin-bottom:10px">
-        Rejouer
-      </button>
-      <button class="btn btn-ghost" onclick="location.href='/'" style="width:100%">
+      <p style="text-align:center;color:var(--text-2);font-size:.82rem;margin-top:8px">
+        Retour au lobby dans <span id="lobby-countdown">10</span>s…
+      </p>
+      <button class="btn btn-ghost" onclick="location.href='/'" style="width:100%;margin-top:14px">
         ← Retour à la galerie
       </button>
     </div>`;
@@ -563,6 +563,18 @@ function handleMsg(msg) {
       S.players = msg.players;
       S.screen  = 'game_end';
       render();
+      startLobbyCountdown(10);
+      break;
+
+    case 'back_to_lobby':
+      S.players     = msg.players;
+      S.pickRound   = 0;
+      S.revealRound = 0;
+      S.selectedMeme = null;
+      S.text        = '';
+      S.screen      = 'lobby';
+      stopLobbyCountdown();
+      render();
       break;
   }
 }
@@ -602,6 +614,25 @@ function updatePlayerList() {
       ${p.id === S.playerId ? `<strong>${esc(p.pseudo)}</strong>` : esc(p.pseudo)}
       <span class="score">${p.score ? p.score + ' pts' : ''}</span>
     </li>`).join('');
+}
+
+// ── Lobby countdown ───────────────────────────────────────────────────────────
+let _lobbyCountdown = null;
+
+function startLobbyCountdown(sec) {
+  stopLobbyCountdown();
+  let n = sec;
+  _lobbyCountdown = setInterval(() => {
+    n--;
+    const el = document.getElementById('lobby-countdown');
+    if (el) el.textContent = n;
+    if (n <= 0) stopLobbyCountdown();
+  }, 1000);
+}
+
+function stopLobbyCountdown() {
+  clearInterval(_lobbyCountdown);
+  _lobbyCountdown = null;
 }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
