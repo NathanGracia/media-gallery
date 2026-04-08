@@ -6,7 +6,7 @@ let state = {
   perPage: 20,
   type:    '',
   feeder:  '',
-  tag:     '',
+  tag:     'cinema',
   total:   0,
 };
 
