@@ -123,6 +123,8 @@ header {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  cursor: pointer;
+  color: inherit;
 }
 
 .brand-logo {

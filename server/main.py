@@ -15,7 +15,8 @@ from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Q
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel, Field, Session, create_engine, select, col
-from sqlalchemy import text
+from sqlalchemy import text, func
+from game_models import GameAnswer
 from PIL import Image
 
 # ── Logging ────────────────────────────────────────────────────────────────────
@@ -226,8 +227,20 @@ def list_media(
             q = q.where(Media.tag == tag)
 
         all_rows = session.exec(q).all()
-        total    = len(all_rows)
-        rows     = all_rows[(page - 1) * per_page: page * per_page]
+
+        # Tri par nombre de réponses Memoss (décroissant), puis par date
+        if all_rows:
+            uuids = [m.uuid for m in all_rows]
+            count_rows = session.exec(
+                select(GameAnswer.media_uuid, func.count(GameAnswer.id).label("cnt"))
+                .where(GameAnswer.media_uuid.in_(uuids))
+                .group_by(GameAnswer.media_uuid)
+            ).all()
+            answer_counts = {r.media_uuid: r.cnt for r in count_rows}
+            all_rows = sorted(all_rows, key=lambda m: (-answer_counts.get(m.uuid, 0), -m.uploaded_at.timestamp()))
+
+        total = len(all_rows)
+        rows  = all_rows[(page - 1) * per_page: page * per_page]
 
         return {
             "total":    total,
