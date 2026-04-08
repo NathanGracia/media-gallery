@@ -9,6 +9,7 @@ from typing import Optional
 
 import yaml
 import requests as req
+from game_router import router as game_router, init as init_game
 import aiofiles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Query, Request
 from fastapi.responses import FileResponse
@@ -70,6 +71,7 @@ class Media(SQLModel, table=True):
 
 
 SQLModel.metadata.create_all(engine)
+init_game(engine, Media)
 
 # Migration : ajoute la colonne tag si elle n'existe pas encore (DB existante)
 with engine.connect() as _conn:
@@ -429,6 +431,11 @@ def get_media(filename: str):
     ct = TYPES.get(Path(filename).suffix.lower(), "application/octet-stream")
     return FileResponse(path, media_type=ct)
 
+
+app.include_router(game_router)
+
+# Static game SPA
+app.mount("/game", StaticFiles(directory="static/game", html=True), name="game-static")
 
 # Mount gallery SPA — must be last
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

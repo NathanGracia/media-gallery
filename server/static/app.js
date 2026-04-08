@@ -302,6 +302,7 @@ function openMedia(id, type, url, name, tag = '') {
     document.getElementById('video-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => vpInit(url));
+    loadMemossHistory(id);
   } else {
     document.getElementById('modal-img').src = url;
     document.getElementById('image-name').textContent = name;
@@ -377,6 +378,8 @@ function closeOverlay() {
   document.getElementById('crop-top').value    = 0;
   document.getElementById('crop-bottom').value = 0;
   updateCropPreview();
+  // Reset history
+  document.getElementById('memoss-history').innerHTML = '';
 }
 
 // ── Copy link ─────────────────────────────────────────────────────────────────
@@ -472,6 +475,38 @@ document.getElementById('feeder-select').addEventListener('change', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeOverlay();
 });
+
+// ── Memoss History ─────────────────────────────────────────────────────────────
+async function loadMemossHistory(uuid) {
+  const el = document.getElementById('memoss-history');
+  if (!el) return;
+  el.innerHTML = '';
+
+  try {
+    const data = await fetch(`/game/api/history/${uuid}`).then(r => r.json());
+    if (!Array.isArray(data) || data.length === 0) return;
+
+    const stars = n => '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n));
+
+    el.innerHTML = `
+      <div class="memoss-history-title">
+        💬 Légendes Memoss
+        <a class="game-link" href="/game/">Jouer →</a>
+      </div>
+      <div class="memoss-caption-list">
+        ${data.map(c => `
+          <div class="memoss-caption">
+            <div class="memoss-caption-text">${esc(c.text)}</div>
+            <div class="memoss-caption-meta">
+              <span>${esc(c.pseudo)}</span>
+              <span class="memoss-caption-stars">${stars(Math.round(c.avg))}</span>
+              <span class="memoss-caption-avg">${c.avg} / 5</span>
+              <span style="margin-left:auto">${c.vote_count} vote${c.vote_count > 1 ? 's' : ''}</span>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  } catch (_) {}
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {

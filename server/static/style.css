@@ -132,6 +132,21 @@ header {
   flex-shrink: 0;
 }
 
+.btn-game-link {
+  padding: 6px 14px;
+  background: var(--glass);
+  border: 1px solid var(--gb);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-family: 'Figtree', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.btn-game-link:hover { color: var(--accent); border-color: var(--accent-dim); background: var(--glass-hover); }
+
 .brand-name {
   font-family: 'Syne', sans-serif;
   font-size: 1.25rem;
@@ -869,6 +884,54 @@ main {
 }
 .plyr__control--overlaid:hover {
   background: rgba(34, 211, 238, 0.35) !important;
+}
+
+/* ── Memoss History ─────────────────────────────────────────────────────────── */
+.memoss-history {
+  padding: 0 20px 20px;
+}
+.memoss-history:empty { display: none; }
+
+.memoss-history-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.75rem; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gb);
+}
+.memoss-history-title .game-link {
+  margin-left: auto;
+  color: var(--accent); text-decoration: none;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.7; transition: opacity 0.15s;
+}
+.memoss-history-title .game-link:hover { opacity: 1; }
+
+.memoss-caption-list {
+  display: flex; flex-direction: column; gap: 7px;
+}
+.memoss-caption {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 10px 13px;
+  background: var(--glass);
+  border: 1px solid var(--gb);
+  border-radius: 9px;
+}
+.memoss-caption-text {
+  font-size: 0.9rem; font-weight: 500;
+  color: var(--text); line-height: 1.4;
+}
+.memoss-caption-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.72rem; color: var(--text-dim);
+}
+.memoss-caption-stars {
+  color: #fbbf24; letter-spacing: 1px;
+}
+.memoss-caption-avg {
+  font-weight: 700; color: #fbbf24;
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
