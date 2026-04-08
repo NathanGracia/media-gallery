@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Code source
 COPY main.py .
+COPY game_models.py .
+COPY game_router.py .
 COPY static/ static/
 
 # Les données (media, thumbnails, db, config) sont montées en volumes
