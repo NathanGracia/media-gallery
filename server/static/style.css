@@ -601,8 +601,8 @@ main {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.video-panel { width: min(960px, 95vw); }
-.image-panel { width: min(1000px, 95vw); }
+.video-panel { width: auto; max-width: min(960px, 92vw); }
+.image-panel { width: auto; max-width: min(1000px, 92vw); }
 
 .overlay-close {
   position: absolute;
@@ -627,18 +627,29 @@ main {
 /* Video wrap */
 .vp-wrap {
   background: #000;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 80vh;
+  overflow: hidden;
 }
 
 #modal-video {
-  width: 100%;
-  max-height: 72vh;
   display: block;
+  max-height: 80vh;
+  max-width: min(960px, 92vw);
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
+/* Plyr inherit natural dimensions */
+.plyr--video         { max-height: 80vh; width: auto !important; }
+.plyr__video-wrapper { max-height: 80vh; }
+
 #modal-img {
-  max-width: 100%;
-  max-height: 78vh;
+  max-width: min(1000px, 92vw);
+  max-height: 80vh;
   object-fit: contain;
   display: block;
 }
