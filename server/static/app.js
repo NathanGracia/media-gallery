@@ -179,90 +179,27 @@ function goPage(p) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── Video Player ──────────────────────────────────────────────────────────────
-const _vid       = () => document.getElementById('modal-video');
-const _fill      = () => document.getElementById('vp-progress-fill');
-const _thumb     = () => document.getElementById('vp-progress-thumb');
-const _timeEl    = () => document.getElementById('vp-time');
-const _bigBtn    = () => document.getElementById('vp-center');
-const _playBtn   = () => document.getElementById('vp-play');
-const _muteBtn   = () => document.getElementById('vp-mute');
-
-function fmtTime(s) {
-  if (isNaN(s)) return '0:00';
-  const m = Math.floor(s / 60);
-  const sec = String(Math.floor(s % 60)).padStart(2, '0');
-  return `${m}:${sec}`;
-}
-
-function vpUpdateUI() {
-  const v = _vid();
-  const pct = v.duration ? (v.currentTime / v.duration * 100) : 0;
-  _fill().style.width  = pct + '%';
-  _thumb().style.left  = pct + '%';
-  _timeEl().textContent = `${fmtTime(v.currentTime)} / ${fmtTime(v.duration)}`;
-
-  const isPlaying = !v.paused && !v.ended;
-  _bigBtn().classList.toggle('hidden', isPlaying);
-  _playBtn().querySelector('.ico-play').style.display  = isPlaying ? 'none' : '';
-  _playBtn().querySelector('.ico-pause').style.display = isPlaying ? ''     : 'none';
-}
-
-function vpTogglePlay() {
-  const v = _vid();
-  if (v.paused || v.ended) { v.play().catch(console.error); }
-  else { v.pause(); }
-}
-
-function vpSeek(e) {
-  const v   = _vid();
-  const bar = document.getElementById('vp-progress');
-  const rect = bar.getBoundingClientRect();
-  const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  v.currentTime = pct * v.duration;
-}
-
-function vpToggleMute() {
-  const v = _vid();
-  v.muted = !v.muted;
-  _muteBtn().querySelector('.ico-vol').style.display  = v.muted ? 'none' : '';
-  _muteBtn().querySelector('.ico-mute').style.display = v.muted ? ''     : 'none';
-}
-
-function vpVolume(val) {
-  const v = _vid();
-  v.volume = val;
-  v.muted  = val == 0;
-  _muteBtn().querySelector('.ico-vol').style.display  = v.muted ? 'none' : '';
-  _muteBtn().querySelector('.ico-mute').style.display = v.muted ? ''     : 'none';
-}
-
-function vpFullscreen() {
-  const wrap = document.getElementById('vp-wrap');
-  if (document.fullscreenElement) { document.exitFullscreen(); }
-  else { wrap.requestFullscreen().catch(console.error); }
-}
+// ── Plyr video player ─────────────────────────────────────────────────────────
+let player = null;
 
 function vpInit(url) {
-  const v = _vid();
-  v.pause();
-  v.src = url;
-  v.load();
-
-  v.ontimeupdate = vpUpdateUI;
-  v.onplay       = vpUpdateUI;
-  v.onpause      = vpUpdateUI;
-  v.onended      = vpUpdateUI;
-  v.ondurationchange = vpUpdateUI;
-
-  v.oncanplay = () => {
-    vpUpdateUI();
-    v.play().catch(console.error);
+  if (!player) {
+    player = new Plyr('#modal-video', {
+      controls: ['play-large','play','progress','current-time','mute','volume','fullscreen'],
+      autoplay: true,
+      resetOnEnd: true,
+    });
+  }
+  player.source = {
+    type: 'video',
+    sources: [{ src: url, type: 'video/mp4' }],
   };
+  player.play().catch(() => {});
 }
 
 // ── Overlays ──────────────────────────────────────────────────────────────────
 function openMedia(id, type, url, name) {
+  console.log('openMedia called', type, url);
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
@@ -284,11 +221,10 @@ function openMedia(id, type, url, name) {
 function closeOverlay() {
   document.querySelectorAll('.overlay.open').forEach(o => {
     o.classList.remove('open');
-    const vid = o.querySelector('video');
-    if (vid) { vid.pause(); vid.removeAttribute('src'); vid.load(); }
     const img = o.querySelector('img');
     if (img) img.src = '';
   });
+  if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }
   document.body.style.overflow = '';
 }
 
