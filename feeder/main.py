@@ -237,12 +237,13 @@ class MediaHandler(FileSystemEventHandler):
 
 
 # ── Scan initial ───────────────────────────────────────────────────────────────
-log.info("Scan initial du dossier...")
+log.info("Scan initial du dossier (récursif)...")
 initial_threads = []
-for f in FOLDER.iterdir():
-    t = threading.Thread(target=process, args=(f,), daemon=True)
-    t.start()
-    initial_threads.append(t)
+for f in FOLDER.rglob("*"):
+    if f.is_file():
+        t = threading.Thread(target=process, args=(f,), daemon=True)
+        t.start()
+        initial_threads.append(t)
 
 # Attendre la fin du scan initial (sans bloquer indéfiniment)
 for t in initial_threads:
@@ -252,7 +253,7 @@ log.info("Scan initial terminé — surveillance en cours...")
 
 # ── Start observer ─────────────────────────────────────────────────────────────
 observer = Observer()
-observer.schedule(MediaHandler(), str(FOLDER), recursive=False)
+observer.schedule(MediaHandler(), str(FOLDER), recursive=True)
 observer.start()
 
 try:
@@ -261,7 +262,7 @@ try:
         if not observer.is_alive():
             log.error("Observer mort — redémarrage...")
             observer = Observer()
-            observer.schedule(MediaHandler(), str(FOLDER), recursive=False)
+            observer.schedule(MediaHandler(), str(FOLDER), recursive=True)
             observer.start()
 except KeyboardInterrupt:
     pass

@@ -21,10 +21,11 @@ def show_config_ui() -> Optional[dict]:
 
     # Center window
     root.update_idletasks()
-    w, h = 480, 420
+    w, h = 480, 500
     x = (root.winfo_screenwidth()  - w) // 2
     y = (root.winfo_screenheight() - h) // 2
     root.geometry(f"{w}x{h}+{x}+{y}")
+    root.minsize(480, 500)
 
     # ── Styles ────────────────────────────────────────────────────────────────
     BG      = "#14141c"
@@ -157,8 +158,8 @@ def show_config_ui() -> Optional[dict]:
     status_lbl.grid(row=8, column=0, sticky="w", pady=(6, 0))
 
     # ── Buttons ───────────────────────────────────────────────────────────────
-    btn_frame = tk.Frame(root, bg=BG, padx=30, pady=0)
-    btn_frame.pack(fill="x")
+    btn_frame = tk.Frame(root, bg=BG, padx=30, pady=10)
+    btn_frame.pack(fill="x", side="bottom")
     btn_frame.columnconfigure(0, weight=1)
     btn_frame.columnconfigure(1, weight=0)
     btn_frame.columnconfigure(2, weight=0)
