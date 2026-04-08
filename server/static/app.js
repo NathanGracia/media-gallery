@@ -173,7 +173,10 @@ function goPage(p) {
 // ── Overlays ──────────────────────────────────────────────────────────────────
 function openMedia(id, type, url, name) {
   if (type === 'video') {
-    document.getElementById('modal-video').src = url;
+    const vid = document.getElementById('modal-video');
+    vid.src = url;
+    vid.load();
+    vid.play().catch(() => {});
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
     dl.href = url;
