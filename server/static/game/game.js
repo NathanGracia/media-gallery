@@ -158,7 +158,7 @@ function renderLobby() {
             <span class="player-dot ${p.connected ? '' : 'off'}"></span>
             ${p.id === S.playerId ? `<strong>${esc(p.pseudo)}</strong>` : esc(p.pseudo)}
             ${p.id === S.players[0]?.id ? '<span class="crown">👑</span>' : ''}
-            ${p.score ? `<span class="score">${p.score} ★</span>` : ''}
+            ${p.score ? `<span class="score">${p.score} pts</span>` : ''}
           </li>`).join('')}
       </ul>
 
@@ -373,18 +373,17 @@ function renderReveal() {
         ${isAuthor
           ? `<div class="is-author-label">C'est ta légende ! 🎤<br><small style="opacity:.6">Les autres votent…</small></div>`
           : `<p class="vote-label">Note cette légende</p>
-             <div class="stars-input" id="stars">
-               ${[1,2,3,4,5].map(n =>
-                 `<span class="star ${S.myVote >= n ? 'active' : ''}"
-                        data-val="${n}"
-                        onmouseover="hoverStars(${n})"
-                        onmouseout="unhoverStars()"
-                        onclick="castVote(${n})">★</span>`
-               ).join('')}
+             <div class="vote-slider-wrap">
+               <div class="vote-slider-row">
+                 <span class="vote-slider-bound">0</span>
+                 <input type="range" id="vote-slider" class="vote-slider"
+                        min="0" max="100" value="50"
+                        oninput="updateSliderDisplay(this.value)">
+                 <span class="vote-slider-bound">100</span>
+               </div>
+               <div class="vote-slider-val" id="vote-slider-val">50</div>
              </div>
-             ${S.myVote
-               ? `<button class="btn btn-primary" id="btn-vote-confirm" onclick="confirmVote()">Confirmer ${S.myVote} ★</button>`
-               : `<p style="font-size:.75rem;color:var(--text-3);margin-top:4px">Clique une étoile puis confirme</p>`}`}
+             <button class="btn btn-primary" id="btn-vote-confirm" onclick="confirmVote()">Confirmer</button>`}
       </div>
     </div>`;
 
@@ -403,23 +402,18 @@ function renderReveal() {
   }
 }
 
-function hoverStars(val) {
-  document.querySelectorAll('.star').forEach(s => {
-    s.classList.toggle('hover', +s.dataset.val <= val);
-  });
+function updateSliderDisplay(val) {
+  const el = document.getElementById('vote-slider-val');
+  if (el) el.textContent = val;
 }
-function unhoverStars() {
-  document.querySelectorAll('.star').forEach(s => s.classList.remove('hover'));
-}
-function castVote(val) {
-  S.myVote = val;
-  render();
-}
+
 function confirmVote() {
-  if (!S.myVote) return;
-  S.ws?.send(JSON.stringify({ type: 'submit_vote', stars: S.myVote }));
+  const slider = document.getElementById('vote-slider');
+  const val = slider ? parseInt(slider.value) : 50;
+  S.ws?.send(JSON.stringify({ type: 'submit_vote', stars: val }));
   const btn = document.getElementById('btn-vote-confirm');
-  if (btn) { btn.disabled = true; btn.textContent = 'Vote envoyé ✓'; }
+  if (btn) { btn.disabled = true; btn.textContent = `${val} / 100 — envoyé ✓`; }
+  if (slider) slider.disabled = true;
 }
 
 // ── Round end ─────────────────────────────────────────────────────────────────
@@ -435,7 +429,7 @@ function renderRoundEnd() {
           <div class="podium-item ${i===0?'first':i===1?'second':''}">
             <span class="podium-rank">${['🥇','🥈','🥉'][i] || `${i+1}.`}</span>
             <span class="podium-pseudo">${esc(p.pseudo)}</span>
-            <span class="podium-score">${p.score} ★</span>
+            <span class="podium-score">${p.score} pts</span>
           </div>`).join('')}
       </div>
       <p style="text-align:center;color:var(--text-dim);font-size:0.85rem;">
@@ -461,7 +455,7 @@ function renderGameEnd() {
           <div class="podium-item ${i===0?'first':i===1?'second':''}">
             <span class="podium-rank">${['🥇','🥈','🥉'][i] || `${i+1}`}</span>
             <span class="podium-pseudo">${esc(p.pseudo)}${p.id === S.playerId ? ' <span style="color:var(--text-3);font-weight:400">(toi)</span>' : ''}</span>
-            <span class="podium-score">${p.score} ★</span>
+            <span class="podium-score">${p.score} pts</span>
           </div>`).join('')}
       </div>
 
@@ -581,16 +575,17 @@ function showRevealResult(msg) {
     display:flex;align-items:center;justify-content:center;
     background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);`;
 
-  const stars  = '★'.repeat(msg.total_stars) + '☆'.repeat(Math.max(0, msg.vote_count * 5 - msg.total_stars));
-  const avgStr = msg.vote_count ? (msg.total_stars / msg.vote_count).toFixed(1) : '—';
+  const avg    = msg.vote_count ? Math.round(msg.total_stars / msg.vote_count) : 0;
+  const emoji  = avg >= 80 ? '🔥' : avg >= 50 ? '👍' : avg >= 20 ? '😐' : '💀';
+  const color  = avg >= 80 ? 'var(--green)' : avg >= 50 ? 'var(--accent)' : avg >= 20 ? 'var(--gold)' : 'var(--red)';
 
   overlay.innerHTML = `
     <div style="background:rgba(10,10,20,0.95);border:1px solid rgba(255,255,255,0.1);
                 border-radius:18px;padding:40px;text-align:center;max-width:320px;width:90%">
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px">${esc(msg.pseudo)}</p>
-      <p style="font-size:3rem;margin-bottom:8px">${msg.total_stars === 0 ? '😬' : msg.total_stars >= msg.vote_count * 4 ? '🔥' : '👍'}</p>
-      <p style="font-size:1.8rem;color:var(--todo);font-weight:700;margin-bottom:4px">${avgStr} / 5</p>
-      <p style="font-size:0.8rem;color:var(--text-dim)">${msg.vote_count} vote${msg.vote_count > 1 ? 's' : ''}</p>
+      <p style="font-size:0.85rem;color:var(--text-2);margin-bottom:8px">${esc(msg.pseudo)}</p>
+      <p style="font-size:3rem;margin-bottom:12px">${emoji}</p>
+      <p style="font-size:2.4rem;font-weight:800;color:${color};margin-bottom:4px;font-family:'Syne',sans-serif">${avg}</p>
+      <p style="font-size:0.8rem;color:var(--text-2)">sur 100 · ${msg.vote_count} vote${msg.vote_count > 1 ? 's' : ''}</p>
     </div>`;
 
   document.body.appendChild(overlay);
@@ -605,7 +600,7 @@ function updatePlayerList() {
     <li class="player-item">
       <span class="player-dot ${p.connected ? '' : 'off'}"></span>
       ${p.id === S.playerId ? `<strong>${esc(p.pseudo)}</strong>` : esc(p.pseudo)}
-      <span class="score">${p.score ? p.score + ' ★' : ''}</span>
+      <span class="score">${p.score ? p.score + ' pts' : ''}</span>
     </li>`).join('');
 }
 

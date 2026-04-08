@@ -418,7 +418,7 @@ async def handle_vote(code: str, player_id: int, data: dict):
     if player_id == item["player_id"]:
         return
 
-    stars = max(1, min(5, int(data.get("stars", 3))))
+    stars = max(0, min(100, int(data.get("stars", 50))))
     state["current_votes"][player_id] = stars
     await check_all_voted(code)
 
@@ -441,8 +441,9 @@ async def check_all_voted(code: str):
 
     total_stars = sum(state["current_votes"].values())
     vote_count  = len(state["current_votes"])
+    avg_score   = round(total_stars / vote_count) if vote_count else 0
 
-    state["players"][item["player_id"]]["score"] += total_stars
+    state["players"][item["player_id"]]["score"] += avg_score
 
     state["all_answers"].append({
         "round_num":    item["round_num"],
