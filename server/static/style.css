@@ -279,6 +279,13 @@ main {
   gap: 16px;
 }
 
+/* Filler invisible pour compléter la dernière ligne */
+.card-filler {
+  border-radius: var(--radius);
+  pointer-events: none;
+  visibility: hidden;
+}
+
 /* Skeleton */
 .skeleton-grid { display: contents; }
 

@@ -100,7 +100,8 @@ function renderGrid(items) {
     return;
   }
 
-  grid.innerHTML = items.map(item => {
+  // Staggered entrance animation delay
+  grid.innerHTML = items.map((item, i) => {
     const isVideo  = item.type === 'video';
     const thumbUrl = esc(item.thumbnail);
     const mediaUrl = esc(item.url);
@@ -109,6 +110,7 @@ function renderGrid(items) {
 
     return `
       <div class="card"
+           style="animation-delay:${Math.min(i * 40, 300)}ms"
            data-id="${esc(item.id)}"
            data-type="${esc(item.type)}"
            data-url="${esc(item.url)}"
@@ -147,6 +149,20 @@ function renderGrid(items) {
         </div>
       </div>`;
   }).join('');
+
+  // Remplir la dernière ligne pour éviter les trous
+  requestAnimationFrame(() => {
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+    const remainder = items.length % cols;
+    if (remainder !== 0) {
+      const needed = cols - remainder;
+      for (let i = 0; i < needed; i++) {
+        const filler = document.createElement('div');
+        filler.className = 'card-filler';
+        grid.appendChild(filler);
+      }
+    }
+  });
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
