@@ -1,0 +1,32 @@
+# ── Secrets & config locaux ───────────────────────────────────────────────────
+server/config.yaml          # Contient clés API et webhook — NE JAMAIS COMMITTER
+feeder/config.json          # Config feeder locale
+
+# ── Données serveur (volumes Docker) ─────────────────────────────────────────
+server/db.sqlite
+server/media/
+server/thumbnails/
+server/gallery.log
+
+# ── Données feeder ────────────────────────────────────────────────────────────
+feeder/sent_files.json
+feeder/feeder.log
+
+# ── Build feeder ──────────────────────────────────────────────────────────────
+feeder/dist/
+feeder/build/
+feeder/*.spec
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

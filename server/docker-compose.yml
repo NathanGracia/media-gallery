@@ -1,0 +1,30 @@
+services:
+  gallery:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Config (non versionnée — contient les secrets)
+      - ./config.yaml:/app/config.yaml:ro
+      # Données persistantes
+      - media_data:/app/media
+      - thumb_data:/app/thumbnails
+      # SQLite — bind mount pour backup facile
+      - ./db.sqlite:/app/db.sqlite
+      # Logs
+      - ./gallery.log:/app/gallery.log
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/storage"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  media_data:
+    driver: local
+  thumb_data:
+    driver: local

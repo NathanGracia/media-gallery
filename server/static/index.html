@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media Gallery v3</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="brand">
+      <span class="brand-icon">◈</span>
+      <span class="brand-name">Media Gallery</span>
+      <span class="brand-version">v3</span>
+    </div>
+    <div class="storage-widget">
+      <div class="storage-label">
+        <span id="storage-text">—</span>
+      </div>
+      <div class="storage-track">
+        <div class="storage-bar" id="storage-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="tab active" data-type="">Tout</button>
+      <button class="tab" data-type="video">Vidéos</button>
+      <button class="tab" data-type="image">Images</button>
+    </div>
+    <div class="toolbar-right">
+      <select id="feeder-select" class="feeder-select">
+        <option value="">Tous les feeders</option>
+      </select>
+      <span class="count-badge" id="count-badge">0 fichiers</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="grid" id="grid">
+    <div class="skeleton-grid">
+      <div class="skeleton-card"></div><div class="skeleton-card"></div>
+      <div class="skeleton-card"></div><div class="skeleton-card"></div>
+      <div class="skeleton-card"></div><div class="skeleton-card"></div>
+    </div>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<!-- Video Modal -->
+<div class="overlay" id="video-overlay" role="dialog" aria-modal="true">
+  <div class="overlay-backdrop" onclick="closeOverlay()"></div>
+  <div class="overlay-panel video-panel">
+    <button class="overlay-close" onclick="closeOverlay()" aria-label="Fermer">✕</button>
+    <video id="modal-video" controls playsinline></video>
+    <div class="overlay-footer">
+      <span class="overlay-name" id="video-name"></span>
+      <a class="btn-dl" id="video-dl" download>⬇ Télécharger</a>
+    </div>
+  </div>
+</div>
+
+<!-- Image Lightbox -->
+<div class="overlay" id="image-overlay" role="dialog" aria-modal="true">
+  <div class="overlay-backdrop" onclick="closeOverlay()"></div>
+  <div class="overlay-panel image-panel">
+    <button class="overlay-close" onclick="closeOverlay()" aria-label="Fermer">✕</button>
+    <img id="modal-img" src="" alt="">
+    <div class="overlay-footer">
+      <span class="overlay-name" id="image-name"></span>
+      <a class="btn-dl" id="image-dl" download>⬇ Télécharger</a>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

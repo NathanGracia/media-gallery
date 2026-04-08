@@ -1,0 +1,21 @@
+# ── Media Gallery v3 — Configuration serveur ──────────────────────────────────
+# Copier ce fichier en config.yaml et remplir les valeurs
+
+media_dir: media
+thumb_dir: thumbnails
+db_path: db.sqlite
+
+max_total_gb: 40
+max_file_mb: 25
+alert_threshold_pct: 80
+
+# URL du webhook Discord pour les alertes de stockage (laisser vide pour désactiver)
+discord_webhook_url: ""
+
+# Clés API autorisées pour les feeders
+# Générer avec : python3 -c "import secrets; print(secrets.token_hex(32))"
+api_keys:
+  - "REMPLACE_MOI_AVEC_UNE_CLE_SECRETE"
+
+host: 0.0.0.0
+port: 8000

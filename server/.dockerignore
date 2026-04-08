@@ -1,0 +1,21 @@
+# Données — montées en volumes, pas dans l'image
+config.yaml
+db.sqlite
+gallery.log
+media/
+thumbnails/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# Install scripts (pas nécessaires dans le container)
+install.sh
+nginx.conf
