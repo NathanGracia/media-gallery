@@ -275,7 +275,7 @@ main {
 /* ── Grid ──────────────────────────────────────────────────────────────────── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
 }
 
@@ -738,7 +738,7 @@ main {
 @media (max-width: 600px) {
   header { padding: 0 14px; }
   main { padding: 16px 14px; }
-  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .storage-widget { display: none; }
   .toolbar { gap: 2px; }
   .toolbar-right { padding-bottom: 6px; }
