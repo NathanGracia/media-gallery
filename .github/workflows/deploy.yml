@@ -3,9 +3,7 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
-    paths:
-      - "server/**"          # Ne déclenche que si le serveur a changé
-      - ".github/workflows/deploy.yml"
+  workflow_dispatch:         # Déclenchement manuel depuis l'onglet Actions
 
 jobs:
   deploy:
