@@ -283,6 +283,74 @@ def list_feeders():
         return sorted(set(rows))
 
 
+@app.post("/api/media/{media_uuid}/crop")
+def crop_media(
+    media_uuid: str,
+    top_pct:    float = Query(0, ge=0, lt=50),
+    bottom_pct: float = Query(0, ge=0, lt=50),
+):
+    if top_pct + bottom_pct == 0:
+        raise HTTPException(400, "Aucun rognage demandé")
+
+    with Session(engine) as session:
+        media = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
+        if not media:
+            raise HTTPException(404, "Media introuvable")
+        if media.media_type != "video":
+            raise HTTPException(400, "Crop disponible uniquement pour les vidéos")
+
+    file_path = MEDIA_DIR / media.filename
+
+    # Récupérer les dimensions via ffprobe
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0", str(file_path)],
+        capture_output=True, text=True, timeout=15,
+    )
+    if probe.returncode != 0 or not probe.stdout.strip():
+        raise HTTPException(500, "Impossible de lire les dimensions de la vidéo")
+
+    try:
+        w, h = map(int, probe.stdout.strip().split(","))
+    except ValueError:
+        raise HTTPException(500, "Dimensions invalides")
+
+    top_px    = round(h * top_pct    / 100)
+    bottom_px = round(h * bottom_pct / 100)
+    new_h     = h - top_px - bottom_px
+    if new_h % 2 != 0:
+        new_h -= 1  # FFmpeg exige une hauteur paire pour H.264
+    if new_h <= 0:
+        raise HTTPException(400, "Zone de crop invalide")
+
+    tmp_path = file_path.with_suffix(".crop_tmp" + file_path.suffix)
+    r = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(file_path),
+         "-vf", f"crop={w}:{new_h}:0:{top_px}",
+         "-c:a", "copy", str(tmp_path)],
+        capture_output=True, timeout=300,
+    )
+    if r.returncode != 0 or not tmp_path.exists():
+        tmp_path.unlink(missing_ok=True)
+        raise HTTPException(500, f"FFmpeg échoué: {r.stderr[-300:].decode(errors='replace')}")
+
+    tmp_path.replace(file_path)
+
+    new_size = file_path.stat().st_size
+    with Session(engine) as session:
+        m = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
+        m.size_bytes = new_size
+        session.add(m)
+        session.commit()
+
+    thumb_path = THUMB_DIR / f"{media_uuid}.jpg"
+    thumb_path.unlink(missing_ok=True)
+    gen_video_thumb(file_path, thumb_path)
+
+    log.info(f"Crop: {media_uuid} top={top_pct}% bottom={bottom_pct}%")
+    return {"ok": True}
+
+
 @app.delete("/api/media/{media_uuid}")
 def delete_media(media_uuid: str, _: str = Depends(require_api_key)):
     with Session(engine) as session:

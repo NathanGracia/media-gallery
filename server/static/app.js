@@ -273,6 +273,7 @@ function openMediaFromCard(el) {
 
 function openMedia(id, type, url, name) {
   _currentMediaUrl = url;
+  _currentMediaId  = id;
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
@@ -290,6 +291,37 @@ function openMedia(id, type, url, name) {
   }
 }
 
+// ── Crop ──────────────────────────────────────────────────────────────────────
+async function cropVideo() {
+  const top    = Math.max(0, parseInt(document.getElementById('crop-top').value)    || 0);
+  const bottom = Math.max(0, parseInt(document.getElementById('crop-bottom').value) || 0);
+  if (top + bottom === 0) return;
+
+  const btn = document.getElementById('btn-crop');
+  btn.disabled    = true;
+  btn.textContent = '…';
+
+  try {
+    const r = await fetch(
+      `/api/media/${_currentMediaId}/crop?top_pct=${top}&bottom_pct=${bottom}`,
+      { method: 'POST' }
+    );
+    if (r.ok) {
+      closeOverlay();
+      document.getElementById('crop-top').value    = 0;
+      document.getElementById('crop-bottom').value = 0;
+      loadMedia();
+    } else {
+      const d = await r.json().catch(() => ({}));
+      btn.textContent = '✗ Erreur';
+      setTimeout(() => { btn.textContent = 'Appliquer'; btn.disabled = false; }, 2000);
+    }
+  } catch (_) {
+    btn.textContent = '✗ Erreur';
+    setTimeout(() => { btn.textContent = 'Appliquer'; btn.disabled = false; }, 2000);
+  }
+}
+
 function closeOverlay() {
   document.querySelectorAll('.overlay.open').forEach(o => {
     o.classList.remove('open');
@@ -302,6 +334,7 @@ function closeOverlay() {
 
 // ── Copy link ─────────────────────────────────────────────────────────────────
 let _currentMediaUrl = '';
+let _currentMediaId  = '';
 
 function copyLink(e, url) {
   const full = location.origin + url;

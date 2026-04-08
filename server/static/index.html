@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
@@ -89,6 +89,12 @@
     <div class="vp-wrap" id="vp-wrap">
       <video id="modal-video" playsinline controls></video>
     </div>
+    <div class="crop-bar" id="crop-bar">
+      <span class="crop-bar-icon">✂</span>
+      <label class="crop-field">Haut <input type="number" id="crop-top" min="0" max="49" value="0" step="1">%</label>
+      <label class="crop-field">Bas <input type="number" id="crop-bottom" min="0" max="49" value="0" step="1">%</label>
+      <button class="btn-crop-apply" id="btn-crop" onclick="cropVideo()">Appliquer</button>
+    </div>
     <div class="overlay-footer">
       <span class="overlay-name" id="video-name"></span>
       <div class="overlay-actions">
@@ -116,6 +122,6 @@
 </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
