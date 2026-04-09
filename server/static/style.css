@@ -945,10 +945,11 @@ main {
 
 /* Footer */
 .overlay-footer {
-  padding: 12px 16px;
+  padding: 10px 16px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: flex-start;
   gap: 12px;
   border-top: 1px solid rgba(255,255,255,0.07);
   flex-shrink: 0;
@@ -959,6 +960,7 @@ main {
   color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
+  width: 100%;
   white-space: nowrap;
   flex: 1;
   font-weight: 500;
@@ -967,7 +969,8 @@ main {
 .overlay-actions {
   display: flex;
   gap: 8px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .btn-copy-modal {
@@ -1064,11 +1067,24 @@ main {
   display: flex; align-items: center; gap: 8px;
   font-size: 0.72rem; color: var(--text-dim);
 }
-.memoss-caption-stars {
-  color: #fbbf24; letter-spacing: 1px;
+.memoss-caption-score {
+  display: flex; align-items: center; gap: 6px;
 }
-.memoss-caption-avg {
-  font-weight: 700; color: #fbbf24;
+.memoss-score-bar {
+  width: 48px; height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px; overflow: hidden;
+  flex-shrink: 0;
+}
+.memoss-score-fill {
+  display: block; height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.memoss-score-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.8rem; font-weight: 800;
+  line-height: 1;
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
@@ -1080,7 +1096,6 @@ main {
   .toolbar { gap: 2px; }
   .toolbar-right { padding-bottom: 6px; }
   .orb { opacity: 0.3; }
-  .overlay-footer { flex-direction: column; align-items: flex-start; }
   .overlay-actions { width: 100%; }
   .btn-dl, .btn-copy-modal { flex: 1; text-align: center; justify-content: center; }
 }

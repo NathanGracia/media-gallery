@@ -525,24 +525,28 @@ async function loadMemossHistory(uuid) {
     const data = await fetch(`/game/api/history/${uuid}`).then(r => r.json());
     if (!Array.isArray(data) || data.length === 0) return;
 
-    const stars = n => '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n));
-
     el.innerHTML = `
       <div class="memoss-history-title">
         💬 Légendes Memoss
         <a class="game-link" href="/game/">Jouer →</a>
       </div>
       <div class="memoss-caption-list">
-        ${data.map(c => `
+        ${data.map(c => {
+          const score = Math.round(c.avg);
+          const hue = Math.round(score * 1.2); // 0→rouge, 100→vert
+          return `
           <div class="memoss-caption">
             <div class="memoss-caption-text">${esc(c.text)}</div>
             <div class="memoss-caption-meta">
               <span>${esc(c.pseudo)}</span>
-              <span class="memoss-caption-stars">${stars(Math.round(c.avg))}</span>
-              <span class="memoss-caption-avg">${c.avg} / 5</span>
-              <span style="margin-left:auto">${c.vote_count} vote${c.vote_count > 1 ? 's' : ''}</span>
+              <span class="memoss-caption-score">
+                <span class="memoss-score-bar"><span class="memoss-score-fill" style="width:${score}%;background:hsl(${hue},80%,55%)"></span></span>
+                <span class="memoss-score-num" style="color:hsl(${hue},80%,65%)">${score}</span>
+              </span>
+              <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem">${c.vote_count} vote${c.vote_count > 1 ? 's' : ''}</span>
             </div>
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
   } catch (_) {}
 }
