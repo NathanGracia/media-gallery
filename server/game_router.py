@@ -106,6 +106,7 @@ def new_state(db_room_id: int, host_id: int, host_pseudo: str) -> dict:
         "host_id":         host_id,
         "players":         {host_id: {"pseudo": host_pseudo, "score": 0, "connected": False}},
         "player_memes":    {},     # pid -> [{uuid,url,thumb}] pour le round courant
+        "player_drafts":   {},     # pid -> {media_uuid, text} — brouillon en cours de frappe
         "submissions":     {},     # pid -> {media_uuid, text} pour le round courant
         "all_submissions": {},     # pick_round_idx -> {pid -> {media_uuid, text}}
         "timer_task":      None,
@@ -228,6 +229,12 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
                 if player_id == state["host_id"] and state["status"] == "lobby":
                     await start_game(code)
 
+            elif event == "draft_answer":
+                if state["status"] == "picking" and player_id not in state["submissions"]:
+                    media_uuid = data.get("media_uuid", "")
+                    text       = data.get("text", "")[:100]
+                    state["player_drafts"][player_id] = {"media_uuid": media_uuid, "text": text}
+
             elif event == "submit_answer":
                 if state["status"] == "picking" and player_id not in state["submissions"]:
                     await handle_submit(code, player_id, data)
@@ -259,11 +266,12 @@ async def start_game(code: str):
 async def start_pick_round(code: str):
     state = game_states[code]
     n = state["pick_round"]
-    state["submissions"]  = {}
-    state["player_memes"] = {}
+    state["submissions"]   = {}
+    state["player_memes"]  = {}
+    state["player_drafts"] = {}
 
     for pid in state["players"]:
-        memes = get_random_memes(3)
+        memes = get_random_memes(5)
         state["player_memes"][pid] = memes
         await manager.send_to(code, pid, {
             "type":         "round_start",
@@ -278,7 +286,7 @@ async def start_pick_round(code: str):
 
 
 async def round_timer(code: str, pick_round: int):
-    for remaining in range(59, -1, -1):
+    for remaining in range(119, -1, -1):
         await asyncio.sleep(1)
         st = game_states.get(code)
         if not st or st["pick_round"] != pick_round or st["status"] != "picking":
@@ -293,9 +301,13 @@ async def auto_submit_missing(code: str):
     state = game_states[code]
     for pid in list(state["players"]):
         if pid not in state["submissions"]:
-            memes  = state["player_memes"].get(pid, [])
-            chosen = random.choice(memes) if memes else {"uuid": ""}
-            state["submissions"][pid] = {"media_uuid": chosen["uuid"], "text": ""}
+            draft = state["player_drafts"].get(pid)
+            if draft and draft.get("media_uuid"):
+                state["submissions"][pid] = {"media_uuid": draft["media_uuid"], "text": draft.get("text", "")}
+            else:
+                memes  = state["player_memes"].get(pid, [])
+                chosen = random.choice(memes) if memes else {"uuid": ""}
+                state["submissions"][pid] = {"media_uuid": chosen["uuid"], "text": draft.get("text", "") if draft else ""}
     await advance_picking(code)
 
 

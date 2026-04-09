@@ -23,7 +23,7 @@ const S = {
   myVote:        null,
   // timer
   timerInterval: null,
-  timerVal:      60,
+  timerVal:      120,
 };
 
 const app  = document.getElementById('app');
@@ -197,7 +197,7 @@ function renderPicking() {
 
       <div class="timer-row">
         <div class="timer-bar-wrap">
-          <div class="timer-bar" id="timer-bar" style="width:${(S.timerVal/60)*100}%"></div>
+          <div class="timer-bar" id="timer-bar" style="width:${(S.timerVal/120)*100}%"></div>
         </div>
         <div class="timer-label" id="timer-label">${S.timerVal}s</div>
       </div>
@@ -239,9 +239,16 @@ function renderPicking() {
     </div>`;
 
   if (S.selectedMeme) {
+    let _draftTimeout = null;
     document.getElementById('caption-input').addEventListener('input', e => {
       S.text = e.target.value;
       document.getElementById('char-count').textContent = `${S.text.length}/100`;
+      clearTimeout(_draftTimeout);
+      _draftTimeout = setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'draft_answer', media_uuid: S.selectedMeme?.uuid || '', text: S.text }));
+        }
+      }, 500);
     });
     document.getElementById('btn-submit').onclick = doSubmit;
   }
@@ -249,6 +256,9 @@ function renderPicking() {
 
 function selectMeme(idx) {
   S.selectedMeme = S.memes[idx];
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'draft_answer', media_uuid: S.selectedMeme.uuid, text: S.text }));
+  }
   renderPicking();
 }
 
@@ -638,7 +648,7 @@ function stopLobbyCountdown() {
 // ── Timer ─────────────────────────────────────────────────────────────────────
 function startTimer() {
   stopTimer();
-  S.timerVal = 60;
+  S.timerVal = 120;
 }
 
 function stopTimer() {
@@ -652,7 +662,7 @@ function updateTimer() {
   if (!lbl || !bar) return;
 
   lbl.textContent = `${S.timerVal}s`;
-  bar.style.width = `${(S.timerVal / 60) * 100}%`;
+  bar.style.width = `${(S.timerVal / 120) * 100}%`;
   bar.className   = 'timer-bar' + (S.timerVal <= 10 ? ' crit' : S.timerVal <= 20 ? ' warn' : '');
 }
 
