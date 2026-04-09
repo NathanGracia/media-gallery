@@ -557,7 +557,7 @@ function applyAdminUI() {
   const btn = document.getElementById('admin-btn');
   if (btn) {
     btn.classList.toggle('admin-mode-on', isAdmin());
-    btn.title = isAdmin() ? 'Admin — cliquer pour se déconnecter' : 'Mode admin';
+    btn.title = isAdmin() ? 'Déconnecter le mode admin' : 'Connexion admin';
   }
 }
 

@@ -134,38 +134,70 @@ header {
   flex-shrink: 0;
 }
 
-.btn-game-link {
-  padding: 6px 14px;
-  background: var(--glass);
-  border: 1px solid var(--gb);
-  border-radius: var(--radius-sm);
-  color: var(--text-dim);
-  font-family: 'Figtree', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.15s;
-  flex-shrink: 0;
+/* ── Jouer button ─────────────────────────────────────────────────────────── */
+@keyframes game-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0), 0 0 6px rgba(34,211,238,0.06); }
+  50%       { box-shadow: 0 0 0 4px rgba(34,211,238,0.04), 0 0 12px rgba(34,211,238,0.12); }
 }
-.btn-game-link:hover { color: var(--accent); border-color: var(--accent-dim); background: var(--glass-hover); }
+@keyframes game-border-shimmer {
+  0%   { border-color: rgba(34,211,238,0.18); }
+  50%  { border-color: rgba(34,211,238,0.38); }
+  100% { border-color: rgba(34,211,238,0.18); }
+}
+
+.btn-game-link {
+  padding: 7px 18px;
+  background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(99,102,241,0.06) 100%);
+  border: 1px solid rgba(34,211,238,0.25);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  animation: game-pulse 2.8s ease-in-out infinite, game-border-shimmer 2.8s ease-in-out infinite;
+}
+.btn-game-link:hover {
+  background: rgba(34,211,238,0.14);
+  color: #fff;
+  animation: none;
+  box-shadow: 0 0 20px rgba(34,211,238,0.25);
+}
 
 /* ── Admin button ─────────────────────────────────────────────────────────── */
 .btn-admin {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  background: var(--glass);
-  border: 1px solid var(--gb);
+  margin-left: auto;
+  padding: 5px 11px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
-  color: var(--text-dim);
-  transition: all 0.15s;
+  font-family: 'Figtree', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(100,116,139,0.5);
+  transition: all 0.2s;
   flex-shrink: 0;
 }
-.btn-admin::before { content: '🔒'; }
-.btn-admin:hover { border-color: var(--accent-dim); color: var(--accent); }
-.btn-admin.admin-mode-on { border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.1); }
-.btn-admin.admin-mode-on::before { content: '🔓'; }
+.btn-admin:hover {
+  color: var(--text-dim);
+  border-color: var(--gb);
+  background: var(--glass);
+}
+.btn-admin.admin-mode-on {
+  color: rgba(74,222,128,0.7);
+  border-color: rgba(74,222,128,0.2);
+  background: rgba(74,222,128,0.06);
+}
+.btn-admin.admin-mode-on:hover {
+  color: #4ade80;
+  border-color: rgba(74,222,128,0.4);
+}
 
 /* ── Admin-only visibility ────────────────────────────────────────────────── */
 .admin-only { display: none !important; }
