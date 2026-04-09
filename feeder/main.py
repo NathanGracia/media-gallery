@@ -158,15 +158,24 @@ def run(stop_event: threading.Event = None):
     else:
         sent_files = set()
 
-    def mark_sent(fhash: str):
-        with _sent_lock:
-            sent_files.add(fhash)
-            with open(SENT_FILE, "w", encoding="utf-8") as f:
-                json.dump(list(sent_files), f)
+    def _persist():
+        with open(SENT_FILE, "w", encoding="utf-8") as f:
+            json.dump(list(sent_files), f)
 
-    def is_sent(fhash: str) -> bool:
+    def try_claim(fhash: str) -> bool:
+        """Claim atomiquement le hash pour upload. Retourne True si ce thread doit uploader."""
         with _sent_lock:
-            return fhash in sent_files
+            if fhash in sent_files:
+                return False
+            sent_files.add(fhash)  # pré-claim immédiat → les autres threads voient déjà "envoyé"
+            _persist()
+            return True
+
+    def unclaim(fhash: str):
+        """Libère le claim si l'upload a échoué."""
+        with _sent_lock:
+            sent_files.discard(fhash)
+            _persist()
 
     # ── Upload ────────────────────────────────────────────────────────────────
     def is_valid(path: Path) -> bool:
@@ -220,13 +229,13 @@ def run(stop_event: threading.Event = None):
             fhash = file_md5(path)
         except Exception:
             return
-        if is_sent(fhash):
+        if not try_claim(fhash):
             return
         log.info(f"Upload: {path.name} ({path.stat().st_size/1024/1024:.1f} MB)")
         if upload(path):
-            mark_sent(fhash)
             log.info(f"✓ Envoyé: {path.name}")
         else:
+            unclaim(fhash)
             log.error(f"✗ Échec: {path.name}")
 
     # ── Watchdog handler ──────────────────────────────────────────────────────
