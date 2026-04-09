@@ -58,7 +58,7 @@ function renderHome() {
 
       <div class="field">
         <label>Ton pseudo</label>
-        <input id="pseudo-input" type="text" maxlength="20" placeholder="Ex: Nathan" value="${esc(S.pseudo)}"
+        <input id="pseudo-input" type="text" maxlength="20" placeholder="Ex: shikamaru64" value="${esc(S.pseudo)}"
                autocomplete="off" spellcheck="false">
       </div>
 
@@ -719,7 +719,7 @@ function showInviteModal(code) {
       <p class="invite-sub">Tu as été invité à rejoindre cette room</p>
       <div class="field">
         <label>Ton pseudo</label>
-        <input id="invite-pseudo" type="text" maxlength="20" placeholder="Ex: Nathan"
+        <input id="invite-pseudo" type="text" maxlength="20" placeholder="Ex: shikamaru64"
                autocomplete="off" spellcheck="false" value="${esc(S.pseudo)}">
       </div>
       <button class="btn btn-cinema" id="invite-join-btn" style="width:100%;margin-top:4px">
