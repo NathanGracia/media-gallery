@@ -64,13 +64,13 @@ function renderHome() {
 
       <button class="btn btn-primary" id="btn-create" style="margin-top:4px">Créer une partie</button>
 
-      <div class="divider-or">ou</div>
+      <div class="divider-or">ou rejoindre</div>
 
-      <div class="field-row">
-        <input id="code-input" type="text" maxlength="6" placeholder="Code de la room"
-               style="text-transform:uppercase;letter-spacing:.1em" autocomplete="off">
-        <button class="btn btn-ghost" id="btn-join">Rejoindre</button>
+      <div class="code-boxes" id="code-boxes">
+        ${Array.from({length:6}, () => `<input class="code-box" maxlength="1" inputmode="text" autocomplete="off" spellcheck="false">`).join('')}
       </div>
+
+      <button class="btn btn-ghost" id="btn-join" style="width:100%">Rejoindre →</button>
 
       <p class="error-msg" id="home-error"></p>
     </div>`;
@@ -78,9 +78,7 @@ function renderHome() {
   document.getElementById('pseudo-input').focus();
   document.getElementById('btn-create').onclick = doCreateRoom;
   document.getElementById('btn-join').onclick   = doJoinRoom;
-  document.getElementById('code-input').addEventListener('input', e => {
-    e.target.value = e.target.value.toUpperCase();
-  });
+  initCodeBoxes();
   document.getElementById('pseudo-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') doCreateRoom();
   });
@@ -108,9 +106,9 @@ async function doCreateRoom() {
 
 async function doJoinRoom() {
   const pseudo = document.getElementById('pseudo-input').value.trim();
-  const code   = document.getElementById('code-input').value.trim().toUpperCase();
+  const code   = getCodeFromBoxes();
   if (!pseudo) return setError('Renseigne un pseudo.');
-  if (!code)   return setError('Entre un code de room.');
+  if (code.length < 6) return setError('Entre le code complet (6 caractères).');
   S.pseudo = pseudo;
 
   const btn = document.getElementById('btn-join');
@@ -149,7 +147,7 @@ function renderLobby() {
           <div class="code-label">Code de la room</div>
           <div class="code-val">${esc(S.roomCode)}</div>
         </div>
-        <button class="btn btn-ghost btn-sm" id="btn-copy">Copier</button>
+        <button class="btn btn-ghost btn-sm" id="btn-copy">🔗 Inviter</button>
       </div>
 
       <ul class="player-list" id="player-list">
@@ -170,9 +168,10 @@ function renderLobby() {
     </div>`;
 
   document.getElementById('btn-copy')?.addEventListener('click', () => {
-    navigator.clipboard.writeText(S.roomCode).then(() => {
+    const url = `${location.origin}/game?join=${S.roomCode}`;
+    navigator.clipboard.writeText(url).then(() => {
       const btn = document.getElementById('btn-copy');
-      if (btn) { btn.textContent = '✓ Copié'; setTimeout(() => { if (btn) btn.textContent = 'Copier'; }, 1500); }
+      if (btn) { btn.textContent = '✓ Copié !'; setTimeout(() => { if (btn) btn.textContent = '🔗 Inviter'; }, 2000); }
     });
   });
   if (S.isHost) {
@@ -245,8 +244,8 @@ function renderPicking() {
       document.getElementById('char-count').textContent = `${S.text.length}/100`;
       clearTimeout(_draftTimeout);
       _draftTimeout = setTimeout(() => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'draft_answer', media_uuid: S.selectedMeme?.uuid || '', text: S.text }));
+        if (S.ws && S.ws.readyState === WebSocket.OPEN) {
+          S.ws.send(JSON.stringify({ type: 'draft_answer', media_uuid: S.selectedMeme?.uuid || '', text: S.text }));
         }
       }, 500);
     });
@@ -256,8 +255,8 @@ function renderPicking() {
 
 function selectMeme(idx) {
   S.selectedMeme = S.memes[idx];
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'draft_answer', media_uuid: S.selectedMeme.uuid, text: S.text }));
+  if (S.ws && S.ws.readyState === WebSocket.OPEN) {
+    S.ws.send(JSON.stringify({ type: 'draft_answer', media_uuid: S.selectedMeme.uuid, text: S.text }));
   }
   renderPicking();
 }
@@ -673,5 +672,105 @@ function esc(str) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+// ── OTP code boxes ────────────────────────────────────────────────────────────
+function initCodeBoxes(containerSelector = '#code-boxes') {
+  const boxes = Array.from(document.querySelectorAll(`${containerSelector} .code-box`));
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', e => {
+      const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      e.target.value = val ? val[val.length - 1] : '';
+      e.target.classList.toggle('filled', !!e.target.value);
+      if (e.target.value && i < boxes.length - 1) boxes[i + 1].focus();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !e.target.value && i > 0) {
+        boxes[i - 1].value = '';
+        boxes[i - 1].classList.remove('filled');
+        boxes[i - 1].focus();
+      }
+      if (e.key === 'Enter') doJoinRoom();
+    });
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const paste = (e.clipboardData.getData('text') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      paste.split('').forEach((ch, j) => {
+        if (boxes[j]) { boxes[j].value = ch; boxes[j].classList.add('filled'); }
+      });
+      const next = Math.min(paste.length, boxes.length - 1);
+      boxes[next].focus();
+    });
+  });
+}
+
+function getCodeFromBoxes(containerSelector = '#code-boxes') {
+  return Array.from(document.querySelectorAll(`${containerSelector} .code-box`))
+    .map(b => b.value).join('');
+}
+
+// ── Invite modal (lien ?join=CODE) ────────────────────────────────────────────
+function showInviteModal(code) {
+  const overlay = document.createElement('div');
+  overlay.className = 'invite-overlay';
+  overlay.id = 'invite-overlay';
+  overlay.innerHTML = `
+    <div class="invite-modal">
+      <div class="invite-emoji">🎬</div>
+      <div class="invite-code-display">${esc(code)}</div>
+      <p class="invite-sub">Tu as été invité à rejoindre cette room</p>
+      <div class="field">
+        <label>Ton pseudo</label>
+        <input id="invite-pseudo" type="text" maxlength="20" placeholder="Ex: Nathan"
+               autocomplete="off" spellcheck="false" value="${esc(S.pseudo)}">
+      </div>
+      <button class="btn btn-cinema" id="invite-join-btn" style="width:100%;margin-top:4px">
+        Rejoindre la partie →
+      </button>
+      <p class="error-msg" id="invite-error"></p>
+      <button class="btn btn-ghost" id="invite-cancel-btn"
+              style="width:100%;margin-top:8px;font-size:.8rem">
+        Annuler
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const pseudoInput = document.getElementById('invite-pseudo');
+  pseudoInput.focus();
+
+  async function doInviteJoin() {
+    const pseudo = pseudoInput.value.trim();
+    if (!pseudo) { document.getElementById('invite-error').textContent = 'Renseigne un pseudo.'; return; }
+    S.pseudo = pseudo;
+    const btn = document.getElementById('invite-join-btn');
+    btn.disabled = true; btn.textContent = '…';
+    const r = await fetch(`/game/api/rooms/${code}/join`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ pseudo }),
+    });
+    if (!r.ok) {
+      btn.disabled = false; btn.textContent = 'Rejoindre la partie →';
+      const d = await r.json().catch(() => ({}));
+      document.getElementById('invite-error').textContent = d.detail || 'Room introuvable.';
+      return;
+    }
+    const { player_id } = await r.json();
+    S.playerId = player_id;
+    S.isHost   = false;
+    setRoomCode(code);
+    overlay.remove();
+    history.replaceState({}, '', '/game');
+    connectWS();
+  }
+
+  document.getElementById('invite-join-btn').onclick = doInviteJoin;
+  document.getElementById('invite-cancel-btn').onclick = () => {
+    overlay.remove();
+    history.replaceState({}, '', '/game');
+  };
+  pseudoInput.addEventListener('keydown', e => { if (e.key === 'Enter') doInviteJoin(); });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 render();
+
+const _joinParam = new URLSearchParams(location.search).get('join');
+if (_joinParam) showInviteModal(_joinParam.toUpperCase());
