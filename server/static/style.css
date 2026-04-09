@@ -542,6 +542,18 @@ main {
 
 .btn-card-dl:hover { background: var(--accent-dim); color: var(--accent); border-color: rgba(34,211,238,0.3); }
 
+.btn-card-del {
+  padding: 4px 7px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(248,113,113,0.5);
+  transition: all 0.15s;
+}
+.btn-card-del:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+
 /* ── Empty state ───────────────────────────────────────────────────────────── */
 .empty {
   grid-column: 1 / -1;
@@ -875,6 +887,14 @@ main {
 }
 
 .btn-dl:hover { background: linear-gradient(135deg, rgba(34,211,238,0.25), rgba(99,102,241,0.25)); box-shadow: 0 0 16px rgba(34,211,238,0.2); }
+
+.btn-delete {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 14px; height: 36px; border-radius: 10px; border: none; cursor: pointer;
+  background: rgba(239,68,68,0.12); color: #f87171; font-size: 16px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.btn-delete:hover { background: rgba(239,68,68,0.28); box-shadow: 0 0 14px rgba(239,68,68,0.3); }
 
 /* ── Plyr overrides ────────────────────────────────────────────────────────── */
 .plyr--video { border-radius: 0; }

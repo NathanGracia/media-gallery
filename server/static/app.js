@@ -147,6 +147,9 @@ function renderGrid(items) {
                download="${name}"
                onclick="event.stopPropagation()"
                title="Télécharger">↓</a>
+            <button class="btn-card-del"
+               onclick="event.stopPropagation(); deleteMedia('${esc(item.id)}')"
+               title="Supprimer">🗑</button>
           </div>
         </div>
       </div>`;
@@ -443,6 +446,42 @@ async function setTag(event, id, tag) {
     btn.classList.toggle('active-osef',  isActive && tag === 'osef');
     btn.classList.toggle('active-todo',  isActive && tag === 'todo');
   });
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteMedia(id) {
+  if (!confirm('Supprimer ce média définitivement ?')) return;
+
+  let apiKey = localStorage.getItem('memoss-api-key');
+  if (!apiKey) {
+    apiKey = prompt('Clé API :');
+    if (!apiKey) return;
+    localStorage.setItem('memoss-api-key', apiKey);
+  }
+
+  const r = await fetch(`/api/media/${id}`, {
+    method: 'DELETE',
+    headers: { 'x-api-key': apiKey },
+  });
+
+  if (r.status === 401) {
+    localStorage.removeItem('memoss-api-key');
+    alert('Clé API invalide.');
+    return;
+  }
+  if (!r.ok) {
+    alert('Erreur lors de la suppression.');
+    return;
+  }
+
+  // Fermer l'overlay si le média supprimé est celui ouvert
+  if (id === _currentMediaId) closeOverlay();
+  loadMedia();
+  refreshStorage();
+}
+
+async function deleteCurrentMedia() {
+  return deleteMedia(_currentMediaId);
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────────

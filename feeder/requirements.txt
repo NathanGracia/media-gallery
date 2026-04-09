@@ -1,3 +1,5 @@
 requests>=2.31
 watchdog>=3.0
 pyinstaller>=6.0
+pystray>=0.19
+Pillow>=10.0
