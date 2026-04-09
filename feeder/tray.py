@@ -5,7 +5,7 @@ Lance MediaFeeder en arrière-plan et affiche son état dans la barre système.
 import sys
 import threading
 import os
-import msvcrt
+import socket
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -18,22 +18,24 @@ else:
     BASE_DIR = Path(__file__).parent
 
 sys.path.insert(0, str(BASE_DIR))
-LOG_FILE  = BASE_DIR / "feeder.log"
-TRAY_LOCK = BASE_DIR / "tray.lock"
+LOG_FILE = BASE_DIR / "feeder.log"
 
-# ── Single-instance guard ──────────────────────────────────────────────────────
-_tray_lock_fh = None
+# ── Single-instance guard (socket local) ──────────────────────────────────────
+_lock_socket = None
+LOCK_PORT = 47391  # port arbitraire réservé à MediaFeeder Tray
 
 def _acquire_tray_lock() -> bool:
-    global _tray_lock_fh
+    global _lock_socket
     try:
-        _tray_lock_fh = open(TRAY_LOCK, "w")
-        msvcrt.locking(_tray_lock_fh.fileno(), msvcrt.LK_NBLCK, 1)
+        _lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        _lock_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
+        _lock_socket.bind(('127.0.0.1', LOCK_PORT))
+        _lock_socket.listen(1)
         return True
-    except (IOError, OSError):
-        if _tray_lock_fh:
-            _tray_lock_fh.close()
-            _tray_lock_fh = None
+    except OSError:
+        if _lock_socket:
+            _lock_socket.close()
+            _lock_socket = None
         return False
 
 # ── State ──────────────────────────────────────────────────────────────────────

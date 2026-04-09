@@ -8,7 +8,7 @@ import time
 import hashlib
 import logging
 import threading
-import msvcrt
+import socket
 from pathlib import Path
 
 import requests
@@ -24,22 +24,22 @@ else:
 CONFIG_FILE = BASE_DIR / "config.json"
 SENT_FILE   = BASE_DIR / "sent_files.json"
 LOG_FILE    = BASE_DIR / "feeder.log"
-LOCK_FILE   = BASE_DIR / "feeder.lock"
-
-# ── Single-instance lock ───────────────────────────────────────────────────────
-_lock_fh = None  # garde le handle ouvert tant que le processus vit
+# ── Single-instance lock (socket local) ───────────────────────────────────────
+_lock_socket = None
+LOCK_PORT = 47392  # port distinct du tray
 
 def _acquire_instance_lock() -> bool:
-    """Retourne True si cette instance a obtenu le verrou exclusif."""
-    global _lock_fh
+    global _lock_socket
     try:
-        _lock_fh = open(LOCK_FILE, "w")
-        msvcrt.locking(_lock_fh.fileno(), msvcrt.LK_NBLCK, 1)
+        _lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        _lock_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
+        _lock_socket.bind(('127.0.0.1', LOCK_PORT))
+        _lock_socket.listen(1)
         return True
-    except (IOError, OSError):
-        if _lock_fh:
-            _lock_fh.close()
-            _lock_fh = None
+    except OSError:
+        if _lock_socket:
+            _lock_socket.close()
+            _lock_socket = None
         return False
 
 # ── Logging ────────────────────────────────────────────────────────────────────
@@ -274,15 +274,6 @@ def run(stop_event: threading.Event = None):
         observer.stop()
         observer.join()
         log.info("MediaFeeder arrêté.")
-        # Relâche le verrou inter-processus
-        global _lock_fh
-        if _lock_fh:
-            try:
-                msvcrt.locking(_lock_fh.fileno(), msvcrt.LK_UNLCK, 1)
-                _lock_fh.close()
-            except Exception:
-                pass
-            _lock_fh = None
 
 
 if __name__ == "__main__":
