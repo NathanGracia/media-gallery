@@ -147,7 +147,10 @@ function renderLobby() {
           <div class="code-label">Code de la room</div>
           <div class="code-val">${esc(S.roomCode)}</div>
         </div>
-        <button class="btn btn-ghost btn-sm" id="btn-copy">🔗 Inviter</button>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn btn-ghost btn-sm" id="btn-copy-code">Copier le code</button>
+          <button class="btn btn-ghost btn-sm" id="btn-copy-link">🔗 Lien d'invitation</button>
+        </div>
       </div>
 
       <ul class="player-list" id="player-list">
@@ -167,11 +170,17 @@ function renderLobby() {
         : `<p style="text-align:center;color:var(--text-2);font-size:.88rem;padding:8px 0">En attente du host…</p>`}
     </div>`;
 
-  document.getElementById('btn-copy')?.addEventListener('click', () => {
+  document.getElementById('btn-copy-code')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(S.roomCode).then(() => {
+      const btn = document.getElementById('btn-copy-code');
+      if (btn) { btn.textContent = '✓ Copié !'; setTimeout(() => { if (btn) btn.textContent = 'Copier le code'; }, 2000); }
+    });
+  });
+  document.getElementById('btn-copy-link')?.addEventListener('click', () => {
     const url = `${location.origin}/game?join=${S.roomCode}`;
     navigator.clipboard.writeText(url).then(() => {
-      const btn = document.getElementById('btn-copy');
-      if (btn) { btn.textContent = '✓ Copié !'; setTimeout(() => { if (btn) btn.textContent = '🔗 Inviter'; }, 2000); }
+      const btn = document.getElementById('btn-copy-link');
+      if (btn) { btn.textContent = '✓ Lien copié !'; setTimeout(() => { if (btn) btn.textContent = '🔗 Lien d\'invitation'; }, 2000); }
     });
   });
   if (S.isHost) {
