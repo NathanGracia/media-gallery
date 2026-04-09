@@ -1029,6 +1029,9 @@ main {
 /* ── Memoss History ─────────────────────────────────────────────────────────── */
 .memoss-history {
   padding: 0 20px 20px;
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .memoss-history:empty { display: none; }
 
