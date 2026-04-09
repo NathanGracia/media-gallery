@@ -541,7 +541,7 @@ async function loadMemossHistory(uuid) {
               <span>${esc(c.pseudo)}</span>
               <span class="memoss-caption-score">
                 <span class="memoss-score-bar"><span class="memoss-score-fill" style="width:${score}%;background:hsl(${hue},80%,55%)"></span></span>
-                <span class="memoss-score-num" style="color:hsl(${hue},80%,65%)">${score}</span>
+                <span class="memoss-score-num" style="color:hsl(${hue},80%,65%)">${score}<span class="memoss-score-denom">/100</span></span>
               </span>
               <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem">${c.vote_count} vote${c.vote_count > 1 ? 's' : ''}</span>
             </div>

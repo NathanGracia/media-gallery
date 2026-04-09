@@ -1087,6 +1087,11 @@ main {
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
+.memoss-score-denom {
+  font-size: 0.68rem; font-weight: 500;
+  opacity: 0.55;
+  margin-left: 1px;
+}
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
