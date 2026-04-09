@@ -1082,8 +1082,9 @@ main {
   transition: width 0.4s ease;
 }
 .memoss-score-num {
-  font-family: 'Syne', sans-serif;
-  font-size: 0.8rem; font-weight: 800;
+  font-family: 'Figtree', sans-serif;
+  font-size: 0.78rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
