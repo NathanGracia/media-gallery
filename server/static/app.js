@@ -525,6 +525,8 @@ async function loadMemossHistory(uuid) {
     const data = await fetch(`/game/api/history/${uuid}`).then(r => r.json());
     if (!Array.isArray(data) || data.length === 0) return;
 
+    data.sort((a, b) => b.avg - a.avg || b.vote_count - a.vote_count);
+
     el.innerHTML = `
       <div class="memoss-history-title">
         💬 Légendes Memoss
