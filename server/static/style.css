@@ -149,6 +149,81 @@ header {
 }
 .btn-game-link:hover { color: var(--accent); border-color: var(--accent-dim); background: var(--glass-hover); }
 
+/* ── Admin button ─────────────────────────────────────────────────────────── */
+.btn-admin {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--gb);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  color: var(--text-dim);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.btn-admin::before { content: '🔒'; }
+.btn-admin:hover { border-color: var(--accent-dim); color: var(--accent); }
+.btn-admin.admin-mode-on { border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.1); }
+.btn-admin.admin-mode-on::before { content: '🔓'; }
+
+/* ── Admin-only visibility ────────────────────────────────────────────────── */
+.admin-only { display: none !important; }
+body.admin-mode .admin-only { display: block !important; }
+body.admin-mode .card-tag-bar.admin-only,
+body.admin-mode .overlay-tag-bar.admin-only { display: flex !important; }
+
+/* ── Admin modal ──────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+}
+.admin-modal-box {
+  background: #0f1117;
+  border: 1px solid var(--gb);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  width: 320px;
+  display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+.admin-modal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem; font-weight: 800;
+  color: var(--text);
+}
+.admin-modal-input {
+  background: var(--glass);
+  border: 1px solid var(--gb);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.admin-modal-input:focus { border-color: var(--accent); }
+.admin-modal-error { color: var(--red); font-size: 0.82rem; min-height: 16px; }
+.admin-modal-actions { display: flex; gap: 10px; }
+.admin-modal-btn {
+  flex: 1;
+  padding: 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600; font-size: 0.85rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.admin-modal-btn:hover { background: var(--accent); color: #000; }
+.admin-modal-btn--cancel {
+  border-color: var(--gb); background: transparent; color: var(--text-dim);
+}
+.admin-modal-btn--cancel:hover { background: var(--glass); color: var(--text); }
+
 .brand-name {
   font-family: 'Syne', sans-serif;
   font-size: 1.25rem;
@@ -553,6 +628,14 @@ main {
   transition: all 0.15s;
 }
 .btn-card-del:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+
+.btn-card-del--todo {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  font-weight: 600;
+}
+.btn-card-del--todo:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
 
 /* ── Empty state ───────────────────────────────────────────────────────────── */
 .empty {

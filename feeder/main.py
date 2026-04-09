@@ -8,6 +8,7 @@ import time
 import hashlib
 import logging
 import threading
+import msvcrt
 from pathlib import Path
 
 import requests
@@ -23,6 +24,23 @@ else:
 CONFIG_FILE = BASE_DIR / "config.json"
 SENT_FILE   = BASE_DIR / "sent_files.json"
 LOG_FILE    = BASE_DIR / "feeder.log"
+LOCK_FILE   = BASE_DIR / "feeder.lock"
+
+# ── Single-instance lock ───────────────────────────────────────────────────────
+_lock_fh = None  # garde le handle ouvert tant que le processus vit
+
+def _acquire_instance_lock() -> bool:
+    """Retourne True si cette instance a obtenu le verrou exclusif."""
+    global _lock_fh
+    try:
+        _lock_fh = open(LOCK_FILE, "w")
+        msvcrt.locking(_lock_fh.fileno(), msvcrt.LK_NBLCK, 1)
+        return True
+    except (IOError, OSError):
+        if _lock_fh:
+            _lock_fh.close()
+            _lock_fh = None
+        return False
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -92,6 +110,11 @@ def run(stop_event: threading.Event = None):
     """
     if stop_event is None:
         stop_event = threading.Event()
+
+    # ── Single-instance guard ─────────────────────────────────────────────────
+    if not _acquire_instance_lock():
+        log.warning("Une autre instance du feeder est déjà en cours — arrêt.")
+        return
 
     # ── Config ────────────────────────────────────────────────────────────────
     config = load_config()
@@ -251,6 +274,15 @@ def run(stop_event: threading.Event = None):
         observer.stop()
         observer.join()
         log.info("MediaFeeder arrêté.")
+        # Relâche le verrou inter-processus
+        global _lock_fh
+        if _lock_fh:
+            try:
+                msvcrt.locking(_lock_fh.fileno(), msvcrt.LK_UNLCK, 1)
+                _lock_fh.close()
+            except Exception:
+                pass
+            _lock_fh = None
 
 
 if __name__ == "__main__":

@@ -95,6 +95,15 @@ def require_api_key(x_api_key: str = Header(...)):
     return x_api_key
 
 
+@app.post("/api/admin/login")
+async def admin_login(request: Request):
+    body = await request.json()
+    password = body.get("password", "")
+    if password in API_KEYS:
+        return {"ok": True}
+    raise HTTPException(401, "Mot de passe incorrect")
+
+
 # ── Storage helpers ────────────────────────────────────────────────────────────
 def get_total_size() -> int:
     return sum(f.stat().st_size for f in MEDIA_DIR.rglob("*") if f.is_file())

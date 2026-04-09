@@ -123,7 +123,7 @@ function renderGrid(items) {
             <div class="play-ring">${isVideo ? '▶' : '⤢'}</div>
           </div>
           <span class="card-badge badge-${item.type}">${item.type}</span>
-          <div class="card-tag-bar" onclick="event.stopPropagation()">
+          <div class="card-tag-bar admin-only" onclick="event.stopPropagation()">
             <button class="tag-opt ${tag === 'cinema' ? 'active-cinema' : ''}" data-tag="cinema"
                     onclick="setTag(event, '${esc(item.id)}', 'cinema')">Cinema</button>
             <button class="tag-opt ${tag === 'osef' ? 'active-osef' : ''}" data-tag="osef"
@@ -147,9 +147,9 @@ function renderGrid(items) {
                download="${name}"
                onclick="event.stopPropagation()"
                title="Télécharger">↓</a>
-            <button class="btn-card-del"
+            ${tag === 'todo' ? `<button class="btn-card-del btn-card-del--todo admin-only"
                onclick="event.stopPropagation(); deleteMedia('${esc(item.id)}')"
-               title="Supprimer">🗑</button>
+               title="Supprimer">Supprimer</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -547,8 +547,66 @@ async function loadMemossHistory(uuid) {
   } catch (_) {}
 }
 
+// ── Admin mode ────────────────────────────────────────────────────────────────
+function isAdmin() {
+  return !!localStorage.getItem('memoss-api-key');
+}
+
+function applyAdminUI() {
+  document.body.classList.toggle('admin-mode', isAdmin());
+  const btn = document.getElementById('admin-btn');
+  if (btn) {
+    btn.classList.toggle('admin-mode-on', isAdmin());
+    btn.title = isAdmin() ? 'Admin — cliquer pour se déconnecter' : 'Mode admin';
+  }
+}
+
+function toggleAdminModal() {
+  if (isAdmin()) {
+    // Déconnexion directe
+    localStorage.removeItem('memoss-api-key');
+    applyAdminUI();
+    loadMedia();
+    return;
+  }
+  const modal = document.getElementById('admin-modal');
+  modal.style.display = 'flex';
+  document.getElementById('admin-password-input').value = '';
+  document.getElementById('admin-modal-error').textContent = '';
+  setTimeout(() => document.getElementById('admin-password-input').focus(), 50);
+}
+
+function closeAdminModal() {
+  document.getElementById('admin-modal').style.display = 'none';
+}
+
+async function submitAdminLogin() {
+  const password = document.getElementById('admin-password-input').value;
+  const errEl    = document.getElementById('admin-modal-error');
+  errEl.textContent = '';
+  try {
+    const r = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (r.ok) {
+      localStorage.setItem('memoss-api-key', password);
+      closeAdminModal();
+      applyAdminUI();
+      loadMedia();
+    } else {
+      errEl.textContent = 'Mot de passe incorrect.';
+      document.getElementById('admin-password-input').select();
+    }
+  } catch (_) {
+    errEl.textContent = 'Erreur réseau.';
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
+  applyAdminUI();
   await Promise.all([refreshStorage(), refreshFeeders(), loadMedia()]);
   // Refresh storage every 30 seconds
   setInterval(refreshStorage, 30_000);

@@ -5,6 +5,7 @@ Lance MediaFeeder en arrière-plan et affiche son état dans la barre système.
 import sys
 import threading
 import os
+import msvcrt
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -17,7 +18,23 @@ else:
     BASE_DIR = Path(__file__).parent
 
 sys.path.insert(0, str(BASE_DIR))
-LOG_FILE = BASE_DIR / "feeder.log"
+LOG_FILE  = BASE_DIR / "feeder.log"
+TRAY_LOCK = BASE_DIR / "tray.lock"
+
+# ── Single-instance guard ──────────────────────────────────────────────────────
+_tray_lock_fh = None
+
+def _acquire_tray_lock() -> bool:
+    global _tray_lock_fh
+    try:
+        _tray_lock_fh = open(TRAY_LOCK, "w")
+        msvcrt.locking(_tray_lock_fh.fileno(), msvcrt.LK_NBLCK, 1)
+        return True
+    except (IOError, OSError):
+        if _tray_lock_fh:
+            _tray_lock_fh.close()
+            _tray_lock_fh = None
+        return False
 
 # ── State ──────────────────────────────────────────────────────────────────────
 _stop_event: threading.Event = None
@@ -127,6 +144,10 @@ def _setup(icon):
 
 
 def main():
+    if not _acquire_tray_lock():
+        # Une instance du tray tourne déjà — on quitte silencieusement
+        sys.exit(0)
+
     global _tray_icon
     _tray_icon = pystray.Icon(
         "MediaFeeder",
