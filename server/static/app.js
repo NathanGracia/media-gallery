@@ -297,6 +297,7 @@ function openMedia(id, type, url, name, tag = '') {
   _currentMediaUrl = url;
   _currentMediaId  = id;
   _currentMediaTag = tag;
+  history.pushState({ mediaId: id }, '', `/?m=${id}`);
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
@@ -383,6 +384,8 @@ function closeOverlay() {
   updateCropPreview();
   // Reset history
   document.getElementById('memoss-history').innerHTML = '';
+  // Clean URL
+  history.replaceState({}, '', '/');
 }
 
 // ── Copy link ─────────────────────────────────────────────────────────────────
@@ -403,8 +406,8 @@ function copyLink(e, url) {
 }
 
 function copyModalLink() {
-  if (!_currentMediaUrl) return;
-  const full = location.origin + _currentMediaUrl;
+  if (!_currentMediaId) return;
+  const full = `${location.origin}/?m=${_currentMediaId}`;
   navigator.clipboard.writeText(full).then(() => {
     const btn = document.querySelector('.overlay.open .btn-copy-modal');
     if (!btn) return;
@@ -614,6 +617,26 @@ async function submitAdminLogin() {
 (async () => {
   applyAdminUI();
   await Promise.all([refreshStorage(), refreshFeeders(), loadMedia()]);
-  // Refresh storage every 30 seconds
   setInterval(refreshStorage, 30_000);
+
+  // Deeplink : ouvre directement un média via ?m=UUID
+  const deepId = new URLSearchParams(location.search).get('m');
+  if (deepId) {
+    try {
+      const meta = await fetch(`/api/media/${deepId}`).then(r => r.ok ? r.json() : null);
+      if (meta) openMedia(meta.id, meta.type, meta.url, meta.original_name, meta.tag);
+    } catch (_) {}
+  }
 })();
+
+// Ferme la modal si on navigue en arrière (popstate)
+window.addEventListener('popstate', () => {
+  if (!new URLSearchParams(location.search).get('m')) {
+    document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+    if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }
+    document.body.style.overflow = '';
+    const panel = document.querySelector('.video-panel');
+    if (panel) panel.classList.remove('crop-open');
+    document.getElementById('memoss-history').innerHTML = '';
+  }
+});
