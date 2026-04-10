@@ -305,6 +305,7 @@ function openMedia(id, type, url, name, tag = '') {
     updateOverlayTagBar(tag);
     document.getElementById('video-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     requestAnimationFrame(() => vpInit(url));
     loadMemossHistory(id);
   } else {
@@ -314,6 +315,7 @@ function openMedia(id, type, url, name, tag = '') {
     dl.href = url; dl.download = name;
     document.getElementById('image-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
   }
 }
 
@@ -635,6 +637,7 @@ window.addEventListener('popstate', () => {
     document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
     if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }
     document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
     const panel = document.querySelector('.video-panel');
     if (panel) panel.classList.remove('crop-open');
     document.getElementById('memoss-history').innerHTML = '';
