@@ -737,7 +737,7 @@ main {
   z-index: 1;
   background: rgba(10, 10, 20, 0.85);
   border-radius: 18px;
-  overflow: hidden;
+  overflow: clip;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
     0 40px 100px rgba(0, 0, 0, 0.8),
