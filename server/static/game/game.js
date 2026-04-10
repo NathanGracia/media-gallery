@@ -382,7 +382,7 @@ function renderReveal() {
       </div>
 
       <video class="reveal-video" id="reveal-video" src="${esc(r.media_url)}"
-             autoplay playsinline controls></video>
+             autoplay playsinline controls loop></video>
 
       <div class="reveal-caption">${esc(r.text) || '<em style="opacity:.35">— pas de légende —</em>'}</div>
       <p class="reveal-author">par <strong>${esc(r.pseudo)}</strong></p>

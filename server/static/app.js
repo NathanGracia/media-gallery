@@ -250,7 +250,7 @@ function vpInit(url) {
     player = new Plyr('#modal-video', {
       controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
       autoplay: true,
-      resetOnEnd: true,
+      loop: { active: true },
     });
     player.on('volumechange', () => {
       sessionStorage.setItem('plyr-volume', player.volume);
