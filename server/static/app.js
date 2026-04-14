@@ -378,6 +378,7 @@ function closeOverlay() {
   });
   if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }
   document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
   // Reset crop
   const panel = document.querySelector('.video-panel');
   if (panel) panel.classList.remove('crop-open');
