@@ -456,6 +456,10 @@ def get_media(filename: str):
 
 app.include_router(game_router)
 
+@app.get("/timeline")
+async def timeline_page():
+    return FileResponse("static/timeline.html")
+
 # Static game SPA
 app.mount("/game", StaticFiles(directory="static/game", html=True), name="game-static")
 
