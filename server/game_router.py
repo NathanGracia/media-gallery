@@ -168,9 +168,8 @@ async def join_room(code: str, body: dict):
 
 @router.get("/game/api/timeline")
 async def get_timeline(days: int = 7):
-    since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
     with Session(_engine) as s:
-        rows = s.exec(
+        stmt = (
             select(
                 GameAnswer.id,
                 GameAnswer.player_pseudo,
@@ -183,9 +182,12 @@ async def get_timeline(days: int = 7):
             .join(GameRound, GameAnswer.round_id == GameRound.id)
             .join(GameRoom, GameRound.room_id == GameRoom.id)
             .where(GameAnswer.text != "")
-            .where(GameRoom.created_at >= since)
             .order_by(GameRoom.created_at.desc(), GameAnswer.id.asc())
-        ).all()
+        )
+        if days > 0:
+            since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+            stmt  = stmt.where(GameRoom.created_at >= since)
+        rows = s.exec(stmt).all()
 
         uuids   = list({r.media_uuid for r in rows})
         medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
