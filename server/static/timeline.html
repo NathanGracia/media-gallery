@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Légendes — Memoss</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan:    #22d3ee;
+      --indigo:  #6366f1;
+      --bg:      #080d18;
+      --surface: rgba(255,255,255,0.04);
+      --border:  rgba(255,255,255,0.07);
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --subtle:  #475569;
+    }
+
+    body {
+      font-family: 'Figtree', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* — Orbs — */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(110px); opacity: 0.1;
+      pointer-events: none; z-index: 0;
+      animation: drift 22s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 640px; height: 640px; background: var(--cyan);   top: -200px; left: -180px; }
+    .orb-2 { width: 420px; height: 420px; background: var(--indigo); bottom: -80px; right: -120px; animation-duration: 18s; }
+    @keyframes drift { to { transform: translate(25px, 18px); } }
+
+    /* — Header — */
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(8,13,24,0.88);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 860px; margin: 0 auto;
+      padding: 0.875rem 1.5rem;
+      display: flex; align-items: center; gap: 0.875rem;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 0.45rem;
+      text-decoration: none; color: inherit; flex-shrink: 0;
+    }
+    .brand-logo { width: 26px; height: 26px; }
+    .brand-name {
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem;
+      background: linear-gradient(135deg, var(--cyan), var(--indigo));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-divider {
+      width: 1px; height: 18px; background: var(--border); flex-shrink: 0;
+    }
+    .page-title {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+      color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .header-gap { flex: 1; }
+    .btn-nav {
+      display: inline-flex; align-items: center;
+      padding: 0.375rem 0.875rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text); font-size: 0.82rem; font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .btn-nav:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.16);
+    }
+    .btn-nav-primary {
+      background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(99,102,241,0.18));
+      border-color: rgba(34,211,238,0.3);
+      color: var(--cyan);
+    }
+    .btn-nav-primary:hover {
+      background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(99,102,241,0.26));
+      border-color: rgba(34,211,238,0.5);
+    }
+
+    /* — Main — */
+    main {
+      max-width: 860px; margin: 0 auto;
+      padding: 2.5rem 1.5rem 5rem;
+      position: relative; z-index: 2;
+    }
+
+    /* — Timeline — */
+    .timeline {
+      position: relative;
+      padding-left: 1.5rem;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute; left: 6px; top: 10px; bottom: 24px; width: 2px;
+      background: linear-gradient(to bottom,
+        rgba(34,211,238,0.45) 0%,
+        rgba(99,102,241,0.25) 60%,
+        transparent 100%);
+      border-radius: 2px;
+    }
+
+    /* — Day group — */
+    .day-group { margin-bottom: 2.75rem; }
+
+    .day-header {
+      position: relative;
+      display: flex; align-items: center; gap: 0.65rem;
+      margin-bottom: 1rem; padding-left: 1.5rem;
+    }
+    .day-header::before {
+      content: '';
+      position: absolute; left: -0.8rem; top: 50%; transform: translateY(-50%);
+      width: 12px; height: 12px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--indigo));
+      box-shadow: 0 0 10px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.15);
+    }
+    .day-label {
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.95rem;
+      color: var(--cyan);
+    }
+    .day-count {
+      font-size: 0.75rem; color: var(--subtle);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.1rem 0.55rem;
+    }
+
+    /* — Entry card — */
+    .entry {
+      position: relative;
+      display: flex; align-items: center; gap: 0.875rem;
+      margin-left: 1.5rem; margin-bottom: 0.625rem;
+      padding: 0.75rem 1rem 0.75rem 0.875rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none; color: inherit;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .entry:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(34,211,238,0.22);
+      transform: translateX(3px);
+    }
+    .entry::before {
+      content: '';
+      position: absolute; left: -1.3rem; top: 50%; transform: translateY(-50%);
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--subtle);
+    }
+
+    .entry-thumb {
+      width: 80px; height: 56px;
+      object-fit: cover; border-radius: 8px; flex-shrink: 0;
+      background: #1e293b;
+      transition: opacity 0.2s;
+    }
+
+    .entry-body { flex: 1; min-width: 0; }
+    .entry-text {
+      font-size: 0.925rem; font-weight: 500; line-height: 1.45;
+      color: #f1f5f9; margin-bottom: 0.3rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .entry-meta { font-size: 0.75rem; color: var(--muted); }
+    .entry-pseudo { color: #94a3b8; font-weight: 600; }
+
+    .entry-score {
+      flex-shrink: 0; text-align: right; min-width: 44px;
+    }
+    .score-val {
+      display: block;
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem;
+      line-height: 1;
+    }
+    .score-unit {
+      display: block; font-size: 0.62rem; color: var(--subtle);
+      letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px;
+    }
+    .score-high .score-val { color: #4ade80; }
+    .score-mid  .score-val { color: #fbbf24; }
+    .score-low  .score-val { color: var(--muted); }
+
+    /* — Empty — */
+    .empty {
+      text-align: center; padding: 5rem 2rem; color: var(--subtle);
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 1.25rem; opacity: 0.45; }
+    .empty h2 {
+      font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800;
+      color: var(--text); margin-bottom: 0.5rem;
+    }
+    .empty p { font-size: 0.9rem; }
+
+    /* — Skeleton — */
+    .skeleton-wrap { padding-left: 1.5rem; }
+    .skel {
+      height: 74px; border-radius: 12px; margin-bottom: 0.625rem;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0.03) 25%,
+        rgba(255,255,255,0.06) 50%,
+        rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header>
+  <div class="header-inner">
+    <a class="brand" href="/">
+      <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2"  y="2"  width="13" height="13" rx="3" fill="url(#tg)" opacity="0.9"/>
+        <rect x="17" y="2"  width="13" height="13" rx="3" fill="url(#tg)" opacity="0.5"/>
+        <rect x="2"  y="17" width="13" height="13" rx="3" fill="url(#tg)" opacity="0.5"/>
+        <rect x="17" y="17" width="13" height="13" rx="3" fill="url(#tg)" opacity="0.9"/>
+        <defs>
+          <linearGradient id="tg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stop-color="#22d3ee"/>
+            <stop offset="100%" stop-color="#6366f1"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="brand-name">Memoss</span>
+    </a>
+    <div class="header-divider"></div>
+    <span class="page-title">Légendes</span>
+    <span class="header-gap"></span>
+    <a href="/game/" class="btn-nav btn-nav-primary">Jouer</a>
+    <a href="/"      class="btn-nav">Galerie</a>
+  </div>
+</header>
+
+<main>
+  <div id="root">
+    <div class="skeleton-wrap">
+      <div class="skel"></div>
+      <div class="skel" style="opacity:.7"></div>
+      <div class="skel" style="opacity:.5"></div>
+      <div class="skel" style="opacity:.3"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+async function load() {
+  const root = document.getElementById('root');
+  try {
+    const res = await fetch('/game/api/timeline?days=7');
+    if (!res.ok) throw new Error();
+    render(root, await res.json());
+  } catch {
+    root.innerHTML = `<div class="empty">
+      <div class="empty-icon">⚠</div>
+      <h2>Erreur de chargement</h2>
+      <p>Impossible de récupérer l'historique.</p>
+    </div>`;
+  }
+}
+
+function render(root, items) {
+  if (!items.length) {
+    root.innerHTML = `<div class="empty">
+      <div class="empty-icon">💬</div>
+      <h2>Aucune légende cette semaine</h2>
+      <p>Jouez une partie pour alimenter l'historique&nbsp;!</p>
+    </div>`;
+    return;
+  }
+
+  const now        = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1);
+
+  // Group by local calendar day (items sorted desc by game_date from API)
+  const groups = [];
+  let cur = null;
+  for (const item of items) {
+    const d      = new Date(item.game_date + 'Z');
+    const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (!cur || cur.key !== dayKey) {
+      cur = { key: dayKey, refDate: d, items: [] };
+      groups.push(cur);
+    }
+    cur.items.push(item);
+  }
+
+  let html = '<div class="timeline">';
+
+  for (const g of groups) {
+    const dayStart = new Date(g.refDate.getFullYear(), g.refDate.getMonth(), g.refDate.getDate());
+
+    let label;
+    if      (dayStart >= todayStart) label = "Aujourd'hui";
+    else if (dayStart >= yestStart)  label = "Hier";
+    else {
+      label = g.refDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      label = label.charAt(0).toUpperCase() + label.slice(1);
+    }
+
+    const n = g.items.length;
+    html += `<div class="day-group">
+      <div class="day-header">
+        <span class="day-label">${label}</span>
+        <span class="day-count">${n} légende${n > 1 ? 's' : ''}</span>
+      </div>`;
+
+    for (const item of g.items) {
+      const d    = new Date(item.game_date + 'Z');
+      const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+      const hasVote = item.vote_count > 0;
+      const avg     = hasVote ? item.avg : null;
+      const scoreCls = avg === null ? 'score-low'
+                     : avg >= 70    ? 'score-high'
+                     : avg >= 40    ? 'score-mid'
+                     :                'score-low';
+      const scoreVal = avg !== null ? avg : '—';
+
+      html += `<a class="entry" href="/?m=${esc(item.media_uuid)}">
+        <img class="entry-thumb" src="${esc(item.thumb)}" alt="" loading="lazy" onerror="this.style.opacity='0.25'">
+        <div class="entry-body">
+          <div class="entry-text">${esc(item.text)}</div>
+          <div class="entry-meta"><span class="entry-pseudo">@${esc(item.pseudo)}</span> · ${time}</div>
+        </div>
+        <div class="entry-score ${scoreCls}">
+          <span class="score-val">${scoreVal}</span>
+          ${hasVote ? '<span class="score-unit">/ 100</span>' : ''}
+        </div>
+      </a>`;
+    }
+
+    html += '</div>';
+  }
+
+  html += '</div>';
+  root.innerHTML = html;
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+load();
+</script>
+
+</body>
+</html>

@@ -4,6 +4,7 @@ Phase 1 : tous les rounds de soumission d'abord.
 Phase 2 : tous les rounds de révélation / vote ensuite.
 """
 import asyncio
+import datetime
 import random
 import string
 import logging
@@ -163,6 +164,40 @@ async def join_room(code: str, body: dict):
 
     state["players"][player_id] = {"pseudo": pseudo, "score": 0, "connected": False}
     return {"room_code": code, "player_id": player_id, "players": players_list(state)}
+
+
+@router.get("/game/api/timeline")
+async def get_timeline(days: int = 7):
+    since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+    with Session(_engine) as s:
+        rows = s.exec(
+            select(
+                GameAnswer.player_pseudo,
+                GameAnswer.media_uuid,
+                GameAnswer.text,
+                GameAnswer.total_stars,
+                GameAnswer.vote_count,
+                GameRoom.created_at,
+            )
+            .join(GameRound, GameAnswer.round_id == GameRound.id)
+            .join(GameRoom, GameRound.room_id == GameRoom.id)
+            .where(GameAnswer.text != "")
+            .where(GameRoom.created_at >= since)
+            .order_by(GameRoom.created_at.desc())
+        ).all()
+        return [
+            {
+                "pseudo":      r.player_pseudo,
+                "text":        r.text,
+                "total_stars": r.total_stars,
+                "vote_count":  r.vote_count,
+                "avg":         round(r.total_stars / r.vote_count, 1) if r.vote_count else 0,
+                "media_uuid":  r.media_uuid,
+                "thumb":       f"/thumbnail/{r.media_uuid}.jpg",
+                "game_date":   r.created_at.isoformat(),
+            }
+            for r in rows
+        ]
 
 
 @router.get("/game/api/history/{media_uuid}")
