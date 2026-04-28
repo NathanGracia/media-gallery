@@ -123,10 +123,10 @@
     }
 
     /* — Timeline — */
-    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline { position: relative; padding: 0; }
     .timeline::before {
       content: '';
-      position: absolute; left: 6px; top: 10px; bottom: 24px; width: 2px;
+      position: absolute; left: calc(50% - 1px); top: 10px; bottom: 24px; width: 2px;
       background: linear-gradient(to bottom, rgba(34,211,238,0.45) 0%, rgba(99,102,241,0.25) 60%, transparent 100%);
       border-radius: 2px;
     }
@@ -135,13 +135,13 @@
     .day-group { margin-bottom: 2.75rem; }
 
     .day-header {
-      position: relative; display: flex; align-items: center; gap: 0.65rem;
-      margin-bottom: 1rem; padding-left: 1.5rem;
+      position: relative; display: flex; align-items: center; justify-content: center; gap: 0.65rem;
+      margin-bottom: 1.25rem; padding: 0;
     }
     .day-header::before {
       content: '';
-      position: absolute; left: -0.8rem; top: 50%; transform: translateY(-50%);
-      width: 12px; height: 12px; border-radius: 50%;
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 14px; height: 14px; border-radius: 50%;
       background: linear-gradient(135deg, var(--cyan), var(--indigo));
       box-shadow: 0 0 10px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.15);
     }
@@ -155,17 +155,31 @@
     /* — Entry card — */
     .entry {
       position: relative; display: flex; align-items: center; gap: 0.875rem;
-      margin-left: 1.5rem; margin-bottom: 0.625rem;
+      width: calc(50% - 2.25rem); margin-bottom: 0.875rem;
       padding: 0.75rem 1rem 0.75rem 0.875rem;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px;
       text-decoration: none; color: inherit; cursor: pointer;
       transition: background 0.15s, border-color 0.15s, transform 0.1s;
     }
-    .entry:hover { background: rgba(255,255,255,0.07); border-color: rgba(34,211,238,0.22); transform: translateX(3px); }
+    .entry:hover { background: rgba(255,255,255,0.07); border-color: rgba(34,211,238,0.22); }
+    .entry--left              { margin-left: 0; }
+    .entry--left:hover        { transform: translateX(-3px); }
+    .entry--right             { margin-left: calc(50% + 2.25rem); }
+    .entry--right:hover       { transform: translateX(3px); }
     .entry::before {
-      content: ''; position: absolute; left: -1.3rem; top: 50%; transform: translateY(-50%);
-      width: 5px; height: 5px; border-radius: 50%; background: var(--subtle);
+      content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+      width: 6px; height: 6px; border-radius: 50%; background: var(--subtle);
+    }
+    .entry--left::before  { left: auto; right: -1.4rem; }
+    .entry--right::before { left: -1.4rem; }
+    @media (max-width: 680px) {
+      .timeline::before { left: 6px; }
+      .day-header { justify-content: flex-start; padding-left: 1.75rem; }
+      .day-header::before { left: 0; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; }
+      .entry { width: 100%; margin-left: 1.75rem !important; }
+      .entry--left:hover, .entry--right:hover { transform: translateX(3px); }
+      .entry--left::before  { left: -1.4rem; right: auto; }
     }
 
     .entry-player-wrap {
@@ -458,6 +472,7 @@ function render(root, items) {
   }
 
   let html = '<div class="timeline">';
+  let entryIdx = 0;
 
   for (const g of groups) {
     const dayStart = new Date(g.refDate.getFullYear(), g.refDate.getMonth(), g.refDate.getDate());
@@ -483,11 +498,12 @@ function render(root, items) {
       const avg     = hasVote ? item.avg : null;
       const scoreCls = avg === null ? 'score-low' : avg >= 70 ? 'score-high' : avg >= 40 ? 'score-mid' : 'score-low';
       const scoreVal = avg !== null ? avg : '—';
-      const mediaEl  = item.url
+      const side    = entryIdx++ % 2 === 0 ? 'entry--left' : 'entry--right';
+      const mediaEl = item.url
         ? `<div class="entry-player-wrap"><video class="entry-player" src="${esc(item.url)}" poster="${esc(item.thumb)}" muted loop playsinline preload="metadata"></video></div>`
         : `<img class="entry-thumb" src="${esc(item.thumb)}" alt="" loading="lazy" onerror="this.style.opacity='0.25'">`;
 
-      html += `<a class="entry" href="/?m=${item.media_uuid}" onclick="openMediaCard(event,'${item.media_uuid}')">
+      html += `<a class="entry ${side}" href="/?m=${item.media_uuid}" onclick="openMediaCard(event,'${item.media_uuid}')">
         ${mediaEl}
         <div class="entry-body">
           <div class="entry-text">${esc(item.text)}</div>
