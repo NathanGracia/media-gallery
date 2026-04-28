@@ -185,6 +185,11 @@ async def get_timeline(days: int = 7):
             .where(GameRoom.created_at >= since)
             .order_by(GameRoom.created_at.desc())
         ).all()
+
+        uuids   = list({r.media_uuid for r in rows})
+        medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
+        url_map = {m.uuid: f"/media/{m.filename}" for m in medias}
+
         return [
             {
                 "pseudo":      r.player_pseudo,
@@ -193,6 +198,7 @@ async def get_timeline(days: int = 7):
                 "vote_count":  r.vote_count,
                 "avg":         round(r.total_stars / r.vote_count, 1) if r.vote_count else 0,
                 "media_uuid":  r.media_uuid,
+                "url":         url_map.get(r.media_uuid),
                 "thumb":       f"/thumbnail/{r.media_uuid}.jpg",
                 "game_date":   r.created_at.isoformat(),
             }
