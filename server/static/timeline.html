@@ -310,7 +310,10 @@ function render(root, items) {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1);
 
-  // Group by local calendar day (items sorted desc by game_date from API)
+  // Trier du plus récent au plus ancien (sécurité côté client)
+  items.sort((a, b) => b.game_date.localeCompare(a.game_date));
+
+  // Group by local calendar day
   const groups = [];
   let cur = null;
   for (const item of items) {

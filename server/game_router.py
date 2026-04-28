@@ -172,6 +172,7 @@ async def get_timeline(days: int = 7):
     with Session(_engine) as s:
         rows = s.exec(
             select(
+                GameAnswer.id,
                 GameAnswer.player_pseudo,
                 GameAnswer.media_uuid,
                 GameAnswer.text,
@@ -183,7 +184,7 @@ async def get_timeline(days: int = 7):
             .join(GameRoom, GameRound.room_id == GameRoom.id)
             .where(GameAnswer.text != "")
             .where(GameRoom.created_at >= since)
-            .order_by(GameRoom.created_at.desc())
+            .order_by(GameRoom.created_at.desc(), GameAnswer.id.asc())
         ).all()
 
         uuids   = list({r.media_uuid for r in rows})
