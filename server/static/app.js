@@ -297,7 +297,7 @@ function openMedia(id, type, url, name, tag = '') {
   _currentMediaUrl = url;
   _currentMediaId  = id;
   _currentMediaTag = tag;
-  history.pushState({ mediaId: id }, '', `/?m=${id}`);
+  if (!window.TIMELINE_MODE) history.pushState({ mediaId: id }, '', `/?m=${id}`);
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
@@ -379,16 +379,19 @@ function closeOverlay() {
   if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';
-  // Reset crop
+  // Reset crop (éléments absents sur la page timeline)
   const panel = document.querySelector('.video-panel');
   if (panel) panel.classList.remove('crop-open');
-  document.getElementById('crop-top').value    = 0;
-  document.getElementById('crop-bottom').value = 0;
-  updateCropPreview();
+  const cropTop = document.getElementById('crop-top');
+  const cropBot = document.getElementById('crop-bottom');
+  if (cropTop) cropTop.value = 0;
+  if (cropBot) cropBot.value = 0;
+  if (cropTop || cropBot) updateCropPreview();
   // Reset history
-  document.getElementById('memoss-history').innerHTML = '';
-  // Clean URL
-  history.replaceState({}, '', '/');
+  const hist = document.getElementById('memoss-history');
+  if (hist) hist.innerHTML = '';
+  // Clean URL (pas sur la page timeline)
+  if (!window.TIMELINE_MODE) history.replaceState({}, '', '/');
 }
 
 // ── Copy link ─────────────────────────────────────────────────────────────────
@@ -619,6 +622,7 @@ async function submitAdminLogin() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
   applyAdminUI();
+  if (!document.getElementById('grid')) return; // page timeline ou autre
   await Promise.all([refreshStorage(), refreshFeeders(), loadMedia()]);
   setInterval(refreshStorage, 30_000);
 
@@ -632,8 +636,9 @@ async function submitAdminLogin() {
   }
 })();
 
-// Ferme la modal si on navigue en arrière (popstate)
+// Ferme la modal si on navigue en arrière (popstate, galerie uniquement)
 window.addEventListener('popstate', () => {
+  if (window.TIMELINE_MODE) return;
   if (!new URLSearchParams(location.search).get('m')) {
     document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
     if (player) { player.pause(); player.source = { type: 'video', sources: [] }; }

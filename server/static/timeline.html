@@ -7,19 +7,42 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
+      /* Timeline */
       --cyan:    #22d3ee;
       --indigo:  #6366f1;
       --bg:      #080d18;
       --surface: rgba(255,255,255,0.04);
       --border:  rgba(255,255,255,0.07);
-      --text:    #e2e8f0;
+      --text:    #f1f5f9;
       --muted:   #64748b;
       --subtle:  #475569;
+      /* Overlay compat (style.css variables) */
+      --accent:       #22d3ee;
+      --accent-dim:   rgba(34,211,238,0.15);
+      --glass:        rgba(255,255,255,0.04);
+      --glass-md:     rgba(255,255,255,0.06);
+      --glass-hover:  rgba(255,255,255,0.09);
+      --gb:           rgba(255,255,255,0.08);
+      --text-dim:     #64748b;
+      --text-muted:   #334155;
+      --cinema:       #4ade80;
+      --cinema-dim:   rgba(74,222,128,0.15);
+      --osef:         #94a3b8;
+      --osef-dim:     rgba(148,163,184,0.1);
+      --todo:         #fbbf24;
+      --todo-dim:     rgba(251,191,36,0.12);
+      --red:          #f87171;
+      --radius:       14px;
+      --radius-sm:    9px;
+      --plyr-color-main:            #22d3ee;
+      --plyr-video-background:      #000;
+      --plyr-range-fill-background: #22d3ee;
     }
 
     body {
@@ -65,9 +88,7 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .header-divider {
-      width: 1px; height: 18px; background: var(--border); flex-shrink: 0;
-    }
+    .header-divider { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
     .page-title {
       font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
       color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase;
@@ -84,14 +105,10 @@
       transition: background 0.15s, border-color 0.15s;
       white-space: nowrap;
     }
-    .btn-nav:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.16);
-    }
+    .btn-nav:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.16); }
     .btn-nav-primary {
       background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(99,102,241,0.18));
-      border-color: rgba(34,211,238,0.3);
-      color: var(--cyan);
+      border-color: rgba(34,211,238,0.3); color: var(--cyan);
     }
     .btn-nav-primary:hover {
       background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(99,102,241,0.26));
@@ -106,17 +123,11 @@
     }
 
     /* — Timeline — */
-    .timeline {
-      position: relative;
-      padding-left: 1.5rem;
-    }
+    .timeline { position: relative; padding-left: 1.5rem; }
     .timeline::before {
       content: '';
       position: absolute; left: 6px; top: 10px; bottom: 24px; width: 2px;
-      background: linear-gradient(to bottom,
-        rgba(34,211,238,0.45) 0%,
-        rgba(99,102,241,0.25) 60%,
-        transparent 100%);
+      background: linear-gradient(to bottom, rgba(34,211,238,0.45) 0%, rgba(99,102,241,0.25) 60%, transparent 100%);
       border-radius: 2px;
     }
 
@@ -124,8 +135,7 @@
     .day-group { margin-bottom: 2.75rem; }
 
     .day-header {
-      position: relative;
-      display: flex; align-items: center; gap: 0.65rem;
+      position: relative; display: flex; align-items: center; gap: 0.65rem;
       margin-bottom: 1rem; padding-left: 1.5rem;
     }
     .day-header::before {
@@ -135,128 +145,168 @@
       background: linear-gradient(135deg, var(--cyan), var(--indigo));
       box-shadow: 0 0 10px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.15);
     }
-    .day-label {
-      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.95rem;
-      color: var(--cyan);
-    }
+    .day-label { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.95rem; color: var(--cyan); }
     .day-count {
       font-size: 0.75rem; color: var(--subtle);
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
       border-radius: 999px; padding: 0.1rem 0.55rem;
     }
 
     /* — Entry card — */
     .entry {
-      position: relative;
-      display: flex; align-items: center; gap: 0.875rem;
+      position: relative; display: flex; align-items: center; gap: 0.875rem;
       margin-left: 1.5rem; margin-bottom: 0.625rem;
       padding: 0.75rem 1rem 0.75rem 0.875rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px;
-      text-decoration: none; color: inherit;
+      text-decoration: none; color: inherit; cursor: pointer;
       transition: background 0.15s, border-color 0.15s, transform 0.1s;
     }
-    .entry:hover {
-      background: rgba(255,255,255,0.07);
-      border-color: rgba(34,211,238,0.22);
-      transform: translateX(3px);
-    }
+    .entry:hover { background: rgba(255,255,255,0.07); border-color: rgba(34,211,238,0.22); transform: translateX(3px); }
     .entry::before {
-      content: '';
-      position: absolute; left: -1.3rem; top: 50%; transform: translateY(-50%);
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--subtle);
+      content: ''; position: absolute; left: -1.3rem; top: 50%; transform: translateY(-50%);
+      width: 5px; height: 5px; border-radius: 50%; background: var(--subtle);
     }
 
     .entry-player-wrap {
-      width: 160px; height: 90px;
-      flex-shrink: 0; border-radius: 8px; overflow: hidden;
-      background: #1e293b; position: relative;
+      width: 160px; height: 90px; flex-shrink: 0;
+      border-radius: 8px; overflow: hidden; background: #1e293b;
     }
-    .entry-player {
-      width: 100%; height: 100%;
-      object-fit: cover; display: block;
-    }
-    /* fallback image when no video url */
-    .entry-thumb {
-      width: 160px; height: 90px;
-      object-fit: cover; border-radius: 8px; flex-shrink: 0;
-      background: #1e293b;
-    }
+    .entry-player { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .entry-thumb { width: 160px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #1e293b; }
 
     .entry-body { flex: 1; min-width: 0; }
     .entry-text {
-      font-size: 0.925rem; font-weight: 500; line-height: 1.45;
-      color: #f1f5f9; margin-bottom: 0.3rem;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      font-size: 0.925rem; font-weight: 500; line-height: 1.45; color: #f1f5f9; margin-bottom: 0.3rem;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .entry-meta { font-size: 0.75rem; color: var(--muted); }
     .entry-pseudo { color: #94a3b8; font-weight: 600; }
 
-    .entry-score {
-      flex-shrink: 0; text-align: right; min-width: 44px;
-    }
-    .score-val {
-      display: block;
-      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem;
-      line-height: 1;
-    }
-    .score-unit {
-      display: block; font-size: 0.62rem; color: var(--subtle);
-      letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px;
-    }
+    .entry-score { flex-shrink: 0; text-align: right; min-width: 44px; }
+    .score-val { display: block; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; line-height: 1; }
+    .score-unit { display: block; font-size: 0.62rem; color: var(--subtle); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px; }
     .score-high .score-val { color: #4ade80; }
     .score-mid  .score-val { color: #fbbf24; }
     .score-low  .score-val { color: var(--muted); }
 
     /* — Toolbar — */
-    .toolbar {
-      display: flex; align-items: center; gap: 0.75rem;
-      margin-bottom: 2rem;
-    }
+    .toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
     .toolbar-label { font-size: 0.82rem; color: var(--muted); }
     .period-select {
       appearance: none; -webkit-appearance: none;
       background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.65rem center;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      border: 1px solid var(--border); border-radius: 8px;
       color: var(--text); font-family: 'Figtree', sans-serif; font-size: 0.875rem; font-weight: 600;
-      padding: 0.4rem 2rem 0.4rem 0.75rem;
-      cursor: pointer;
-      transition: border-color 0.15s, background-color 0.15s;
+      padding: 0.4rem 2rem 0.4rem 0.75rem; cursor: pointer;
+      transition: border-color 0.15s;
     }
-    .period-select:hover  { border-color: rgba(255,255,255,0.15); }
-    .period-select:focus  { outline: none; border-color: rgba(34,211,238,0.4); }
+    .period-select:hover { border-color: rgba(255,255,255,0.15); }
+    .period-select:focus { outline: none; border-color: rgba(34,211,238,0.4); }
     .period-select option { background: #0f172a; }
 
     /* — Empty — */
-    .empty {
-      text-align: center; padding: 5rem 2rem; color: var(--subtle);
-    }
+    .empty { text-align: center; padding: 5rem 2rem; color: var(--subtle); }
     .empty-icon { font-size: 2.5rem; margin-bottom: 1.25rem; opacity: 0.45; }
-    .empty h2 {
-      font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800;
-      color: var(--text); margin-bottom: 0.5rem;
-    }
+    .empty h2 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 0.5rem; }
     .empty p { font-size: 0.9rem; }
 
     /* — Skeleton — */
     .skeleton-wrap { padding-left: 1.5rem; }
     .skel {
       height: 74px; border-radius: 12px; margin-bottom: 0.625rem;
-      background: linear-gradient(90deg,
-        rgba(255,255,255,0.03) 25%,
-        rgba(255,255,255,0.06) 50%,
-        rgba(255,255,255,0.03) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.6s infinite;
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%; animation: shimmer 1.6s infinite;
     }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ── Overlay / Modal (repris de style.css) ──────────────────────────────── */
+    .overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      align-items: center; justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    .overlay-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.88); backdrop-filter: blur(16px);
+    }
+    .overlay-panel {
+      position: relative; z-index: 1;
+      background: rgba(10,10,20,0.85); border-radius: 18px; overflow: clip;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(34,211,238,0.08), inset 0 1px 0 rgba(255,255,255,0.08);
+      backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
+      display: flex; flex-direction: column; max-width: 92vw;
+      animation: panelIn 0.25s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes panelIn { from { opacity:0; transform: scale(0.95) translateY(12px); } to { opacity:1; transform: scale(1) translateY(0); } }
+    .video-panel { width: auto; min-width: 320px; }
+    .image-panel { width: min(1000px, 92vw); }
+    .overlay-close {
+      position: absolute; top: 12px; right: 12px; z-index: 10;
+      width: 30px; height: 30px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06); color: var(--text-dim); border-radius: 50%;
+      cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .overlay-close:hover { background: rgba(248,113,113,0.2); border-color: rgba(248,113,113,0.4); color: var(--red); }
+    .vp-wrap { background: #000; overflow: hidden; position: relative; }
+    #modal-video { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .plyr { width: 100% !important; height: 100% !important; }
+    .plyr--video { background: #000; border-radius: 0; }
+    .plyr__video-wrapper { background: #000 !important; height: 100% !important; padding-bottom: 0 !important; }
+    #modal-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; flex: 1; min-height: 0; }
+    .crop-overlay-top, .crop-overlay-bot {
+      position: absolute; left: 0; right: 0; background: rgba(0,0,0,0.55);
+      pointer-events: none; height: 0; transition: height 0.12s ease; z-index: 5;
+    }
+    .crop-overlay-top { top: 0; }
+    .crop-overlay-bot { bottom: 0; }
+    .crop-bar {
+      display: none; align-items: center; gap: 12px; padding: 8px 16px;
+      border-top: 1px solid rgba(251,191,36,0.15); background: rgba(251,191,36,0.04); flex-shrink: 0;
+    }
+    .video-panel.crop-open .crop-bar { display: flex; }
+    .overlay-footer {
+      padding: 10px 16px; display: flex; flex-direction: column; gap: 12px;
+      border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+    }
+    .overlay-name { font-size: 0.8rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; width: 100%; white-space: nowrap; flex: 1; font-weight: 500; }
+    .overlay-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .overlay-tag-bar { display: none; gap: 5px; align-items: center; }
+    .btn-dl {
+      padding: 8px 18px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(99,102,241,0.15));
+      border: 1px solid rgba(34,211,238,0.3); color: var(--accent);
+      text-decoration: none; border-radius: var(--radius-sm);
+      font-family: 'Figtree', sans-serif; font-size: 0.82rem; font-weight: 700;
+      transition: all 0.15s;
+    }
+    .btn-dl:hover { background: linear-gradient(135deg, rgba(34,211,238,0.25), rgba(99,102,241,0.25)); box-shadow: 0 0 16px rgba(34,211,238,0.2); }
+    .plyr__control--overlaid {
+      background: rgba(34,211,238,0.2) !important; border: 1.5px solid rgba(34,211,238,0.5) !important;
+      backdrop-filter: blur(8px); box-shadow: 0 0 20px rgba(34,211,238,0.3) !important;
+    }
+    .plyr__control--overlaid:hover { background: rgba(34,211,238,0.35) !important; }
+    .memoss-history { padding: 0 20px 20px; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; }
+    .memoss-history:empty { display: none; }
+    .memoss-history-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.75rem; font-weight: 700; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 10px; padding-top: 16px; border-top: 1px solid var(--gb);
+    }
+    .memoss-history-title .game-link { margin-left: auto; color: var(--accent); text-decoration: none; font-size: 0.72rem; font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.7; transition: opacity 0.15s; }
+    .memoss-history-title .game-link:hover { opacity: 1; }
+    .memoss-caption-list { display: flex; flex-direction: column; gap: 7px; }
+    .memoss-caption { display: flex; flex-direction: column; gap: 3px; padding: 10px 13px; background: var(--glass); border: 1px solid var(--gb); border-radius: 9px; }
+    .memoss-caption-text { font-size: 0.9rem; font-weight: 500; color: var(--text); line-height: 1.4; }
+    .memoss-caption-meta { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-dim); }
+    .memoss-caption-score { display: flex; align-items: center; gap: 6px; }
+    .memoss-score-bar { width: 48px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; flex-shrink: 0; }
+    .memoss-score-fill { display: block; height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+    .memoss-score-num { font-family: 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+    .memoss-score-denom { font-size: 0.68rem; font-weight: 500; opacity: 0.55; margin-left: 1px; }
   </style>
 </head>
 <body>
@@ -308,10 +358,57 @@
   </div>
 </main>
 
+<!-- Video Modal -->
+<div class="overlay" id="video-overlay" role="dialog" aria-modal="true">
+  <div class="overlay-backdrop" onclick="closeOverlay()"></div>
+  <div class="overlay-panel video-panel">
+    <button class="overlay-close" onclick="closeOverlay()" aria-label="Fermer">✕</button>
+    <div class="vp-wrap" id="vp-wrap">
+      <video id="modal-video" playsinline controls></video>
+      <div class="crop-overlay-top" id="crop-overlay-top"></div>
+      <div class="crop-overlay-bot" id="crop-overlay-bot"></div>
+    </div>
+    <div class="crop-bar" id="crop-bar"></div>
+    <div class="overlay-footer">
+      <span class="overlay-name" id="video-name"></span>
+      <div class="overlay-actions">
+        <div class="overlay-tag-bar" id="video-tag-bar"></div>
+        <a class="btn-dl" id="video-dl" download>Télécharger</a>
+      </div>
+    </div>
+    <div class="memoss-history" id="memoss-history"></div>
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div class="overlay" id="image-overlay" role="dialog" aria-modal="true">
+  <div class="overlay-backdrop" onclick="closeOverlay()"></div>
+  <div class="overlay-panel image-panel">
+    <button class="overlay-close" onclick="closeOverlay()" aria-label="Fermer">✕</button>
+    <img id="modal-img" src="" alt="">
+    <div class="overlay-footer">
+      <span class="overlay-name" id="image-name"></span>
+      <div class="overlay-actions">
+        <a class="btn-dl" id="image-dl" download>Télécharger</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+<script>window.TIMELINE_MODE = true;</script>
+<script src="app.js?v=30"></script>
 <script>
+async function openMediaCard(e, uuid) {
+  e.preventDefault();
+  try {
+    const meta = await fetch(`/api/media/${uuid}`).then(r => r.ok ? r.json() : null);
+    if (meta) openMedia(meta.id, meta.type, meta.url, meta.original_name, meta.tag);
+  } catch (_) {}
+}
+
 function reload() {
-  const days = document.getElementById('period-select').value;
-  load(days);
+  load(document.getElementById('period-select').value);
 }
 
 async function load(days = 7) {
@@ -349,19 +446,14 @@ function render(root, items) {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1);
 
-  // Trier du plus récent au plus ancien (sécurité côté client)
   items.sort((a, b) => b.game_date.localeCompare(a.game_date));
 
-  // Group by local calendar day
   const groups = [];
   let cur = null;
   for (const item of items) {
     const d      = new Date(item.game_date + 'Z');
     const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    if (!cur || cur.key !== dayKey) {
-      cur = { key: dayKey, refDate: d, items: [] };
-      groups.push(cur);
-    }
+    if (!cur || cur.key !== dayKey) { cur = { key: dayKey, refDate: d, items: [] }; groups.push(cur); }
     cur.items.push(item);
   }
 
@@ -369,7 +461,6 @@ function render(root, items) {
 
   for (const g of groups) {
     const dayStart = new Date(g.refDate.getFullYear(), g.refDate.getMonth(), g.refDate.getDate());
-
     let label;
     if      (dayStart >= todayStart) label = "Aujourd'hui";
     else if (dayStart >= yestStart)  label = "Hier";
@@ -386,22 +477,17 @@ function render(root, items) {
       </div>`;
 
     for (const item of g.items) {
-      const d    = new Date(item.game_date + 'Z');
-      const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
+      const d       = new Date(item.game_date + 'Z');
+      const time    = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       const hasVote = item.vote_count > 0;
       const avg     = hasVote ? item.avg : null;
-      const scoreCls = avg === null ? 'score-low'
-                     : avg >= 70    ? 'score-high'
-                     : avg >= 40    ? 'score-mid'
-                     :                'score-low';
+      const scoreCls = avg === null ? 'score-low' : avg >= 70 ? 'score-high' : avg >= 40 ? 'score-mid' : 'score-low';
       const scoreVal = avg !== null ? avg : '—';
-
-      const mediaEl = item.url
+      const mediaEl  = item.url
         ? `<div class="entry-player-wrap"><video class="entry-player" src="${esc(item.url)}" poster="${esc(item.thumb)}" muted loop playsinline preload="metadata"></video></div>`
         : `<img class="entry-thumb" src="${esc(item.thumb)}" alt="" loading="lazy" onerror="this.style.opacity='0.25'">`;
 
-      html += `<a class="entry" href="/?m=${esc(item.media_uuid)}">
+      html += `<a class="entry" href="/?m=${item.media_uuid}" onclick="openMediaCard(event,'${item.media_uuid}')">
         ${mediaEl}
         <div class="entry-body">
           <div class="entry-text">${esc(item.text)}</div>
@@ -420,7 +506,6 @@ function render(root, items) {
   html += '</div>';
   root.innerHTML = html;
 
-  // Autoplay quand visible, pause quand sorti du viewport
   const obs = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (e.isIntersecting) e.target.play().catch(() => {});
@@ -431,11 +516,7 @@ function render(root, items) {
 }
 
 function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 load();
