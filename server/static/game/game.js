@@ -24,6 +24,8 @@ const S = {
   // timer
   timerInterval: null,
   timerVal:      120,
+  // mode
+  mode:          'all',
 };
 
 const app  = document.getElementById('app');
@@ -164,7 +166,11 @@ function renderLobby() {
       </ul>
 
       ${S.isHost
-        ? `<button class="btn btn-cinema" id="btn-start" ${canStart ? '' : 'disabled'}>
+        ? `<label class="mode-toggle" style="display:flex;align-items:center;gap:10px;justify-content:center;margin:12px 0;font-size:.88rem;color:var(--text-2);cursor:pointer">
+             <input type="checkbox" id="mode-recent" ${S.mode === 'recent' ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer">
+             Mèmes récents uniquement (50 derniers)
+           </label>
+           <button class="btn btn-cinema" id="btn-start" ${canStart ? '' : 'disabled'}>
              Lancer · ${S.players.length} joueur${S.players.length > 1 ? 's' : ''}
            </button>`
         : `<p style="text-align:center;color:var(--text-2);font-size:.88rem;padding:8px 0">En attente du host…</p>`}
@@ -184,8 +190,11 @@ function renderLobby() {
     });
   });
   if (S.isHost) {
+    document.getElementById('mode-recent')?.addEventListener('change', e => {
+      S.mode = e.target.checked ? 'recent' : 'all';
+    });
     document.getElementById('btn-start').onclick = () => {
-      S.ws?.send(JSON.stringify({ type: 'start_game' }));
+      S.ws?.send(JSON.stringify({ type: 'start_game', mode: S.mode }));
     };
   }
 }

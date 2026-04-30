@@ -68,13 +68,17 @@ def gen_code() -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
-def get_random_memes(n: int = 3) -> list[dict]:
+def get_random_memes(n: int = 3, mode: str = "all") -> list[dict]:
     with Session(_engine) as s:
-        all_memes = s.exec(
+        stmt = (
             select(_Media)
             .where(_Media.tag == "cinema")
             .where(_Media.media_type == "video")
-        ).all()
+            .order_by(_Media.uploaded_at.desc())
+        )
+        if mode == "recent":
+            stmt = stmt.limit(50)
+        all_memes = s.exec(stmt).all()
     if not all_memes:
         return []
     chosen = random.sample(all_memes, min(n, len(all_memes)))
@@ -116,6 +120,7 @@ def new_state(db_room_id: int, host_id: int, host_pseudo: str) -> dict:
         "current_votes":   {},
         "all_answers":     [],
         "db_room_id":      db_room_id,
+        "mode":            "all",
     }
 
 
@@ -271,6 +276,10 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
 
             elif event == "start_game":
                 if player_id == state["host_id"] and state["status"] == "lobby":
+                    mode = data.get("mode", "all")
+                    if mode not in ("all", "recent"):
+                        mode = "all"
+                    state["mode"] = mode
                     await start_game(code)
 
             elif event == "draft_answer":
@@ -315,7 +324,7 @@ async def start_pick_round(code: str):
     state["player_drafts"] = {}
 
     for pid in state["players"]:
-        memes = get_random_memes(5)
+        memes = get_random_memes(5, state.get("mode", "all"))
         state["player_memes"][pid] = memes
         await manager.send_to(code, pid, {
             "type":         "round_start",
