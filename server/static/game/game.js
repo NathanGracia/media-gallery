@@ -166,10 +166,11 @@ function renderLobby() {
       </ul>
 
       ${S.isHost
-        ? `<label class="mode-toggle" style="display:flex;align-items:center;gap:10px;justify-content:center;margin:12px 0;font-size:.88rem;color:var(--text-2);cursor:pointer">
-             <input type="checkbox" id="mode-recent" ${S.mode === 'recent' ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer">
-             Mèmes récents uniquement (50 derniers)
-           </label>
+        ? `<p class="mode-selector-label">Mode de jeu</p>
+           <div class="mode-pills" id="mode-pills">
+             <button class="mode-pill ${S.mode === 'recent' ? 'active' : ''}" data-mode="recent">⏱ 50 Derniers</button>
+             <button class="mode-pill ${S.mode === 'all' ? 'active' : ''}" data-mode="all">🎬 Cinéma</button>
+           </div>
            <button class="btn btn-cinema" id="btn-start" ${canStart ? '' : 'disabled'}>
              Lancer · ${S.players.length} joueur${S.players.length > 1 ? 's' : ''}
            </button>`
@@ -190,8 +191,12 @@ function renderLobby() {
     });
   });
   if (S.isHost) {
-    document.getElementById('mode-recent')?.addEventListener('change', e => {
-      S.mode = e.target.checked ? 'recent' : 'all';
+    document.getElementById('mode-pills')?.querySelectorAll('.mode-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        S.mode = btn.dataset.mode;
+        document.querySelectorAll('.mode-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
     });
     document.getElementById('btn-start').onclick = () => {
       S.ws?.send(JSON.stringify({ type: 'start_game', mode: S.mode }));

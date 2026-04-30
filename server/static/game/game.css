@@ -589,6 +589,35 @@ h2 {
 }
 .invite-modal .field { text-align: left; }
 
+/* ── Mode selector ── */
+.mode-selector-label {
+  font-size:.7rem; font-weight:700; color:var(--text-3);
+  text-transform:uppercase; letter-spacing:.08em;
+  text-align:center; margin-bottom:8px;
+}
+.mode-pills {
+  display:flex; gap:8px; margin-bottom:16px;
+}
+.mode-pill {
+  flex:1; padding:10px 12px;
+  border-radius:var(--r-sm);
+  border:1.5px solid var(--b0);
+  background:var(--s1);
+  color:var(--text-2);
+  font-family:'Figtree',sans-serif;
+  font-size:.83rem; font-weight:700;
+  cursor:pointer;
+  transition:background .15s, border-color .15s, color .15s, box-shadow .15s;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.mode-pill:hover { background:var(--s2); color:var(--text); }
+.mode-pill.active {
+  background:var(--ac-dim);
+  border-color:rgba(34,211,238,.4);
+  color:var(--accent);
+  box-shadow:0 0 14px var(--ac-glow);
+}
+
 /* ── Divider ── */
 hr.divider { border:none; border-top:1px solid var(--b0); margin:22px 0; }
 
