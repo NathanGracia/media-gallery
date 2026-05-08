@@ -12,7 +12,7 @@ import requests as req
 from game_router import router as game_router, init as init_game
 import aiofiles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Query, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel, Field, Session, create_engine, select, col
 from sqlalchemy import text, func
@@ -47,6 +47,7 @@ MAX_FILE_MB    = float(cfg.get("max_file_mb", 25))
 ALERT_PCT      = float(cfg.get("alert_threshold_pct", 80))
 DISCORD_HOOK   = cfg.get("discord_webhook_url", "")
 API_KEYS       = set(cfg.get("api_keys", []))
+PUBLIC_URL     = cfg.get("public_url", "").rstrip("/")
 
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 THUMB_DIR.mkdir(parents=True, exist_ok=True)
@@ -462,6 +463,52 @@ async def timeline_page():
 
 # Static game SPA
 app.mount("/game", StaticFiles(directory="static/game", html=True), name="game-static")
+
+# ── Open Graph preview pour les liens partagés (?m=UUID&l=ID) ─────────────────
+@app.get("/")
+async def index_page(request: Request, m: Optional[str] = None, l: Optional[str] = None):
+    if not m:
+        return FileResponse("static/index.html")
+
+    with Session(engine) as s:
+        media = s.exec(select(Media).where(Media.uuid == m)).first()
+    if not media:
+        return FileResponse("static/index.html")
+
+    base      = PUBLIC_URL or str(request.base_url).rstrip("/")
+    page_url  = f"{base}/?m={m}" + (f"&l={l}" if l else "")
+    thumb_url = f"{base}/thumbnail/{media.uuid}.jpg"
+    title     = f"{media.original_name} — Memoss"
+    desc      = "Découvrez ce mème sur Memoss 👀"
+
+    if l:
+        try:
+            with Session(engine) as s:
+                cap = s.exec(select(GameAnswer).where(GameAnswer.id == int(l))).first()
+            if cap:
+                desc = f'"{cap.text}" — {cap.player_pseudo}'
+        except Exception:
+            pass
+
+    def xa(v):
+        return v.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+
+    og = (
+        f'<meta property="og:title" content="{xa(title)}">\n'
+        f'  <meta property="og:description" content="{xa(desc)}">\n'
+        f'  <meta property="og:image" content="{xa(thumb_url)}">\n'
+        f'  <meta property="og:url" content="{xa(page_url)}">\n'
+        f'  <meta property="og:type" content="{"video.other" if media.media_type == "video" else "website"}">\n'
+        f'  <meta property="og:site_name" content="Memoss">\n'
+        f'  <meta name="twitter:card" content="summary_large_image">\n'
+        f'  <meta name="twitter:title" content="{xa(title)}">\n'
+        f'  <meta name="twitter:description" content="{xa(desc)}">\n'
+        f'  <meta name="twitter:image" content="{xa(thumb_url)}">'
+    )
+
+    page = Path("static/index.html").read_text(encoding="utf-8")
+    page = page.replace("</head>", f"  {og}\n</head>", 1)
+    return HTMLResponse(page)
 
 # Mount gallery SPA — must be last
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

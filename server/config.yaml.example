@@ -19,3 +19,7 @@ api_keys:
 
 host: 0.0.0.0
 port: 8000
+
+# URL publique du site (utilisée pour les previews Open Graph — Discord, iMessage…)
+# Exemple : https://memoss.mondomaine.com
+public_url: ""
