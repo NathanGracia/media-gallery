@@ -478,33 +478,45 @@ async def index_page(request: Request, m: Optional[str] = None, l: Optional[str]
     base      = PUBLIC_URL or str(request.base_url).rstrip("/")
     page_url  = f"{base}/?m={m}" + (f"&l={l}" if l else "")
     thumb_url = f"{base}/thumbnail/{media.uuid}.jpg"
-    title     = f"{media.original_name} — Memoss"
-    desc      = "Découvrez ce mème sur Memoss 👀"
+    video_url = f"{base}/media/{media.filename}"
+    is_video  = media.media_type == "video"
+
+    # Par défaut (pas de légende)
+    title = "Memoss"
+    desc  = "Découvrez ce mème 👀"
 
     if l:
         try:
             with Session(engine) as s:
                 cap = s.exec(select(GameAnswer).where(GameAnswer.id == int(l))).first()
             if cap:
-                desc = f'"{cap.text}" — {cap.player_pseudo}'
+                title = cap.text           # légende = titre (bleu sur Discord)
+                desc  = cap.player_pseudo  # auteur = description (blanc)
         except Exception:
             pass
 
     def xa(v):
         return v.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
 
-    og = (
-        f'<meta property="og:title" content="{xa(title)}">\n'
-        f'  <meta property="og:description" content="{xa(desc)}">\n'
-        f'  <meta property="og:image" content="{xa(thumb_url)}">\n'
-        f'  <meta property="og:url" content="{xa(page_url)}">\n'
-        f'  <meta property="og:type" content="{"video.other" if media.media_type == "video" else "website"}">\n'
-        f'  <meta property="og:site_name" content="Memoss">\n'
-        f'  <meta name="twitter:card" content="summary_large_image">\n'
-        f'  <meta name="twitter:title" content="{xa(title)}">\n'
-        f'  <meta name="twitter:description" content="{xa(desc)}">\n'
-        f'  <meta name="twitter:image" content="{xa(thumb_url)}">'
-    )
+    og_lines = [
+        f'<meta property="og:title" content="{xa(title)}">',
+        f'<meta property="og:description" content="{xa(desc)}">',
+        f'<meta property="og:image" content="{xa(thumb_url)}">',
+        f'<meta property="og:url" content="{xa(page_url)}">',
+        f'<meta property="og:type" content="{"video.other" if is_video else "website"}">',
+        f'<meta property="og:site_name" content="Memoss">',
+        f'<meta name="twitter:card" content="summary_large_image">',
+        f'<meta name="twitter:title" content="{xa(title)}">',
+        f'<meta name="twitter:description" content="{xa(desc)}">',
+        f'<meta name="twitter:image" content="{xa(thumb_url)}">',
+    ]
+    if is_video:
+        og_lines += [
+            f'<meta property="og:video" content="{xa(video_url)}">',
+            f'<meta property="og:video:type" content="video/mp4">',
+            f'<meta property="og:video:secure_url" content="{xa(video_url)}">',
+        ]
+    og = "\n  ".join(og_lines)
 
     page = Path("static/index.html").read_text(encoding="utf-8")
     page = page.replace("</head>", f"  {og}\n</head>", 1)
