@@ -8,7 +8,10 @@ let state = {
   feeder:  '',
   tag:     'cinema',
   total:   0,
+  mosaic:  false,
 };
+const MOSAIC_PER_PAGE = 9999;
+let mosaicLoading = false;
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function fmtSize(bytes) {
@@ -61,10 +64,11 @@ async function refreshFeeders() {
 }
 
 // ── Media list ────────────────────────────────────────────────────────────────
-async function loadMedia() {
+async function loadMedia(append = false) {
+  const perPage = state.mosaic ? MOSAIC_PER_PAGE : state.perPage;
   const params = new URLSearchParams({
     page:     state.page,
-    per_page: state.perPage,
+    per_page: perPage,
   });
   if (state.type)   params.set('type',   state.type);
   if (state.feeder) params.set('feeder', state.feeder);
@@ -74,8 +78,19 @@ async function loadMedia() {
     const r = await fetch('/api/media?' + params);
     const d = await r.json();
     state.total = d.total;
-    renderGrid(d.items);
-    renderPagination(d.total);
+
+    if (state.mosaic) {
+      if (append && d.items.length) appendToGrid(d.items);
+      else renderGrid(d.items);
+      document.getElementById('pagination').innerHTML = '';
+      const totalPages = Math.ceil(d.total / perPage);
+      document.getElementById('mosaic-sentinel').hidden = state.page >= totalPages;
+    } else {
+      renderGrid(d.items);
+      renderPagination(d.total);
+      document.getElementById('mosaic-sentinel').hidden = true;
+    }
+
     document.getElementById('count-badge').textContent =
       d.total === 1 ? '1 fichier' : `${d.total} fichiers`;
   } catch (e) {
@@ -83,10 +98,78 @@ async function loadMedia() {
       '<div class="empty"><div class="empty-icon">⚠</div>' +
       '<div class="empty-title">Erreur de chargement</div>' +
       '<div class="empty-sub">Vérifiez que le serveur est bien lancé</div></div>';
+  } finally {
+    mosaicLoading = false;
   }
 }
 
 // ── Grid rendering ────────────────────────────────────────────────────────────
+function cardHTML(item, i) {
+  const isVideo  = item.type === 'video';
+  const thumbUrl = esc(item.thumbnail);
+  const mediaUrl = esc(item.url);
+  const name     = esc(item.original_name);
+  const tag      = item.tag || 'todo';
+  return `
+    <div class="card"
+         style="animation-delay:${Math.min(i * 40, 300)}ms"
+         data-id="${esc(item.id)}"
+         data-type="${esc(item.type)}"
+         data-url="${esc(item.url)}"
+         data-name="${esc(item.original_name)}"
+         data-tag="${tag}"
+         onclick="openMediaFromCard(this)">
+      <div class="card-thumb-wrap">
+        <img class="card-thumb" src="${thumbUrl}" loading="lazy" alt="${name}" onerror="this.style.opacity=0.2">
+        <div class="card-play">
+          <div class="play-ring">${isVideo ? '▶' : '⤢'}</div>
+        </div>
+        <span class="card-badge badge-${item.type}">${item.type}</span>
+        <div class="card-tag-bar admin-only" onclick="event.stopPropagation()">
+          <button class="tag-opt ${tag === 'cinema' ? 'active-cinema' : ''}" data-tag="cinema"
+                  onclick="setTag(event, '${esc(item.id)}', 'cinema')">Cinema</button>
+          <button class="tag-opt ${tag === 'osef' ? 'active-osef' : ''}" data-tag="osef"
+                  onclick="setTag(event, '${esc(item.id)}', 'osef')">Osef</button>
+          <button class="tag-opt ${tag === 'todo' ? 'active-todo' : ''}" data-tag="todo"
+                  onclick="setTag(event, '${esc(item.id)}', 'todo')">Todo</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-title" title="${name}">${name}</div>
+        <div class="card-meta">
+          <div class="card-info">
+            <span>${fmtSize(item.size)}</span>
+            <span>${fmtDate(item.date)} · ${esc(item.feeder)}</span>
+          </div>
+          <button class="btn-card-copy"
+             onclick="event.stopPropagation(); copyLink(event, '${esc(item.url)}')"
+             title="Copier le lien">⎘</button>
+          <a class="btn-card-dl"
+             href="${mediaUrl}"
+             download="${name}"
+             onclick="event.stopPropagation()"
+             title="Télécharger">↓</a>
+          ${tag === 'todo' ? `<button class="btn-card-del btn-card-del--todo admin-only"
+             onclick="event.stopPropagation(); deleteMedia('${esc(item.id)}')"
+             title="Supprimer">Supprimer</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function fillGridRow(grid, cardCount) {
+  const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+  const remainder = cardCount % cols;
+  if (remainder !== 0) {
+    const needed = cols - remainder;
+    for (let i = 0; i < needed; i++) {
+      const filler = document.createElement('div');
+      filler.className = 'card-filler';
+      grid.appendChild(filler);
+    }
+  }
+}
+
 function renderGrid(items) {
   const grid = document.getElementById('grid');
 
@@ -100,74 +183,22 @@ function renderGrid(items) {
     return;
   }
 
-  // Staggered entrance animation delay
-  grid.innerHTML = items.map((item, i) => {
-    const isVideo  = item.type === 'video';
-    const thumbUrl = esc(item.thumbnail);
-    const mediaUrl = esc(item.url);
-    const name     = esc(item.original_name);
-    const tag      = item.tag || 'todo';
+  grid.innerHTML = items.map((item, i) => cardHTML(item, i)).join('');
+  requestAnimationFrame(() => fillGridRow(grid, items.length));
+}
 
-    return `
-      <div class="card"
-           style="animation-delay:${Math.min(i * 40, 300)}ms"
-           data-id="${esc(item.id)}"
-           data-type="${esc(item.type)}"
-           data-url="${esc(item.url)}"
-           data-name="${esc(item.original_name)}"
-           data-tag="${tag}"
-           onclick="openMediaFromCard(this)">
-        <div class="card-thumb-wrap">
-          <img class="card-thumb" src="${thumbUrl}" loading="lazy" alt="${name}" onerror="this.style.opacity=0.2">
-          <div class="card-play">
-            <div class="play-ring">${isVideo ? '▶' : '⤢'}</div>
-          </div>
-          <span class="card-badge badge-${item.type}">${item.type}</span>
-          <div class="card-tag-bar admin-only" onclick="event.stopPropagation()">
-            <button class="tag-opt ${tag === 'cinema' ? 'active-cinema' : ''}" data-tag="cinema"
-                    onclick="setTag(event, '${esc(item.id)}', 'cinema')">Cinema</button>
-            <button class="tag-opt ${tag === 'osef' ? 'active-osef' : ''}" data-tag="osef"
-                    onclick="setTag(event, '${esc(item.id)}', 'osef')">Osef</button>
-            <button class="tag-opt ${tag === 'todo' ? 'active-todo' : ''}" data-tag="todo"
-                    onclick="setTag(event, '${esc(item.id)}', 'todo')">Todo</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="card-title" title="${name}">${name}</div>
-          <div class="card-meta">
-            <div class="card-info">
-              <span>${fmtSize(item.size)}</span>
-              <span>${fmtDate(item.date)} · ${esc(item.feeder)}</span>
-            </div>
-            <button class="btn-card-copy"
-               onclick="event.stopPropagation(); copyLink(event, '${esc(item.url)}')"
-               title="Copier le lien">⎘</button>
-            <a class="btn-card-dl"
-               href="${mediaUrl}"
-               download="${name}"
-               onclick="event.stopPropagation()"
-               title="Télécharger">↓</a>
-            ${tag === 'todo' ? `<button class="btn-card-del btn-card-del--todo admin-only"
-               onclick="event.stopPropagation(); deleteMedia('${esc(item.id)}')"
-               title="Supprimer">Supprimer</button>` : ''}
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-
-  // Remplir la dernière ligne pour éviter les trous
-  requestAnimationFrame(() => {
-    const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-    const remainder = items.length % cols;
-    if (remainder !== 0) {
-      const needed = cols - remainder;
-      for (let i = 0; i < needed; i++) {
-        const filler = document.createElement('div');
-        filler.className = 'card-filler';
-        grid.appendChild(filler);
-      }
-    }
+function appendToGrid(items) {
+  const grid = document.getElementById('grid');
+  grid.querySelectorAll('.card-filler').forEach(f => f.remove());
+  const offset = grid.querySelectorAll('.card').length;
+  const frag = document.createDocumentFragment();
+  items.forEach((item, i) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = cardHTML(item, offset + i);
+    frag.appendChild(tmp.firstElementChild);
   });
+  grid.appendChild(frag);
+  requestAnimationFrame(() => fillGridRow(grid, grid.querySelectorAll('.card').length));
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
@@ -493,6 +524,27 @@ async function deleteCurrentMedia() {
   return deleteMedia(_currentMediaId);
 }
 
+// ── Mosaic mode ───────────────────────────────────────────────────────────────
+function toggleMosaic() {
+  state.mosaic = !state.mosaic;
+  state.page   = 1;
+  document.getElementById('grid').classList.toggle('mosaic', state.mosaic);
+  document.getElementById('mosaic-btn').classList.toggle('active', state.mosaic);
+  loadMedia();
+}
+
+const _mosaicObserver = new IntersectionObserver((entries) => {
+  if (!state.mosaic || mosaicLoading) return;
+  if (entries[0].isIntersecting) {
+    const totalPages = Math.ceil(state.total / MOSAIC_PER_PAGE);
+    if (state.page < totalPages) {
+      mosaicLoading = true;
+      state.page++;
+      loadMedia(true);
+    }
+  }
+}, { rootMargin: '300px' });
+
 // ── Event listeners ───────────────────────────────────────────────────────────
 document.getElementById('filter-tabs').addEventListener('click', e => {
   const btn = e.target.closest('.tab');
@@ -625,6 +677,8 @@ async function submitAdminLogin() {
   if (!document.getElementById('grid')) return; // page timeline ou autre
   await Promise.all([refreshStorage(), refreshFeeders(), loadMedia()]);
   setInterval(refreshStorage, 30_000);
+  const sentinel = document.getElementById('mosaic-sentinel');
+  if (sentinel) _mosaicObserver.observe(sentinel);
 
   // Deeplink : ouvre directement un média via ?m=UUID
   const deepId = new URLSearchParams(location.search).get('m');

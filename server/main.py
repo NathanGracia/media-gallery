@@ -224,7 +224,7 @@ def list_media(
     feeder:   Optional[str] = Query(None),
     tag:      Optional[str] = Query(None),
     page:     int           = Query(1, ge=1),
-    per_page: int           = Query(30, ge=1, le=100),
+    per_page: int           = Query(30, ge=1, le=10000),
 ):
     with Session(engine) as session:
         q = select(Media).order_by(col(Media.uploaded_at).desc())
