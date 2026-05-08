@@ -225,6 +225,7 @@ async def get_history(media_uuid: str):
         ).all()
         return [
             {
+                "id":          a.id,
                 "pseudo":      a.player_pseudo,
                 "text":        a.text,
                 "total_stars": a.total_stars,

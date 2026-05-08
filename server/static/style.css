@@ -1169,6 +1169,31 @@ main {
   margin-left: 1px;
 }
 
+.memoss-caption.highlighted {
+  border-color: rgba(34,211,238,0.35);
+  background: rgba(34,211,238,0.06);
+  box-shadow: 0 0 0 1px rgba(34,211,238,0.12);
+}
+
+.memoss-caption-shared-badge {
+  font-size: 0.65rem; font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin-bottom: 2px;
+  opacity: 0.8;
+}
+
+.btn-caption-share {
+  background: none; border: none;
+  color: var(--text-muted);
+  cursor: pointer; font-size: 0.85rem;
+  padding: 0 2px; line-height: 1;
+  opacity: 0; flex-shrink: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+.memoss-caption:hover .btn-caption-share { opacity: 1; }
+.btn-caption-share:hover { color: var(--accent); }
+
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   header { padding: 0 14px; }

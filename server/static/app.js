@@ -324,11 +324,14 @@ function updateOverlayTagBar(tag) {
   });
 }
 
-function openMedia(id, type, url, name, tag = '') {
+function openMedia(id, type, url, name, tag = '', highlightCaption = null) {
   _currentMediaUrl = url;
   _currentMediaId  = id;
   _currentMediaTag = tag;
-  if (!window.TIMELINE_MODE) history.pushState({ mediaId: id }, '', `/?m=${id}`);
+  if (!window.TIMELINE_MODE) {
+    const qs = highlightCaption ? `?m=${id}&l=${highlightCaption}` : `?m=${id}`;
+    history.pushState({ mediaId: id }, '', '/' + qs);
+  }
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
     const dl = document.getElementById('video-dl');
@@ -338,7 +341,7 @@ function openMedia(id, type, url, name, tag = '') {
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
     requestAnimationFrame(() => vpInit(url));
-    loadMemossHistory(id);
+    loadMemossHistory(id, highlightCaption);
   } else {
     document.getElementById('modal-img').src = url;
     document.getElementById('image-name').textContent = name;
@@ -577,7 +580,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Memoss History ─────────────────────────────────────────────────────────────
-async function loadMemossHistory(uuid) {
+async function loadMemossHistory(uuid, highlightId = null) {
   const el = document.getElementById('memoss-history');
   if (!el) return;
   el.innerHTML = '';
@@ -588,6 +591,12 @@ async function loadMemossHistory(uuid) {
 
     data.sort((a, b) => b.avg - a.avg || b.vote_count - a.vote_count);
 
+    // Highlighted caption goes to top
+    if (highlightId) {
+      const idx = data.findIndex(c => String(c.id) === String(highlightId));
+      if (idx > 0) data.unshift(data.splice(idx, 1)[0]);
+    }
+
     el.innerHTML = `
       <div class="memoss-history-title">
         💬 Légendes Memoss
@@ -596,9 +605,11 @@ async function loadMemossHistory(uuid) {
       <div class="memoss-caption-list">
         ${data.map(c => {
           const score = Math.round(c.avg);
-          const hue = Math.round(score * 1.2); // 0→rouge, 100→vert
+          const hue = Math.round(score * 1.2);
+          const hi = highlightId && String(c.id) === String(highlightId);
           return `
-          <div class="memoss-caption">
+          <div class="memoss-caption${hi ? ' highlighted' : ''}">
+            ${hi ? '<div class="memoss-caption-shared-badge">Partagée</div>' : ''}
             <div class="memoss-caption-text">${esc(c.text)}</div>
             <div class="memoss-caption-meta">
               <span>${esc(c.pseudo)}</span>
@@ -607,11 +618,24 @@ async function loadMemossHistory(uuid) {
                 <span class="memoss-score-num" style="color:hsl(${hue},80%,65%)">${score}<span class="memoss-score-denom">/100</span></span>
               </span>
               <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem">${c.vote_count} vote${c.vote_count > 1 ? 's' : ''}</span>
+              <button class="btn-caption-share" onclick="shareCaption(event,'${esc(String(c.id))}')" title="Partager cette légende">⎘</button>
             </div>
           </div>`;
         }).join('')}
       </div>`;
   } catch (_) {}
+}
+
+function shareCaption(event, captionId) {
+  event.stopPropagation();
+  const url = `${location.origin}/?m=${_currentMediaId}&l=${captionId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = event.target.closest('button');
+    const prev = btn.textContent;
+    btn.textContent = '✓';
+    btn.style.color = '#4ade80';
+    setTimeout(() => { btn.textContent = prev; btn.style.color = ''; }, 1500);
+  });
 }
 
 // ── Admin mode ────────────────────────────────────────────────────────────────
@@ -680,12 +704,14 @@ async function submitAdminLogin() {
   const sentinel = document.getElementById('mosaic-sentinel');
   if (sentinel) _mosaicObserver.observe(sentinel);
 
-  // Deeplink : ouvre directement un média via ?m=UUID
-  const deepId = new URLSearchParams(location.search).get('m');
+  // Deeplink : ouvre directement un média via ?m=UUID (et ?l=ID pour highlight légende)
+  const _qs       = new URLSearchParams(location.search);
+  const deepId     = _qs.get('m');
+  const deepCaption = _qs.get('l');
   if (deepId) {
     try {
       const meta = await fetch(`/api/media/${deepId}`).then(r => r.ok ? r.json() : null);
-      if (meta) openMedia(meta.id, meta.type, meta.url, meta.original_name, meta.tag);
+      if (meta) openMedia(meta.id, meta.type, meta.url, meta.original_name, meta.tag, deepCaption);
     } catch (_) {}
   }
 })();
