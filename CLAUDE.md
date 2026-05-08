@@ -2,6 +2,8 @@
 
 ## Workflow
 
+**Ne jamais push sans que l'utilisateur le demande explicitement.**
+
 **Toujours tester en local avant de push.**
 
 ```bash

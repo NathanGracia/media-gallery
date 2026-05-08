@@ -609,7 +609,7 @@ async function loadMemossHistory(uuid, highlightId = null) {
           const hi = highlightId && String(c.id) === String(highlightId);
           return `
           <div class="memoss-caption${hi ? ' highlighted' : ''}">
-            ${hi ? '<div class="memoss-caption-shared-badge">Partagée</div>' : ''}
+            ${hi ? '<div class="memoss-caption-shared-badge">Partagé</div>' : ''}
             <div class="memoss-caption-text">${esc(c.text)}</div>
             <div class="memoss-caption-meta">
               <span>${esc(c.pseudo)}</span>
@@ -618,7 +618,12 @@ async function loadMemossHistory(uuid, highlightId = null) {
                 <span class="memoss-score-num" style="color:hsl(${hue},80%,65%)">${score}<span class="memoss-score-denom">/100</span></span>
               </span>
               <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem">${c.vote_count} vote${c.vote_count > 1 ? 's' : ''}</span>
-              <button class="btn-caption-share" onclick="shareCaption(event,'${esc(String(c.id))}')" title="Partager cette légende">⎘</button>
+              <button class="btn-caption-share" onclick="shareCaption(event,'${esc(String(c.id))}')" title="Partager cette légende">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9.5" cy="2.5" r="1.2"/><circle cx="2.5" cy="6" r="1.2"/><circle cx="9.5" cy="9.5" r="1.2"/>
+                  <line x1="3.7" y1="5.35" x2="8.3" y2="3.15"/><line x1="3.7" y1="6.65" x2="8.3" y2="8.85"/>
+                </svg>
+              </button>
             </div>
           </div>`;
         }).join('')}
@@ -626,15 +631,28 @@ async function loadMemossHistory(uuid, highlightId = null) {
   } catch (_) {}
 }
 
+let _toastTimer = null;
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<svg class="toast-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5.5,10.5 12,3.5"/></svg>${msg}`;
+  document.body.appendChild(el);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.remove(), 1950);
+}
+
 function shareCaption(event, captionId) {
   event.stopPropagation();
   const url = `${location.origin}/?m=${_currentMediaId}&l=${captionId}`;
   navigator.clipboard.writeText(url).then(() => {
+    showToast('Lien copié');
     const btn = event.target.closest('button');
-    const prev = btn.textContent;
-    btn.textContent = '✓';
-    btn.style.color = '#4ade80';
-    setTimeout(() => { btn.textContent = prev; btn.style.color = ''; }, 1500);
+    const prev = btn.innerHTML;
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg>';
+    btn.style.borderColor = 'rgba(74,222,128,0.4)';
+    btn.style.background  = 'rgba(74,222,128,0.1)';
+    setTimeout(() => { btn.innerHTML = prev; btn.style.borderColor = ''; btn.style.background = ''; }, 1500);
   });
 }
 
