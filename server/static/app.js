@@ -141,9 +141,6 @@ function cardHTML(item, i) {
             <span>${fmtSize(item.size)}</span>
             <span>${fmtDate(item.date)} · ${esc(item.feeder)}</span>
           </div>
-          <button class="btn-card-copy"
-             onclick="event.stopPropagation(); copyLink(event, '${esc(item.url)}')"
-             title="Copier le lien">⎘</button>
           <a class="btn-card-dl"
              href="${mediaUrl}"
              download="${name}"

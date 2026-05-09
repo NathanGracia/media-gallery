@@ -66,53 +66,58 @@
 
     /* — Header — */
     header {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(8,13,24,0.88);
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(6,6,15,0.7);
       border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(32px) saturate(180%);
+      -webkit-backdrop-filter: blur(32px) saturate(180%);
+      padding: 0 24px;
     }
     .header-inner {
-      max-width: 860px; margin: 0 auto;
-      padding: 0.875rem 1.5rem;
-      display: flex; align-items: center; gap: 0.875rem;
+      display: flex; align-items: center; gap: 24px;
+      padding: 14px 0 10px;
     }
     .brand {
-      display: flex; align-items: center; gap: 0.45rem;
+      display: flex; align-items: center; gap: 10px;
       text-decoration: none; color: inherit; flex-shrink: 0;
     }
-    .brand-logo { width: 26px; height: 26px; }
+    .brand-logo {
+      width: 28px; height: 28px; flex-shrink: 0;
+      filter: drop-shadow(0 0 8px rgba(34,211,238,0.5));
+    }
     .brand-name {
-      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem;
-      background: linear-gradient(135deg, var(--cyan), var(--indigo));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-family: 'Syne', sans-serif; font-size: 1.25rem;
+      font-weight: 800; letter-spacing: -0.03em; color: var(--text);
     }
-    .header-divider { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
-    .page-title {
-      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
-      color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase;
+    @keyframes game-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,211,238,0), 0 0 6px rgba(34,211,238,0.06); }
+      50%      { box-shadow: 0 0 0 4px rgba(34,211,238,0.04), 0 0 12px rgba(34,211,238,0.12); }
     }
-    .header-gap { flex: 1; }
-    .btn-nav {
-      display: inline-flex; align-items: center;
-      padding: 0.375rem 0.875rem;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      color: var(--text); font-size: 0.82rem; font-weight: 600;
-      text-decoration: none;
-      transition: background 0.15s, border-color 0.15s;
-      white-space: nowrap;
+    @keyframes game-border-shimmer {
+      0%   { border-color: rgba(34,211,238,0.18); }
+      50%  { border-color: rgba(34,211,238,0.38); }
+      100% { border-color: rgba(34,211,238,0.18); }
     }
-    .btn-nav:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.16); }
-    .btn-nav-primary {
-      background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(99,102,241,0.18));
-      border-color: rgba(34,211,238,0.3); color: var(--cyan);
+    .btn-game-link {
+      padding: 7px 18px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(99,102,241,0.06) 100%);
+      border: 1px solid rgba(34,211,238,0.25);
+      border-radius: 9px;
+      color: var(--cyan); font-family: 'Syne', sans-serif;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; text-decoration: none;
+      transition: color 0.15s, background 0.15s; flex-shrink: 0;
+      animation: game-pulse 2.8s ease-in-out infinite, game-border-shimmer 2.8s ease-in-out infinite;
     }
-    .btn-nav-primary:hover {
-      background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(99,102,241,0.26));
+    .btn-game-link:hover {
+      background: rgba(34,211,238,0.14); color: #fff;
+      animation: none; box-shadow: 0 0 20px rgba(34,211,238,0.25);
+    }
+    .btn-game-link--active {
+      animation: none;
+      background: rgba(34,211,238,0.14);
       border-color: rgba(34,211,238,0.5);
+      color: #fff;
     }
 
     /* — Main — */
@@ -326,7 +331,7 @@
 
 <header>
   <div class="header-inner">
-    <a class="brand" href="/">
+    <a class="brand" href="/" style="text-decoration:none">
       <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="2"  y="2"  width="13" height="13" rx="3" fill="url(#tg)" opacity="0.9"/>
         <rect x="17" y="2"  width="13" height="13" rx="3" fill="url(#tg)" opacity="0.5"/>
@@ -341,11 +346,8 @@
       </svg>
       <span class="brand-name">Memoss</span>
     </a>
-    <div class="header-divider"></div>
-    <span class="page-title">Légendes</span>
-    <span class="header-gap"></span>
-    <a href="/game/" class="btn-nav btn-nav-primary">Jouer</a>
-    <a href="/"      class="btn-nav">Galerie</a>
+    <a href="/timeline" class="btn-game-link btn-game-link--active">Légendes</a>
+    <a href="/game/"    class="btn-game-link">Jouer</a>
   </div>
 </header>
 

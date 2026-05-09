@@ -8,16 +8,33 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="game.css?v=8">
+  <link rel="stylesheet" href="game.css?v=9">
 </head>
 <body>
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
 
   <header>
-    <a href="/" class="back-link">← Galerie</a>
-    <span class="game-title">🎬 Memoss</span>
-    <span class="room-code-display" id="room-code-display"></span>
+    <div class="header-inner">
+      <a class="brand" href="/" style="text-decoration:none">
+        <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="13" height="13" rx="3" fill="url(#gg)" opacity="0.9"/>
+          <rect x="17" y="2" width="13" height="13" rx="3" fill="url(#gg)" opacity="0.5"/>
+          <rect x="2" y="17" width="13" height="13" rx="3" fill="url(#gg)" opacity="0.5"/>
+          <rect x="17" y="17" width="13" height="13" rx="3" fill="url(#gg)" opacity="0.9"/>
+          <defs>
+            <linearGradient id="gg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#22d3ee"/>
+              <stop offset="100%" stop-color="#6366f1"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="brand-name">Memoss</span>
+      </a>
+      <a href="/timeline" class="btn-game-link">Légendes</a>
+      <a href="/game/" class="btn-game-link btn-game-link--active">Jouer</a>
+      <span class="room-code-display" id="room-code-display"></span>
+    </div>
   </header>
 
   <main id="app">
