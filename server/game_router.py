@@ -153,14 +153,20 @@ async def join_room(code: str, body: dict):
     state = game_states.get(code)
     if not state:
         raise HTTPException(404, "Room introuvable")
-    if state["status"] != "lobby":
-        raise HTTPException(400, "Partie déjà en cours")
-    if len(state["players"]) >= 8:
-        raise HTTPException(400, "Room pleine (8 joueurs max)")
 
     pseudo = body.get("pseudo", "").strip()[:20]
     if not pseudo:
         raise HTTPException(400, "Pseudo requis")
+
+    # Reconnexion : pseudo correspond à un joueur déconnecté → reprise de session
+    for pid, p in state["players"].items():
+        if p["pseudo"] == pseudo and not p["connected"]:
+            return {"room_code": code, "player_id": pid, "players": players_list(state), "resumed": True}
+
+    if state["status"] != "lobby":
+        raise HTTPException(400, "Partie déjà en cours — entre ton pseudo d'origine pour reprendre ta place")
+    if len(state["players"]) >= 8:
+        raise HTTPException(400, "Room pleine (8 joueurs max)")
 
     with Session(_engine) as s:
         player = GamePlayer(room_id=state["db_room_id"], pseudo=pseudo)
@@ -257,6 +263,49 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
         "round":     state["pick_round"],
     })
     await manager.broadcast(code, {"type": "room_update", "players": players_list(state)})
+
+    # Reconnexion en cours de partie : renvoie l'état courant au joueur
+    if state["status"] == "picking":
+        memes = state["player_memes"].get(player_id, [])
+        msg   = {
+            "type":         "round_start",
+            "round":        state["pick_round"] + 1,
+            "total_rounds": TOTAL_ROUNDS,
+            "memes":        memes,
+        }
+        if player_id in state["submissions"]:
+            connected_pids         = [pid for pid, p in state["players"].items() if p["connected"]]
+            msg["already_submitted"] = True
+            msg["submitted_count"]   = sum(1 for pid in connected_pids if pid in state["submissions"])
+            msg["total_connected"]   = len(connected_pids)
+            sub                      = state["submissions"][player_id]
+            msg["submitted_meme"]    = next((m for m in memes if m["uuid"] == sub["media_uuid"]), None)
+            msg["submitted_text"]    = sub["text"]
+        await websocket.send_json(msg)
+
+    elif state["status"] == "revealing":
+        idx = state["reveal_index"]
+        if idx < len(state["reveal_queue"]):
+            item = state["reveal_queue"][idx]
+            info = meme_info(item["media_uuid"])
+            await websocket.send_json({
+                "type":         "reveal_phase_start",
+                "reveal_round": state["reveal_round"] + 1,
+                "total_rounds": TOTAL_ROUNDS,
+            })
+            await websocket.send_json({
+                "type":          "reveal_meme",
+                "reveal_index":  idx + 1,
+                "total_reveals": len(state["reveal_queue"]),
+                "reveal_round":  state["reveal_round"] + 1,
+                "total_rounds":  TOTAL_ROUNDS,
+                "player_id":     item["player_id"],
+                "pseudo":        item["pseudo"],
+                "media_uuid":    item["media_uuid"],
+                "media_url":     info["url"],
+                "thumb":         info["thumb"],
+                "text":          item["text"],
+            })
 
     async def heartbeat():
         while True:
@@ -564,10 +613,34 @@ async def end_game(code: str):
     state["status"] = "finished"
 
     sorted_players = sorted(players_list(state), key=lambda p: p["score"], reverse=True)
+
+    # Top 3 des meilleures légendes (par note moyenne, puis total de points)
+    ranked = sorted(
+        state["all_answers"],
+        key=lambda a: (
+            a["total_stars"] / a["vote_count"] if a["vote_count"] else 0,
+            a["total_stars"],
+        ),
+        reverse=True,
+    )[:3]
+    top_memes = []
+    for a in ranked:
+        info = meme_info(a["media_uuid"])
+        top_memes.append({
+            "pseudo":     a["pseudo"],
+            "text":       a["text"],
+            "media_uuid": a["media_uuid"],
+            "media_url":  info["url"],
+            "thumb":      info["thumb"],
+            "avg":        round(a["total_stars"] / a["vote_count"]) if a["vote_count"] else 0,
+            "vote_count": a["vote_count"],
+        })
+
     await manager.broadcast(code, {
-        "type":    "game_end",
-        "players": sorted_players,
-        "winner":  sorted_players[0] if sorted_players else None,
+        "type":      "game_end",
+        "players":   sorted_players,
+        "winner":    sorted_players[0] if sorted_players else None,
+        "top_memes": top_memes,
     })
 
     await _save_to_db(code)

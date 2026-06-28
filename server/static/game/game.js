@@ -26,6 +26,8 @@ const S = {
   timerVal:      120,
   // mode
   mode:          'all',
+  // game end
+  topMemes:      [],
 };
 
 const app  = document.getElementById('app');
@@ -344,6 +346,48 @@ function selectMemeFromModal(idx) {
   closeMemeModal();
 }
 
+// ── Top meme preview (game end) ───────────────────────────────────────────────
+function openTopMeme(idx) {
+  closeMemeModal();
+  const meme = S.topMemes[idx];
+  if (!meme) return;
+
+  const overlay = document.createElement('div');
+  overlay.id    = 'meme-modal';
+  overlay.innerHTML = `
+    <div class="meme-modal-backdrop" onclick="closeMemeModal()"></div>
+    <div class="meme-modal-panel">
+      <button class="meme-modal-close" onclick="closeMemeModal()">✕</button>
+      <video class="meme-modal-video"
+             src="${esc(meme.media_url)}"
+             autoplay playsinline controls loop></video>
+      <div class="meme-modal-footer">
+        <div class="top-meme-caption" style="text-align:center">${esc(meme.text) || '<em style="opacity:.4">— pas de légende —</em>'}</div>
+        <div class="top-meme-meta" style="justify-content:center;margin-top:6px">
+          <span class="top-meme-author">${esc(meme.pseudo)}</span>
+          <span class="top-meme-score">${meme.avg}/100</span>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+
+  const vid = overlay.querySelector('video');
+  const savedVol   = sessionStorage.getItem('plyr-volume');
+  const savedMuted = sessionStorage.getItem('plyr-muted');
+  if (savedVol !== null) vid.volume = parseFloat(savedVol);
+  vid.muted = savedMuted === 'true' ? true : false;
+  vid.play().catch(() => { vid.muted = true; vid.play(); });
+  vid.addEventListener('volumechange', () => {
+    sessionStorage.setItem('plyr-volume', vid.volume);
+    sessionStorage.setItem('plyr-muted',  vid.muted);
+  });
+
+  document._memeEsc = e => { if (e.key === 'Escape') closeMemeModal(); };
+  document.addEventListener('keydown', document._memeEsc);
+}
+
 function doSubmit() {
   if (!S.selectedMeme) return;
   S.ws?.send(JSON.stringify({
@@ -491,6 +535,26 @@ function renderGameEnd() {
           </div>`).join('')}
       </div>
 
+      ${S.topMemes.length ? `
+        <div class="top-memes">
+          <p class="top-memes-title">🏅 Meilleures légendes</p>
+          ${S.topMemes.map((m,i) => `
+            <div class="top-meme-item">
+              <span class="top-meme-rank">${['🥇','🥈','🥉'][i] || `${i+1}`}</span>
+              <div class="top-meme-thumb" onclick="openTopMeme(${i})">
+                <img src="${esc(m.thumb)}" loading="lazy" onerror="this.style.opacity=0.2">
+                <div class="top-meme-play">▶</div>
+              </div>
+              <div class="top-meme-body">
+                <div class="top-meme-caption">${esc(m.text) || '<em style="opacity:.4">— pas de légende —</em>'}</div>
+                <div class="top-meme-meta">
+                  <span class="top-meme-author">${esc(m.pseudo)}</span>
+                  <span class="top-meme-score">${m.avg}/100${m.vote_count ? ` · ${m.vote_count} vote${m.vote_count > 1 ? 's' : ''}` : ''}</span>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+
       <p style="text-align:center;color:var(--text-2);font-size:.82rem;margin-top:8px">
         Retour au lobby dans <span id="lobby-countdown">10</span>s…
       </p>
@@ -502,19 +566,39 @@ function renderGameEnd() {
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 function connectWS() {
+  if (S.ws) { try { S.ws.close(); } catch(_) {} S.ws = null; }
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const url   = `${proto}//${location.host}/game/ws/${S.roomCode}/${S.playerId}`;
   S.ws = new WebSocket(url);
 
   S.ws.onmessage = e => handleMsg(JSON.parse(e.data));
-  S.ws.onclose   = () => {
-    if (S.screen !== 'game_end') {
-      app.innerHTML = `<div class="card" style="text-align:center;padding:48px">
-        <p style="color:var(--red);font-size:1.1rem">Connexion perdue.</p>
-        <button class="btn btn-ghost" onclick="location.reload()" style="margin-top:16px">Recharger</button>
+  S.ws.onclose   = e => {
+    if (S.screen === 'game_end') return;
+    const now   = new Date().toLocaleTimeString('fr-FR');
+    const labels = { home:'accueil', lobby:'lobby', picking:'soumission manche', waiting:'attente', revealing:'révélation', round_end:'fin de manche', game_end:'fin de partie' };
+    const phase = labels[S.screen] || S.screen;
+    const round = S.pickRound || S.revealRound;
+    app.innerHTML = `
+      <div class="card" style="text-align:center;padding:32px 24px">
+        <p style="color:var(--red);font-size:1.15rem;font-weight:700;margin-bottom:14px">⚡ Connexion perdue</p>
+        <div class="debug-box">
+          <div class="debug-row"><span>Heure</span><span>${now}</span></div>
+          <div class="debug-row"><span>Phase</span><span>${phase}</span></div>
+          ${round ? `<div class="debug-row"><span>Manche</span><span>${round} / ${TOTAL_ROUNDS}</span></div>` : ''}
+          <div class="debug-row"><span>Code WS</span><span>${e.code}</span></div>
+          ${e.reason ? `<div class="debug-row"><span>Raison</span><span>${esc(e.reason)}</span></div>` : ''}
+        </div>
+        <button class="btn btn-primary" id="btn-reconnect" style="margin-top:20px;width:100%">⟳ Tenter de se reconnecter</button>
+        <button class="btn btn-ghost" onclick="location.reload()" style="margin-top:10px;width:100%;font-size:.82rem">Recharger la page</button>
       </div>`;
-    }
+    document.getElementById('btn-reconnect').onclick = doReconnect;
   };
+}
+
+function doReconnect() {
+  const btn = document.getElementById('btn-reconnect');
+  if (btn) { btn.disabled = true; btn.textContent = 'Reconnexion en cours…'; }
+  connectWS();
 }
 
 function handleMsg(msg) {
@@ -527,8 +611,11 @@ function handleMsg(msg) {
     case 'connected':
       S.isHost  = msg.is_host;
       S.players = msg.players;
-      S.screen  = 'lobby';
-      render();
+      if (!msg.status || msg.status === 'lobby' || msg.status === 'finished') {
+        S.screen = 'lobby';
+        render();
+      }
+      // Si picking ou revealing : le serveur va envoyer round_start / reveal_meme juste après
       break;
 
     case 'room_update':
@@ -538,12 +625,20 @@ function handleMsg(msg) {
       break;
 
     case 'round_start':
-      S.pickRound    = msg.round;
-      S.memes        = msg.memes;
-      S.selectedMeme = null;
-      S.text         = '';
-      S.screen       = 'picking';
-      startTimer();
+      S.pickRound = msg.round;
+      S.memes     = msg.memes;
+      if (msg.already_submitted) {
+        S.selectedMeme = msg.submitted_meme || S.memes[0] || null;
+        S.text         = msg.submitted_text || '';
+        S.submitted    = msg.submitted_count || 0;
+        S.total        = msg.total_connected || 0;
+        S.screen       = 'waiting';
+      } else {
+        S.selectedMeme = null;
+        S.text         = '';
+        S.screen       = 'picking';
+        startTimer();
+      }
       render();
       break;
 
@@ -592,8 +687,9 @@ function handleMsg(msg) {
 
     case 'game_end':
       stopTimer();
-      S.players = msg.players;
-      S.screen  = 'game_end';
+      S.players   = msg.players;
+      S.topMemes  = msg.top_memes || [];
+      S.screen    = 'game_end';
       render();
       startLobbyCountdown(10);
       break;

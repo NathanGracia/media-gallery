@@ -33,6 +33,9 @@ Les fichiers statiques sont référencés avec `?v=N` dans `index.html`.
 **Bumper la version à chaque modification de `app.js` ou `style.css`.**  
 Version actuelle : `style.css?v=27`, `app.js?v=31`.
 
+Les fichiers du jeu ont leur propre versioning dans `game/index.html` :  
+Version actuelle : `game.css?v=11`, `game.js?v=30`.
+
 ## API endpoints
 
 | Méthode | Route | Auth | Description |
