@@ -28,9 +28,14 @@ class GamePlayer(SQLModel, table=True):
 class GameRound(SQLModel, table=True):
     __tablename__  = "game_rounds"
     __table_args__ = {"extend_existing": True}
-    id:        Optional[int] = Field(default=None, primary_key=True)
-    room_id:   int           = Field(foreign_key="game_rooms.id")
+    id:        Optional[int]                     = Field(default=None, primary_key=True)
+    room_id:   int                                = Field(foreign_key="game_rooms.id")
     round_num: int           # 0, 1, 2
+    # Horodatage de la partie (identique pour les 3 rounds d'une même partie),
+    # utilisé pour regrouper la timeline par partie plutôt que par room (une
+    # room peut être rejouée plusieurs fois). NULL pour les parties jouées
+    # avant l'ajout de cette colonne — fallback sur GameRoom.created_at.
+    played_at: Optional[datetime.datetime]        = Field(default=None)
 
 
 class GameAnswer(SQLModel, table=True):

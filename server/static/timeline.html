@@ -409,7 +409,7 @@
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script>window.TIMELINE_MODE = true;</script>
-<script src="app.js?v=30"></script>
+<script src="app.js?v=31"></script>
 <script>
 async function openMediaCard(e, uuid) {
   e.preventDefault();
@@ -425,6 +425,16 @@ function reload() {
 
 async function load(days = 7) {
   const root = document.getElementById('root');
+
+  if (!isAdmin()) {
+    root.innerHTML = `<div class="empty">
+      <div class="empty-icon">🔒</div>
+      <h2>Réservé aux admins</h2>
+      <p>Connecte-toi en mode admin depuis l'accueil pour voir l'historique des légendes.</p>
+    </div>`;
+    return;
+  }
+
   root.innerHTML = `<div class="skeleton-wrap">
     <div class="skel"></div>
     <div class="skel" style="opacity:.7"></div>
@@ -460,12 +470,17 @@ function render(root, items) {
 
   items.sort((a, b) => b.game_date.localeCompare(a.game_date));
 
+  // Un groupe par partie (même horodatage game_date = même partie), pas par
+  // jour calendaire : une soirée peut contenir plusieurs parties. Les
+  // légendes plus anciennes que cette mise à jour partagent toutes
+  // l'horodatage de création de leur room (pas de granularité par partie
+  // disponible rétroactivement), donc elles restent regroupées ensemble.
   const groups = [];
   let cur = null;
   for (const item of items) {
-    const d      = new Date(item.game_date + 'Z');
-    const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    if (!cur || cur.key !== dayKey) { cur = { key: dayKey, refDate: d, items: [] }; groups.push(cur); }
+    const d         = new Date(item.game_date + 'Z');
+    const partyKey  = item.game_date;
+    if (!cur || cur.key !== partyKey) { cur = { key: partyKey, refDate: d, items: [] }; groups.push(cur); }
     cur.items.push(item);
   }
 
@@ -474,12 +489,13 @@ function render(root, items) {
 
   for (const g of groups) {
     const dayStart = new Date(g.refDate.getFullYear(), g.refDate.getMonth(), g.refDate.getDate());
+    const timeStr  = g.refDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     let label;
-    if      (dayStart >= todayStart) label = "Aujourd'hui";
-    else if (dayStart >= yestStart)  label = "Hier";
+    if      (dayStart >= todayStart) label = `Aujourd'hui, ${timeStr}`;
+    else if (dayStart >= yestStart)  label = `Hier, ${timeStr}`;
     else {
       label = g.refDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-      label = label.charAt(0).toUpperCase() + label.slice(1);
+      label = label.charAt(0).toUpperCase() + label.slice(1) + `, ${timeStr}`;
     }
 
     const n = g.items.length;

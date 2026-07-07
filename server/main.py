@@ -85,6 +85,15 @@ with engine.connect() as _conn:
     except Exception:
         pass  # Colonne déjà présente
 
+# Migration : ajoute la colonne played_at à game_rounds (regroupement par partie)
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE game_rounds ADD COLUMN played_at DATETIME"))
+        _conn.commit()
+        log.info("Migration : colonne 'played_at' ajoutée à game_rounds.")
+    except Exception:
+        pass  # Colonne déjà présente
+
 # ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Media Gallery v3", docs_url=None, redoc_url=None)
 

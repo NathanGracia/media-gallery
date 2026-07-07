@@ -11,6 +11,7 @@ import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from sqlmodel import Session, select, SQLModel
+from sqlalchemy import func
 
 from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote
 
@@ -188,16 +189,26 @@ async def get_timeline(days: int = 7):
                 GameAnswer.text,
                 GameAnswer.total_stars,
                 GameAnswer.vote_count,
+                GameAnswer.reveal_order,
+                GameRound.round_num,
+                GameRound.played_at,
                 GameRoom.created_at,
             )
             .join(GameRound, GameAnswer.round_id == GameRound.id)
             .join(GameRoom, GameRound.room_id == GameRoom.id)
             .where(GameAnswer.text != "")
-            .order_by(GameRoom.created_at.desc(), GameAnswer.id.asc())
+            # Ordre de partie (played_at si connu, sinon repli sur la création de la
+            # room — parties d'avant cette mise à jour) puis ordre de diffusion réel
+            # à l'intérieur d'une partie (round_num, puis reveal_order).
+            .order_by(
+                func.coalesce(GameRound.played_at, GameRoom.created_at).desc(),
+                GameRound.round_num.asc(),
+                GameAnswer.reveal_order.asc(),
+            )
         )
         if days > 0:
             since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
-            stmt  = stmt.where(GameRoom.created_at >= since)
+            stmt  = stmt.where(func.coalesce(GameRound.played_at, GameRoom.created_at) >= since)
         rows = s.exec(stmt).all()
 
         uuids   = list({r.media_uuid for r in rows})
@@ -214,7 +225,7 @@ async def get_timeline(days: int = 7):
                 "media_uuid":  r.media_uuid,
                 "url":         url_map.get(r.media_uuid),
                 "thumb":       f"/thumbnail/{r.media_uuid}.jpg",
-                "game_date":   r.created_at.isoformat(),
+                "game_date":   (r.played_at or r.created_at).isoformat(),
             }
             for r in rows
         ]
@@ -682,11 +693,12 @@ async def _save_to_db(code: str):
         s.commit()
 
         round_cache: dict[int, int] = {}
+        played_at = datetime.datetime.utcnow()  # même horodatage pour les 3 rounds de cette partie
 
         for ans in state["all_answers"]:
             rnum = ans["round_num"]
             if rnum not in round_cache:
-                gr = GameRound(room_id=state["db_room_id"], round_num=rnum)
+                gr = GameRound(room_id=state["db_room_id"], round_num=rnum, played_at=played_at)
                 s.add(gr); s.commit(); s.refresh(gr)
                 round_cache[rnum] = gr.id
 
