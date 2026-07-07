@@ -39,7 +39,8 @@ Les fichiers du jeu ont leur propre versioning dans `game/index.html` (`game.css
 Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://cooloss.nathangracia.com`) via le cookie partagé `nathangracia_session` — voir `~/docs/compte-unifie-cooloss.md` sur le VPS pour l'architecture complète (token, migration, autres apps). Résumé local :
 
 - `server/shared_auth.py` : vérifie le cookie (HMAC-SHA256, secret `shared_session_secret` dans `config.yaml`, jamais committé).
-- `GET /api/whoami` : `{loggedIn, username, displayName, isAdmin, avatarFile}` — pas de lecture directe du cookie côté client (il est HttpOnly).
+- `GET /api/whoami` : `{loggedIn, username, displayName, isAdmin, isHabitue, avatarFile}` — pas de lecture directe du cookie côté client (il est HttpOnly).
+- **Rôle "habitué"** (`isHabitue`, géré depuis `/admin` sur cooloss) : accès en lecture à `/timeline` et à l'historique des légendes d'un média, sans les droits de modération (delete/tag/crop restent `isAdmin` uniquement). Gate côté serveur : `require_admin_or_habitue` dans `game_router.py`, appliqué à `GET /game/api/timeline` et `GET /game/api/history/{uuid}` — ces deux endpoints n'avaient AUCUNE auth serveur avant (juste un lock-screen client-side), corrigé en même temps que l'ajout du rôle. Gate côté client : `canSeeLegends()` dans `app.js`.
 - `static/account-widget.js` : module partagé par `index.html`, `timeline.html` et `game/index.html` — fetch `/api/whoami` + rend le bouton compte (avatar, dropdown "Modifier le profil" / "Se déconnecter") dans `<div id="account-widget"></div>`. **Seul point qui fetch whoami** — `app.js`/`game.js` lisent `AccountWidget.session` plutôt que de refetch chacun de leur côté.
 - Le feeder .exe est **inchangé**, toujours sur `x-api-key` — c'est un chemin d'auth séparé, pas remplacé par cooloss.
 - Dans le jeu (`create_room`/`join_room`), l'identité vient du cookie vérifié côté serveur, jamais du pseudo envoyé par le client — connecté = pseudo verrouillé sur `displayName || username`, `account_uid` stocké sur `GamePlayer`/`GameAnswer`.
@@ -53,6 +54,8 @@ Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://
 | `GET` | `/api/media` | non | Liste paginée (filtres: type, feeder, tag, page, per_page) |
 | `GET` | `/api/media/{uuid}` | non | Détail d'un média |
 | `GET` | `/api/whoami` | non | Session cooloss courante (voir ci-dessus) |
+| `GET` | `/game/api/timeline` | admin OU habitué | Historique des légendes, groupé par partie |
+| `GET` | `/game/api/history/{uuid}` | admin OU habitué | Légendes proposées pour un média donné |
 | `PATCH` | `/api/media/{uuid}/tag` | `x-api-key` OU session admin | Changer le tag |
 | `POST` | `/api/media/{uuid}/crop` | `x-api-key` OU session admin | Rogner haut/bas → crée un nouveau média |
 | `DELETE` | `/api/media/{uuid}` | `x-api-key` OU session admin | Supprimer |
@@ -60,7 +63,6 @@ Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://
 | `GET` | `/api/feeders` | non | Liste des feeders |
 | `POST` | `/game/api/rooms` | non (identité optionnelle via cookie) | Créer une partie |
 | `POST` | `/game/api/rooms/{code}/join` | non (identité optionnelle via cookie) | Rejoindre une partie |
-| `GET` | `/game/api/timeline` | non | Historique des légendes, groupé par partie |
 | `GET` | `/game/api/my-room` | non (identité optionnelle via cookie) | Room active du compte connecté, pour reprise auto |
 
 ## Crop vidéo
