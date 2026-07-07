@@ -47,7 +47,7 @@
       </div>
     </div>
 
-    <button id="admin-btn" class="btn-admin" onclick="toggleAdminModal()">Admin</button>
+    <button id="admin-btn" class="btn-admin">Se connecter</button>
   </div>
 
   <div class="toolbar">
@@ -146,21 +146,7 @@
   </div>
 </div>
 
-<!-- Admin modal -->
-<div class="modal-backdrop" id="admin-modal" onclick="closeAdminModal()" style="display:none">
-  <div class="admin-modal-box" onclick="event.stopPropagation()">
-    <div class="admin-modal-title" id="admin-modal-title">Mode admin</div>
-    <input class="admin-modal-input" id="admin-password-input" type="password"
-           placeholder="Mot de passe" onkeydown="if(event.key==='Enter') submitAdminLogin()">
-    <div class="admin-modal-error" id="admin-modal-error"></div>
-    <div class="admin-modal-actions">
-      <button class="admin-modal-btn" onclick="submitAdminLogin()">Connexion</button>
-      <button class="admin-modal-btn admin-modal-btn--cancel" onclick="closeAdminModal()">Annuler</button>
-    </div>
-  </div>
-</div>
-
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-<script src="app.js?v=37"></script>
+<script src="app.js?v=39"></script>
 </body>
 </html>

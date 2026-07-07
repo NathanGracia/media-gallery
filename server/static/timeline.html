@@ -409,7 +409,7 @@
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script>window.TIMELINE_MODE = true;</script>
-<script src="app.js?v=31"></script>
+<script src="app.js?v=39"></script>
 <script>
 async function openMediaCard(e, uuid) {
   e.preventDefault();
@@ -430,7 +430,7 @@ async function load(days = 7) {
     root.innerHTML = `<div class="empty">
       <div class="empty-icon">🔒</div>
       <h2>Réservé aux admins</h2>
-      <p>Connecte-toi en mode admin depuis l'accueil pour voir l'historique des légendes.</p>
+      <p>Connecte-toi (lien en haut de page) avec un compte admin pour voir l'historique des légendes.</p>
     </div>`;
     return;
   }
@@ -549,7 +549,14 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-load();
+// refreshSession() (définie dans app.js) doit être attendue explicitement
+// ici : son propre IIFE tourne en fire-and-forget, donc sans ce await,
+// isAdmin() pourrait être lu avant que /api/whoami ait répondu.
+(async () => {
+  await refreshSession();
+  applyAdminUI();
+  load();
+})();
 </script>
 
 </body>

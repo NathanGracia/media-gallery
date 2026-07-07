@@ -18,6 +18,7 @@ from sqlmodel import SQLModel, Field, Session, create_engine, select, col
 from sqlalchemy import text, func
 from game_models import GameAnswer
 from PIL import Image
+from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -48,6 +49,7 @@ ALERT_PCT      = float(cfg.get("alert_threshold_pct", 80))
 DISCORD_HOOK   = cfg.get("discord_webhook_url", "")
 API_KEYS       = set(cfg.get("api_keys", []))
 PUBLIC_URL     = cfg.get("public_url", "").rstrip("/")
+SHARED_SESSION_SECRET = cfg.get("shared_session_secret", "")
 
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 THUMB_DIR.mkdir(parents=True, exist_ok=True)
@@ -100,18 +102,44 @@ app = FastAPI(title="Media Gallery v3", docs_url=None, redoc_url=None)
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
 def require_api_key(x_api_key: str = Header(...)):
+    """Réservé au feeder .exe — clé API brute, inchangé."""
     if API_KEYS and x_api_key not in API_KEYS:
         raise HTTPException(401, "Clé API invalide")
     return x_api_key
 
 
-@app.post("/api/admin/login")
-async def admin_login(request: Request):
-    body = await request.json()
-    password = body.get("password", "")
-    if password in API_KEYS:
-        return {"ok": True}
-    raise HTTPException(401, "Mot de passe incorrect")
+def get_shared_claims(request: Request) -> Optional[dict]:
+    token = request.cookies.get(SHARED_SESSION_COOKIE)
+    return verify_shared_token(token, SHARED_SESSION_SECRET)
+
+
+def require_admin_or_api_key(request: Request, x_api_key: Optional[str] = Header(default=None)):
+    """
+    Gate des actions admin déclenchées depuis le navigateur (suppression,
+    édition de tag, crop). Accepte SOIT la clé API historique (compat,
+    surtout utile si jamais appelé hors navigateur), SOIT une session
+    cooloss valide avec isAdmin=true — c'est ce dernier chemin que l'UI
+    utilise désormais (voir static/app.js, plus de prompt() de mot de passe).
+    """
+    if x_api_key and API_KEYS and x_api_key in API_KEYS:
+        return
+    claims = get_shared_claims(request)
+    if claims and claims.get("isAdmin"):
+        return
+    raise HTTPException(401, "Non autorisé")
+
+
+@app.get("/api/whoami")
+def whoami(request: Request):
+    claims = get_shared_claims(request)
+    if not claims:
+        return {"loggedIn": False}
+    return {
+        "loggedIn": True,
+        "username": claims["username"],
+        "isAdmin": bool(claims.get("isAdmin")),
+        "avatarFile": claims.get("avatarFile"),
+    }
 
 
 # ── Storage helpers ────────────────────────────────────────────────────────────
@@ -304,7 +332,7 @@ def get_media_meta(media_uuid: str):
 
 
 @app.patch("/api/media/{media_uuid}/tag")
-def update_tag(media_uuid: str, tag: str = Query(...)):
+def update_tag(media_uuid: str, tag: str = Query(...), _: None = Depends(require_admin_or_api_key)):
     if tag not in ("osef", "cinema", "todo"):
         raise HTTPException(400, "Tag invalide (osef | cinema | todo)")
     with Session(engine) as session:
@@ -342,6 +370,7 @@ def crop_media(
     media_uuid: str,
     top_pct:    float = Query(0, ge=0, lt=50),
     bottom_pct: float = Query(0, ge=0, lt=50),
+    _: None = Depends(require_admin_or_api_key),
 ):
     if top_pct + bottom_pct == 0:
         raise HTTPException(400, "Aucun rognage demandé")
@@ -417,7 +446,7 @@ def crop_media(
 
 
 @app.delete("/api/media/{media_uuid}")
-def delete_media(media_uuid: str, _: str = Depends(require_api_key)):
+def delete_media(media_uuid: str, _: None = Depends(require_admin_or_api_key)):
     with Session(engine) as session:
         media = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
         if not media:

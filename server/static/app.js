@@ -492,21 +492,12 @@ async function setTag(event, id, tag) {
 async function deleteMedia(id) {
   if (!confirm('Supprimer ce média définitivement ?')) return;
 
-  let apiKey = localStorage.getItem('memoss-api-key');
-  if (!apiKey) {
-    apiKey = prompt('Clé API :');
-    if (!apiKey) return;
-    localStorage.setItem('memoss-api-key', apiKey);
-  }
-
-  const r = await fetch(`/api/media/${id}`, {
-    method: 'DELETE',
-    headers: { 'x-api-key': apiKey },
-  });
+  // Pas de clé à fournir : la session cooloss (cookie same-origin) suffit,
+  // le serveur vérifie isAdmin côté /api/media/{id} lui-même.
+  const r = await fetch(`/api/media/${id}`, { method: 'DELETE' });
 
   if (r.status === 401) {
-    localStorage.removeItem('memoss-api-key');
-    alert('Clé API invalide.');
+    alert('Non autorisé — reconnecte-toi en admin.');
     return;
   }
   if (!r.ok) {
@@ -577,10 +568,17 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Memoss History ─────────────────────────────────────────────────────────────
+function refreshMemossHistoryIfOpen() {
+  if (_currentMediaId && document.getElementById('video-overlay')?.classList.contains('open')) {
+    loadMemossHistory(_currentMediaId);
+  }
+}
+
 async function loadMemossHistory(uuid, highlightId = null) {
   const el = document.getElementById('memoss-history');
   if (!el) return;
   el.innerHTML = '';
+  if (!isAdmin()) return; // légendes réservées au mode admin
 
   try {
     const data = await fetch(`/game/api/history/${uuid}`).then(r => r.json());
@@ -653,66 +651,58 @@ function shareCaption(event, captionId) {
   });
 }
 
-// ── Admin mode ────────────────────────────────────────────────────────────────
+// ── Admin mode (compte partagé cooloss) ─────────────────────────────────────
+const COOLOSS_URL = 'https://cooloss.nathangracia.com';
+
+let _session = { loggedIn: false, isAdmin: false, username: null, avatarFile: null };
+
 function isAdmin() {
-  return !!localStorage.getItem('memoss-api-key');
+  return _session.isAdmin;
+}
+
+// whoami est forcément async (le cookie est HttpOnly, le JS ne peut pas le
+// lire lui-même) : les contrôles admin restent cachés (état par défaut côté
+// CSS) jusqu'à ce que cette réponse arrive, pour éviter un flash de contenu
+// admin visible avant vérification.
+async function refreshSession() {
+  try {
+    const r = await fetch('/api/whoami');
+    _session = await r.json();
+  } catch (_) {
+    _session = { loggedIn: false, isAdmin: false, username: null, avatarFile: null };
+  }
+  applyAdminUI();
 }
 
 function applyAdminUI() {
   document.body.classList.toggle('admin-mode', isAdmin());
   const btn = document.getElementById('admin-btn');
-  if (btn) {
-    btn.classList.toggle('admin-mode-on', isAdmin());
-    btn.title = isAdmin() ? 'Déconnecter le mode admin' : 'Connexion admin';
+  if (!btn) return;
+  if (_session.loggedIn) {
+    btn.textContent = _session.isAdmin ? `${_session.username} (admin)` : _session.username;
+    btn.title = 'Se déconnecter';
+    btn.onclick = logoutSession;
+  } else {
+    btn.textContent = 'Se connecter';
+    btn.title = 'Se connecter via cooloss';
+    btn.onclick = goToLogin;
   }
 }
 
-function toggleAdminModal() {
-  if (isAdmin()) {
-    // Déconnexion directe
-    localStorage.removeItem('memoss-api-key');
-    applyAdminUI();
-    loadMedia();
-    return;
-  }
-  const modal = document.getElementById('admin-modal');
-  modal.style.display = 'flex';
-  document.getElementById('admin-password-input').value = '';
-  document.getElementById('admin-modal-error').textContent = '';
-  setTimeout(() => document.getElementById('admin-password-input').focus(), 50);
+function goToLogin() {
+  window.location.href = `${COOLOSS_URL}/login?next=${encodeURIComponent(location.href)}`;
 }
 
-function closeAdminModal() {
-  document.getElementById('admin-modal').style.display = 'none';
-}
-
-async function submitAdminLogin() {
-  const password = document.getElementById('admin-password-input').value;
-  const errEl    = document.getElementById('admin-modal-error');
-  errEl.textContent = '';
-  try {
-    const r = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    if (r.ok) {
-      localStorage.setItem('memoss-api-key', password);
-      closeAdminModal();
-      applyAdminUI();
-      loadMedia();
-    } else {
-      errEl.textContent = 'Mot de passe incorrect.';
-      document.getElementById('admin-password-input').select();
-    }
-  } catch (_) {
-    errEl.textContent = 'Erreur réseau.';
-  }
+function logoutSession() {
+  // Seul cooloss peut effacer le cookie (Domain=.nathangracia.com) — un
+  // logout local à Memoss ne ferait rien. Navigation simple, pas de fetch
+  // cross-origin/CORS nécessaire.
+  window.location.href = `${COOLOSS_URL}/api/logout?next=${encodeURIComponent(location.href)}`;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
-  applyAdminUI();
+  await refreshSession();
   if (!document.getElementById('grid')) return; // page timeline ou autre
   await Promise.all([refreshStorage(), refreshFeeders(), loadMedia()]);
   setInterval(refreshStorage, 30_000);

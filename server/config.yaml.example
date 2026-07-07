@@ -23,3 +23,8 @@ port: 8000
 # URL publique du site (utilisée pour les previews Open Graph — Discord, iMessage…)
 # Exemple : https://memoss.mondomaine.com
 public_url: ""
+
+# Secret partagé avec cooloss (compte unifié) — doit être IDENTIQUE à
+# SHARED_SESSION_SECRET dans cooloss/.env, sinon les sessions ne sont pas
+# reconnues. Ne réutilise pas une clé api_keys existante.
+shared_session_secret: ""
