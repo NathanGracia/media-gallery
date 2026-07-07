@@ -143,7 +143,7 @@ def new_state(db_room_id: int, host_id: int, host_pseudo: str, host_account_uid:
 async def create_room(request: Request, body: dict):
     claims = get_account_claims(request)
     if claims:
-        pseudo, account_uid = claims["username"], claims["uid"]
+        pseudo, account_uid = (claims.get("displayName") or claims["username"]), claims["uid"]
     else:
         pseudo = body.get("pseudo", "").strip()[:20]
         account_uid = None
@@ -175,7 +175,7 @@ async def join_room(request: Request, code: str, body: dict):
 
     claims = get_account_claims(request)
     if claims:
-        pseudo, account_uid = claims["username"], claims["uid"]
+        pseudo, account_uid = (claims.get("displayName") or claims["username"]), claims["uid"]
     else:
         pseudo = body.get("pseudo", "").strip()[:20]
         account_uid = None

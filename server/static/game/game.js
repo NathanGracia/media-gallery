@@ -33,13 +33,17 @@ const S = {
   account:       null,
 };
 
+function accountName() {
+  return S.account.displayName || S.account.username;
+}
+
 async function loadAccount() {
   try {
     const r = await fetch('/api/whoami');
     const data = await r.json();
     if (data.loggedIn) {
       S.account = data;
-      S.pseudo  = data.username;
+      S.pseudo  = accountName();
     }
   } catch (_) { /* reste invité */ }
 }
@@ -73,7 +77,7 @@ function pseudoFieldHtml(inputId) {
         <label>Connecté en tant que</label>
         <div class="account-badge">
           ${S.account.avatarFile ? `<img src="${esc(S.account.avatarFile)}" alt="" class="account-badge-avatar">` : ''}
-          <strong>${esc(S.account.username)}</strong>
+          <strong>${esc(accountName())}</strong>
         </div>
       </div>`;
   }
@@ -121,7 +125,7 @@ function renderHome() {
 }
 
 async function doCreateRoom() {
-  const pseudo = S.account ? S.account.username : document.getElementById('pseudo-input').value.trim();
+  const pseudo = S.account ? accountName() : document.getElementById('pseudo-input').value.trim();
   if (!pseudo) return setError('Renseigne un pseudo.');
   S.pseudo = pseudo;
 
@@ -141,7 +145,7 @@ async function doCreateRoom() {
 }
 
 async function doJoinRoom() {
-  const pseudo = S.account ? S.account.username : document.getElementById('pseudo-input').value.trim();
+  const pseudo = S.account ? accountName() : document.getElementById('pseudo-input').value.trim();
   const code   = getCodeFromBoxes();
   if (!pseudo) return setError('Renseigne un pseudo.');
   if (code.length < 6) return setError('Entre le code complet (6 caractères).');
@@ -884,7 +888,7 @@ function showInviteModal(code) {
   if (pseudoInput) pseudoInput.focus();
 
   async function doInviteJoin() {
-    const pseudo = S.account ? S.account.username : pseudoInput.value.trim();
+    const pseudo = S.account ? accountName() : pseudoInput.value.trim();
     if (!pseudo) { document.getElementById('invite-error').textContent = 'Renseigne un pseudo.'; return; }
     S.pseudo = pseudo;
     const btn = document.getElementById('invite-join-btn');
