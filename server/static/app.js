@@ -652,12 +652,11 @@ function shareCaption(event, captionId) {
 }
 
 // ── Admin mode (compte partagé cooloss) ─────────────────────────────────────
-const COOLOSS_URL = 'https://cooloss.nathangracia.com';
-
-let _session = { loggedIn: false, isAdmin: false, username: null, avatarFile: null };
-
+// Le fetch de /api/whoami et le rendu du bouton compte vivent dans
+// account-widget.js (partagé avec timeline.html et game/index.html) — ici on
+// se contente de le charger et de dériver l'état admin.
 function isAdmin() {
-  return _session.isAdmin;
+  return !!AccountWidget.session.isAdmin;
 }
 
 // whoami est forcément async (le cookie est HttpOnly, le JS ne peut pas le
@@ -665,39 +664,9 @@ function isAdmin() {
 // CSS) jusqu'à ce que cette réponse arrive, pour éviter un flash de contenu
 // admin visible avant vérification.
 async function refreshSession() {
-  try {
-    const r = await fetch('/api/whoami');
-    _session = await r.json();
-  } catch (_) {
-    _session = { loggedIn: false, isAdmin: false, username: null, avatarFile: null };
-  }
-  applyAdminUI();
-}
-
-function applyAdminUI() {
+  await AccountWidget.load();
+  AccountWidget.mount('account-widget');
   document.body.classList.toggle('admin-mode', isAdmin());
-  const btn = document.getElementById('admin-btn');
-  if (!btn) return;
-  if (_session.loggedIn) {
-    btn.textContent = _session.isAdmin ? `${_session.username} (admin)` : _session.username;
-    btn.title = 'Se déconnecter';
-    btn.onclick = logoutSession;
-  } else {
-    btn.textContent = 'Se connecter';
-    btn.title = 'Se connecter via cooloss';
-    btn.onclick = goToLogin;
-  }
-}
-
-function goToLogin() {
-  window.location.href = `${COOLOSS_URL}/login?next=${encodeURIComponent(location.href)}`;
-}
-
-function logoutSession() {
-  // Seul cooloss peut effacer le cookie (Domain=.nathangracia.com) — un
-  // logout local à Memoss ne ferait rien. Navigation simple, pas de fetch
-  // cross-origin/CORS nécessaire.
-  window.location.href = `${COOLOSS_URL}/api/logout?next=${encodeURIComponent(location.href)}`;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

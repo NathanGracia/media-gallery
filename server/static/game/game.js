@@ -37,15 +37,15 @@ function accountName() {
   return S.account.displayName || S.account.username;
 }
 
+// Le fetch de /api/whoami et le rendu du bouton compte vivent dans
+// account-widget.js (partagé avec index.html et timeline.html).
 async function loadAccount() {
-  try {
-    const r = await fetch('/api/whoami');
-    const data = await r.json();
-    if (data.loggedIn) {
-      S.account = data;
-      S.pseudo  = accountName();
-    }
-  } catch (_) { /* reste invité */ }
+  await AccountWidget.load();
+  if (AccountWidget.session.loggedIn) {
+    S.account = AccountWidget.session;
+    S.pseudo  = accountName();
+  }
+  AccountWidget.mount('account-widget');
 }
 
 const app  = document.getElementById('app');
@@ -920,9 +920,39 @@ function showInviteModal(code) {
   if (pseudoInput) pseudoInput.addEventListener('keydown', e => { if (e.key === 'Enter') doInviteJoin(); });
 }
 
+// ── Reprise automatique d'une partie en cours ───────────────────────────────
+// Pour les comptes connectés uniquement (identité stable via account_uid,
+// contrairement à un pseudo invité qu'on ne peut pas fiabiliser après un
+// reload). Cherche côté serveur si ce compte est déjà joueur dans une room
+// encore en mémoire (lobby, en cours, ou revenue en lobby après une partie —
+// tant que la room existe, on y est toujours "présent").
+async function tryResumeActiveRoom() {
+  if (!S.account) return false;
+  try {
+    const r = await fetch('/game/api/my-room');
+    const { room_code, player_id } = await r.json();
+    if (!room_code) return false;
+
+    S.roomCode = room_code;
+    S.playerId = player_id;
+    S.isHost   = false; // corrigé par le message 'connected' du WS
+    setRoomCode(room_code);
+    app.innerHTML = `<div class="card" style="text-align:center;padding:40px 24px">
+      <p style="color:var(--text-2)">Reconnexion à ta partie…</p>
+    </div>`;
+    connectWS();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
   await loadAccount();
+
+  if (await tryResumeActiveRoom()) return;
+
   render();
 
   const _joinParam = new URLSearchParams(location.search).get('join');

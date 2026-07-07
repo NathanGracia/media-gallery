@@ -201,6 +201,26 @@ async def join_room(request: Request, code: str, body: dict):
     return {"room_code": code, "player_id": player_id, "players": players_list(state), "pseudo": pseudo}
 
 
+@router.get("/game/api/my-room")
+async def my_room(request: Request):
+    """
+    Room active du compte connecté, s'il y en a une — permet au frontend de
+    reprendre automatiquement une partie après un reload/une déco, sans que
+    l'utilisateur ait besoin de retaper le code. Uniquement pour les comptes
+    (account_uid stable) ; un invité perd sa place au reload comme avant.
+    """
+    claims = get_account_claims(request)
+    if not claims:
+        return {"room_code": None}
+
+    uid = claims["uid"]
+    for code, state in game_states.items():
+        for pid, p in state["players"].items():
+            if p.get("account_uid") == uid:
+                return {"room_code": code, "player_id": pid}
+    return {"room_code": None}
+
+
 @router.get("/game/api/timeline")
 async def get_timeline(days: int = 7):
     with Session(_engine) as s:

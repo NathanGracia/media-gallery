@@ -120,6 +120,51 @@
       color: #fff;
     }
 
+    /* — Account widget — */
+    #account-widget { margin-left: auto; flex-shrink: 0; }
+    .account-widget-login {
+      padding: 5px 11px; border-radius: var(--radius-sm);
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+      color: var(--text-dim); text-decoration: none; border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .account-widget-login:hover { color: var(--text); border-color: var(--border); background: var(--surface); }
+    .account-widget { position: relative; }
+    .account-widget-trigger {
+      display: flex; align-items: center; gap: 7px;
+      padding: 4px 9px 4px 4px;
+      background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
+      cursor: pointer; color: var(--text-dim);
+      font-family: 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 600;
+      transition: all 0.2s;
+    }
+    .account-widget-trigger:hover { border-color: var(--border); background: var(--surface); }
+    .account-widget-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .account-widget-avatar--fallback {
+      display: flex; align-items: center; justify-content: center;
+      background: var(--accent-dim); color: var(--cyan); font-size: 0.65rem; font-weight: 700;
+    }
+    .account-widget-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-widget-chevron { color: var(--text-muted); flex-shrink: 0; }
+    .account-widget-menu {
+      position: absolute; top: calc(100% + 8px); right: 0; z-index: 300;
+      min-width: 190px; padding: 6px;
+      background: #0d1420; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+    .account-widget-badge {
+      padding: 4px 10px; margin-bottom: 4px;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+      color: var(--cyan); background: var(--accent-dim); border-radius: var(--radius-sm);
+      text-align: center;
+    }
+    .account-widget-menu a {
+      display: block; padding: 8px 10px; border-radius: var(--radius-sm);
+      color: var(--text-dim); text-decoration: none; font-size: 0.82rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .account-widget-menu a:hover { background: var(--surface); color: var(--text); }
+
     /* — Main — */
     main {
       max-width: 860px; margin: 0 auto;
@@ -348,6 +393,7 @@
     </a>
     <a href="/timeline" class="btn-game-link btn-game-link--active">Légendes</a>
     <a href="/game/"    class="btn-game-link">Jouer</a>
+    <div id="account-widget"></div>
   </div>
 </header>
 
@@ -409,7 +455,8 @@
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script>window.TIMELINE_MODE = true;</script>
-<script src="app.js?v=39"></script>
+<script src="account-widget.js?v=1"></script>
+<script src="app.js?v=40"></script>
 <script>
 async function openMediaCard(e, uuid) {
   e.preventDefault();
@@ -554,7 +601,6 @@ function esc(s) {
 // isAdmin() pourrait être lu avant que /api/whoami ait répondu.
 (async () => {
   await refreshSession();
-  applyAdminUI();
   load();
 })();
 </script>
