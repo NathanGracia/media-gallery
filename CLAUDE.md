@@ -39,9 +39,11 @@ Les fichiers du jeu ont leur propre versioning dans `game/index.html` (`game.css
 Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://cooloss.nathangracia.com`) via le cookie partagé `nathangracia_session` — voir `~/docs/compte-unifie-cooloss.md` sur le VPS pour l'architecture complète (token, migration, autres apps). Résumé local :
 
 - `server/shared_auth.py` : vérifie le cookie (HMAC-SHA256, secret `shared_session_secret` dans `config.yaml`, jamais committé).
-- `GET /api/whoami` : `{loggedIn, username, displayName, isAdmin, avatarFile}` — le frontend (`app.js`, `game.js`, `timeline.html`) l'appelle au chargement, pas de lecture directe du cookie côté client (il est HttpOnly).
+- `GET /api/whoami` : `{loggedIn, username, displayName, isAdmin, avatarFile}` — pas de lecture directe du cookie côté client (il est HttpOnly).
+- `static/account-widget.js` : module partagé par `index.html`, `timeline.html` et `game/index.html` — fetch `/api/whoami` + rend le bouton compte (avatar, dropdown "Modifier le profil" / "Se déconnecter") dans `<div id="account-widget"></div>`. **Seul point qui fetch whoami** — `app.js`/`game.js` lisent `AccountWidget.session` plutôt que de refetch chacun de leur côté.
 - Le feeder .exe est **inchangé**, toujours sur `x-api-key` — c'est un chemin d'auth séparé, pas remplacé par cooloss.
 - Dans le jeu (`create_room`/`join_room`), l'identité vient du cookie vérifié côté serveur, jamais du pseudo envoyé par le client — connecté = pseudo verrouillé sur `displayName || username`, `account_uid` stocké sur `GamePlayer`/`GameAnswer`.
+- **Reprise auto de partie** : un compte connecté qui recharge `/game/` (ou se reconnecte après une déco) rejoint automatiquement sa room en cours via `GET /game/api/my-room` (cherche `account_uid` dans `game_states` en mémoire) — pas d'équivalent pour les invités, pas d'identité stable à matcher après un reload.
 
 ## API endpoints
 
@@ -59,6 +61,7 @@ Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://
 | `POST` | `/game/api/rooms` | non (identité optionnelle via cookie) | Créer une partie |
 | `POST` | `/game/api/rooms/{code}/join` | non (identité optionnelle via cookie) | Rejoindre une partie |
 | `GET` | `/game/api/timeline` | non | Historique des légendes, groupé par partie |
+| `GET` | `/game/api/my-room` | non (identité optionnelle via cookie) | Room active du compte connecté, pour reprise auto |
 
 ## Crop vidéo
 
