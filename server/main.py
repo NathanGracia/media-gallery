@@ -149,6 +149,7 @@ def whoami(request: Request):
         "username": claims["username"],
         "displayName": claims.get("displayName"),
         "isAdmin": bool(claims.get("isAdmin")),
+        "isHabitue": bool(claims.get("isHabitue")),
         "avatarFile": claims.get("avatarFile"),
     }
 

@@ -52,7 +52,7 @@ const AccountWidget = (() => {
           </svg>
         </button>
         <div class="account-widget-menu" id="account-widget-menu" hidden>
-          ${session.isAdmin ? '<div class="account-widget-badge">Admin</div>' : ''}
+          ${session.isAdmin ? '<div class="account-widget-badge">Admin</div>' : session.isHabitue ? '<div class="account-widget-badge">Habitué</div>' : ''}
           <a href="${COOLOSS}/profile/edit" target="_blank" rel="noopener noreferrer">Modifier le profil</a>
           <a href="${COOLOSS}/api/logout?next=${encodeURIComponent(location.href)}">Se déconnecter</a>
         </div>

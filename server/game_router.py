@@ -9,7 +9,7 @@ import random
 import string
 import logging
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Request
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Request, Depends
 from sqlmodel import Session, select, SQLModel
 from sqlalchemy import func
 
@@ -42,6 +42,18 @@ def get_account_claims(request: Request) -> dict | None:
     """
     token = request.cookies.get(SHARED_SESSION_COOKIE)
     return verify_shared_token(token, _shared_secret)
+
+
+def require_admin_or_habitue(request: Request):
+    """
+    Gate de lecture pour l'historique des légendes / timeline — réservé aux
+    comptes admin ou "habitué" (isHabitue), pas aux joueurs normaux ni aux
+    invités. Défense en profondeur : le frontend cache déjà ces vues, mais
+    l'API elle-même doit refuser, pas juste "ne pas être liée" dans l'UI.
+    """
+    claims = get_account_claims(request)
+    if not claims or not (claims.get("isAdmin") or claims.get("isHabitue")):
+        raise HTTPException(401, "Réservé aux admins et habitués")
 
 
 # ── Connection Manager ─────────────────────────────────────────────────────────
@@ -221,7 +233,7 @@ async def my_room(request: Request):
     return {"room_code": None}
 
 
-@router.get("/game/api/timeline")
+@router.get("/game/api/timeline", dependencies=[Depends(require_admin_or_habitue)])
 async def get_timeline(days: int = 7):
     with Session(_engine) as s:
         stmt = (
@@ -274,7 +286,7 @@ async def get_timeline(days: int = 7):
         ]
 
 
-@router.get("/game/api/history/{media_uuid}")
+@router.get("/game/api/history/{media_uuid}", dependencies=[Depends(require_admin_or_habitue)])
 async def get_history(media_uuid: str):
     with Session(_engine) as s:
         answers = s.exec(

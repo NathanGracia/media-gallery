@@ -578,7 +578,7 @@ async function loadMemossHistory(uuid, highlightId = null) {
   const el = document.getElementById('memoss-history');
   if (!el) return;
   el.innerHTML = '';
-  if (!isAdmin()) return; // légendes réservées au mode admin
+  if (!canSeeLegends()) return; // légendes réservées aux admins et habitués
 
   try {
     const data = await fetch(`/game/api/history/${uuid}`).then(r => r.json());
@@ -657,6 +657,16 @@ function shareCaption(event, captionId) {
 // se contente de le charger et de dériver l'état admin.
 function isAdmin() {
   return !!AccountWidget.session.isAdmin;
+}
+
+// Rôle intermédiaire : accès à l'historique des légendes / timeline, pas aux
+// actions de modération (delete/tag/crop, qui restent isAdmin uniquement).
+function isHabitue() {
+  return !!AccountWidget.session.isHabitue;
+}
+
+function canSeeLegends() {
+  return isAdmin() || isHabitue();
 }
 
 // whoami est forcément async (le cookie est HttpOnly, le JS ne peut pas le

@@ -473,11 +473,11 @@ function reload() {
 async function load(days = 7) {
   const root = document.getElementById('root');
 
-  if (!isAdmin()) {
+  if (!canSeeLegends()) {
     root.innerHTML = `<div class="empty">
       <div class="empty-icon">🔒</div>
-      <h2>Réservé aux admins</h2>
-      <p>Connecte-toi (lien en haut de page) avec un compte admin pour voir l'historique des légendes.</p>
+      <h2>Réservé aux admins et habitués</h2>
+      <p>Connecte-toi (lien en haut de page) avec un compte admin ou habitué pour voir l'historique des légendes.</p>
     </div>`;
     return;
   }
