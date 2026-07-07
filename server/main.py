@@ -75,7 +75,7 @@ class Media(SQLModel, table=True):
 
 
 SQLModel.metadata.create_all(engine)
-init_game(engine, Media)
+init_game(engine, Media, SHARED_SESSION_SECRET)
 
 # Migration : ajoute la colonne tag si elle n'existe pas encore (DB existante)
 with engine.connect() as _conn:
@@ -93,6 +93,16 @@ with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE game_rounds ADD COLUMN played_at DATETIME"))
         _conn.commit()
         log.info("Migration : colonne 'played_at' ajoutée à game_rounds.")
+    except Exception:
+        pass  # Colonne déjà présente
+
+# Migration : ajoute account_uid (lien vers le compte cooloss du joueur)
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE game_players ADD COLUMN account_uid INTEGER"))
+        _conn.execute(text("ALTER TABLE game_answers ADD COLUMN account_uid INTEGER"))
+        _conn.commit()
+        log.info("Migration : colonne 'account_uid' ajoutée à game_players/game_answers.")
     except Exception:
         pass  # Colonne déjà présente
 

@@ -194,6 +194,15 @@ h2 {
   box-shadow: 0 0 0 3px var(--ac-dim);
 }
 .field-row { display:flex; gap:8px; }
+.account-badge {
+  display:flex; align-items:center; gap:8px;
+  padding:11px 14px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--b0);
+  border-radius:var(--r-sm);
+  color:var(--text); font-size:.95rem;
+}
+.account-badge-avatar { width:22px; height:22px; border-radius:50%; object-fit:cover; }
 .field-row input { flex:1; }
 
 /* ── Buttons ── */

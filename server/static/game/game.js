@@ -28,7 +28,21 @@ const S = {
   mode:          'all',
   // game end
   topMemes:      [],
+  // compte cooloss (null = invité) — le pseudo n'est alors plus éditable,
+  // le serveur dérive de toute façon l'identité du cookie, pas du body.
+  account:       null,
 };
+
+async function loadAccount() {
+  try {
+    const r = await fetch('/api/whoami');
+    const data = await r.json();
+    if (data.loggedIn) {
+      S.account = data;
+      S.pseudo  = data.username;
+    }
+  } catch (_) { /* reste invité */ }
+}
 
 const app  = document.getElementById('app');
 const rcEl = document.getElementById('room-code-display');
@@ -52,6 +66,25 @@ function render() {
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────────
+function pseudoFieldHtml(inputId) {
+  if (S.account) {
+    return `
+      <div class="field">
+        <label>Connecté en tant que</label>
+        <div class="account-badge">
+          ${S.account.avatarFile ? `<img src="${esc(S.account.avatarFile)}" alt="" class="account-badge-avatar">` : ''}
+          <strong>${esc(S.account.username)}</strong>
+        </div>
+      </div>`;
+  }
+  return `
+      <div class="field">
+        <label>Ton pseudo</label>
+        <input id="${inputId}" type="text" maxlength="20" placeholder="Ex: shikamaru64" value="${esc(S.pseudo)}"
+               autocomplete="off" spellcheck="false">
+      </div>`;
+}
+
 function renderHome() {
   app.innerHTML = `
     <div class="card">
@@ -60,11 +93,7 @@ function renderHome() {
         <div class="home-logo-sub">Le jeu de légendes de mèmes 🎬</div>
       </div>
 
-      <div class="field">
-        <label>Ton pseudo</label>
-        <input id="pseudo-input" type="text" maxlength="20" placeholder="Ex: shikamaru64" value="${esc(S.pseudo)}"
-               autocomplete="off" spellcheck="false">
-      </div>
+      ${pseudoFieldHtml('pseudo-input')}
 
       <button class="btn btn-primary" id="btn-create" style="margin-top:4px">Créer une partie</button>
 
@@ -79,17 +108,20 @@ function renderHome() {
       <p class="error-msg" id="home-error"></p>
     </div>`;
 
-  document.getElementById('pseudo-input').focus();
+  const pseudoInput = document.getElementById('pseudo-input');
+  if (pseudoInput) {
+    pseudoInput.focus();
+    pseudoInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') doCreateRoom();
+    });
+  }
   document.getElementById('btn-create').onclick = doCreateRoom;
   document.getElementById('btn-join').onclick   = doJoinRoom;
   initCodeBoxes();
-  document.getElementById('pseudo-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doCreateRoom();
-  });
 }
 
 async function doCreateRoom() {
-  const pseudo = document.getElementById('pseudo-input').value.trim();
+  const pseudo = S.account ? S.account.username : document.getElementById('pseudo-input').value.trim();
   if (!pseudo) return setError('Renseigne un pseudo.');
   S.pseudo = pseudo;
 
@@ -109,7 +141,7 @@ async function doCreateRoom() {
 }
 
 async function doJoinRoom() {
-  const pseudo = document.getElementById('pseudo-input').value.trim();
+  const pseudo = S.account ? S.account.username : document.getElementById('pseudo-input').value.trim();
   const code   = getCodeFromBoxes();
   if (!pseudo) return setError('Renseigne un pseudo.');
   if (code.length < 6) return setError('Entre le code complet (6 caractères).');
@@ -836,11 +868,7 @@ function showInviteModal(code) {
       <div class="invite-emoji">🎬</div>
       <div class="invite-code-display">${esc(code)}</div>
       <p class="invite-sub">Tu as été invité à rejoindre cette room</p>
-      <div class="field">
-        <label>Ton pseudo</label>
-        <input id="invite-pseudo" type="text" maxlength="20" placeholder="Ex: shikamaru64"
-               autocomplete="off" spellcheck="false" value="${esc(S.pseudo)}">
-      </div>
+      ${pseudoFieldHtml('invite-pseudo')}
       <button class="btn btn-cinema" id="invite-join-btn" style="width:100%;margin-top:4px">
         Rejoindre la partie →
       </button>
@@ -853,10 +881,10 @@ function showInviteModal(code) {
   document.body.appendChild(overlay);
 
   const pseudoInput = document.getElementById('invite-pseudo');
-  pseudoInput.focus();
+  if (pseudoInput) pseudoInput.focus();
 
   async function doInviteJoin() {
-    const pseudo = pseudoInput.value.trim();
+    const pseudo = S.account ? S.account.username : pseudoInput.value.trim();
     if (!pseudo) { document.getElementById('invite-error').textContent = 'Renseigne un pseudo.'; return; }
     S.pseudo = pseudo;
     const btn = document.getElementById('invite-join-btn');
@@ -885,11 +913,14 @@ function showInviteModal(code) {
     overlay.remove();
     history.replaceState({}, '', '/game');
   };
-  pseudoInput.addEventListener('keydown', e => { if (e.key === 'Enter') doInviteJoin(); });
+  if (pseudoInput) pseudoInput.addEventListener('keydown', e => { if (e.key === 'Enter') doInviteJoin(); });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-render();
+(async () => {
+  await loadAccount();
+  render();
 
-const _joinParam = new URLSearchParams(location.search).get('join');
-if (_joinParam) showInviteModal(_joinParam.toUpperCase());
+  const _joinParam = new URLSearchParams(location.search).get('join');
+  if (_joinParam) showInviteModal(_joinParam.toUpperCase());
+})();

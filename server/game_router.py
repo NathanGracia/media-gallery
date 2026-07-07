@@ -9,26 +9,39 @@ import random
 import string
 import logging
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Request
 from sqlmodel import Session, select, SQLModel
 from sqlalchemy import func
 
 from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote
+from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
 
-log     = logging.getLogger(__name__)
-router  = APIRouter()
-_engine = None
-_Media  = None
+log            = logging.getLogger(__name__)
+router         = APIRouter()
+_engine        = None
+_Media         = None
+_shared_secret = ""
 
 TOTAL_ROUNDS = 3
 
 
-def init(engine, MediaModel):
-    global _engine, _Media
-    _engine = engine
-    _Media  = MediaModel
+def init(engine, MediaModel, shared_secret: str = ""):
+    global _engine, _Media, _shared_secret
+    _engine        = engine
+    _Media         = MediaModel
+    _shared_secret = shared_secret
     SQLModel.metadata.create_all(_engine)
     log.info("Game router initialisé.")
+
+
+def get_account_claims(request: Request) -> dict | None:
+    """
+    Identité dérivée du cookie côté serveur — jamais du pseudo envoyé dans le
+    body, qui reste une simple string non fiable. Retourne None si pas de
+    session valide (invité).
+    """
+    token = request.cookies.get(SHARED_SESSION_COOKIE)
+    return verify_shared_token(token, _shared_secret)
 
 
 # ── Connection Manager ─────────────────────────────────────────────────────────
@@ -104,13 +117,13 @@ def players_list(state: dict) -> list[dict]:
     ]
 
 
-def new_state(db_room_id: int, host_id: int, host_pseudo: str) -> dict:
+def new_state(db_room_id: int, host_id: int, host_pseudo: str, host_account_uid: int | None = None) -> dict:
     return {
         "status":          "lobby",
         "pick_round":      0,      # index du round de soumission en cours (0-based)
         "reveal_round":    0,      # index du round de révélation en cours (0-based)
         "host_id":         host_id,
-        "players":         {host_id: {"pseudo": host_pseudo, "score": 0, "connected": False}},
+        "players":         {host_id: {"pseudo": host_pseudo, "score": 0, "connected": False, "account_uid": host_account_uid}},
         "player_memes":    {},     # pid -> [{uuid,url,thumb}] pour le round courant
         "player_drafts":   {},     # pid -> {media_uuid, text} — brouillon en cours de frappe
         "submissions":     {},     # pid -> {media_uuid, text} pour le round courant
@@ -127,8 +140,13 @@ def new_state(db_room_id: int, host_id: int, host_pseudo: str) -> dict:
 
 # ── REST ───────────────────────────────────────────────────────────────────────
 @router.post("/game/api/rooms")
-async def create_room(body: dict):
-    pseudo = body.get("pseudo", "").strip()[:20]
+async def create_room(request: Request, body: dict):
+    claims = get_account_claims(request)
+    if claims:
+        pseudo, account_uid = claims["username"], claims["uid"]
+    else:
+        pseudo = body.get("pseudo", "").strip()[:20]
+        account_uid = None
     if not pseudo:
         raise HTTPException(400, "Pseudo requis")
 
@@ -139,30 +157,35 @@ async def create_room(body: dict):
     with Session(_engine) as s:
         room = GameRoom(code=code, host_pseudo=pseudo)
         s.add(room); s.commit(); s.refresh(room)
-        player = GamePlayer(room_id=room.id, pseudo=pseudo)
+        player = GamePlayer(room_id=room.id, pseudo=pseudo, account_uid=account_uid)
         s.add(player); s.commit(); s.refresh(player)
         db_room_id = room.id
         player_id  = player.id
 
-    game_states[code] = new_state(db_room_id, player_id, pseudo)
-    return {"room_code": code, "player_id": player_id}
+    game_states[code] = new_state(db_room_id, player_id, pseudo, account_uid)
+    return {"room_code": code, "player_id": player_id, "pseudo": pseudo}
 
 
 @router.post("/game/api/rooms/{code}/join")
-async def join_room(code: str, body: dict):
+async def join_room(request: Request, code: str, body: dict):
     code  = code.upper()
     state = game_states.get(code)
     if not state:
         raise HTTPException(404, "Room introuvable")
 
-    pseudo = body.get("pseudo", "").strip()[:20]
+    claims = get_account_claims(request)
+    if claims:
+        pseudo, account_uid = claims["username"], claims["uid"]
+    else:
+        pseudo = body.get("pseudo", "").strip()[:20]
+        account_uid = None
     if not pseudo:
         raise HTTPException(400, "Pseudo requis")
 
     # Reconnexion : pseudo correspond à un joueur déconnecté → reprise de session
     for pid, p in state["players"].items():
         if p["pseudo"] == pseudo and not p["connected"]:
-            return {"room_code": code, "player_id": pid, "players": players_list(state), "resumed": True}
+            return {"room_code": code, "player_id": pid, "players": players_list(state), "resumed": True, "pseudo": pseudo}
 
     if state["status"] != "lobby":
         raise HTTPException(400, "Partie déjà en cours — entre ton pseudo d'origine pour reprendre ta place")
@@ -170,12 +193,12 @@ async def join_room(code: str, body: dict):
         raise HTTPException(400, "Room pleine (8 joueurs max)")
 
     with Session(_engine) as s:
-        player = GamePlayer(room_id=state["db_room_id"], pseudo=pseudo)
+        player = GamePlayer(room_id=state["db_room_id"], pseudo=pseudo, account_uid=account_uid)
         s.add(player); s.commit(); s.refresh(player)
         player_id = player.id
 
-    state["players"][player_id] = {"pseudo": pseudo, "score": 0, "connected": False}
-    return {"room_code": code, "player_id": player_id, "players": players_list(state)}
+    state["players"][player_id] = {"pseudo": pseudo, "score": 0, "connected": False, "account_uid": account_uid}
+    return {"room_code": code, "player_id": player_id, "players": players_list(state), "pseudo": pseudo}
 
 
 @router.get("/game/api/timeline")
@@ -488,11 +511,12 @@ async def start_reveal_phase(code: str):
         if not sub["media_uuid"]:
             continue
         queue.append({
-            "player_id":  pid,
-            "pseudo":     state["players"][pid]["pseudo"],
-            "media_uuid": sub["media_uuid"],
-            "text":       sub["text"],
-            "round_num":  n,
+            "player_id":   pid,
+            "pseudo":      state["players"][pid]["pseudo"],
+            "account_uid": state["players"][pid].get("account_uid"),
+            "media_uuid":  sub["media_uuid"],
+            "text":        sub["text"],
+            "round_num":   n,
         })
     random.shuffle(queue)
     state["reveal_queue"]  = queue
@@ -575,6 +599,7 @@ async def check_all_voted(code: str):
         "round_num":    item["round_num"],
         "player_id":    item["player_id"],
         "pseudo":       item["pseudo"],
+        "account_uid":  item.get("account_uid"),
         "media_uuid":   item["media_uuid"],
         "text":         item["text"],
         "reveal_order": idx,
@@ -706,6 +731,7 @@ async def _save_to_db(code: str):
                 round_id      = round_cache[rnum],
                 player_id     = ans["player_id"],
                 player_pseudo = ans["pseudo"],
+                account_uid   = ans.get("account_uid"),
                 media_uuid    = ans["media_uuid"],
                 text          = ans["text"],
                 reveal_order  = ans["reveal_order"],

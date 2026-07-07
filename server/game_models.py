@@ -19,10 +19,15 @@ class GameRoom(SQLModel, table=True):
 class GamePlayer(SQLModel, table=True):
     __tablename__  = "game_players"
     __table_args__ = {"extend_existing": True}
-    id:      Optional[int] = Field(default=None, primary_key=True)
-    room_id: int           = Field(foreign_key="game_rooms.id")
-    pseudo:  str
-    score:   int           = Field(default=0)
+    id:          Optional[int] = Field(default=None, primary_key=True)
+    room_id:     int           = Field(foreign_key="game_rooms.id")
+    pseudo:      str
+    score:       int           = Field(default=0)
+    # uid cooloss si le joueur était connecté (via le cookie partagé,
+    # vérifié côté serveur — jamais déduit du pseudo envoyé par le client).
+    # NULL pour les invités, comme pour toutes les parties d'avant cette
+    # colonne.
+    account_uid: Optional[int] = Field(default=None)
 
 
 class GameRound(SQLModel, table=True):
@@ -50,6 +55,9 @@ class GameAnswer(SQLModel, table=True):
     reveal_order:  int           = Field(default=0)
     total_stars:   int           = Field(default=0)
     vote_count:    int           = Field(default=0)
+    # Même uid cooloss que GamePlayer.account_uid, dupliqué ici pour pouvoir
+    # requêter "légendes de tel compte" sans jointure. NULL pour un invité.
+    account_uid:   Optional[int] = Field(default=None)
 
 
 class GameVote(SQLModel, table=True):
