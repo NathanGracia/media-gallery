@@ -947,9 +947,54 @@ async function tryResumeActiveRoom() {
   }
 }
 
+// ── Preview d'écran (debug/design, hors flux de jeu) ────────────────────────
+// Usage : /game/?preview=end — construit un faux message game_end avec de
+// vrais médias (vignettes/vidéos chargent normalement) et le fait passer par
+// handleMsg(), exactement comme un vrai message serveur. Ça évite de dupliquer
+// le rendu ailleurs : si renderGameEnd() change, la preview suit sans y
+// toucher. Pas besoin de finir une vraie partie pour itérer sur le CSS.
+async function loadEndScreenPreview() {
+  let items = [];
+  try {
+    const r = await fetch('/api/media?per_page=3');
+    const data = await r.json();
+    items = data.items || [];
+  } catch (_) { /* pas de média dispo, top_memes restera vide */ }
+
+  const captions = [
+    'Quand tu debug à 3h du matin',
+    'Moi ignorant les 47 notifications',
+    'Le vendredi 17h vs le lundi 9h',
+  ];
+
+  S.playerId = 1;
+  handleMsg({
+    type: 'game_end',
+    players: [
+      { id: 1, pseudo: 'Toi',           score: 340, connected: true },
+      { id: 2, pseudo: 'ShikamaruXXL',  score: 210, connected: true },
+      { id: 3, pseudo: 'PixelPanda',    score: 90,  connected: false },
+    ],
+    top_memes: items.map((m, i) => ({
+      pseudo:     ['Toi', 'ShikamaruXXL', 'PixelPanda'][i % 3],
+      text:       captions[i] || 'Légende de test',
+      media_uuid: m.id,
+      media_url:  m.url,
+      thumb:      m.thumbnail,
+      avg:        [92, 78, 61][i] || 50,
+      vote_count: [5, 4, 3][i] || 1,
+    })),
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
   await loadAccount();
+
+  if (new URLSearchParams(location.search).get('preview') === 'end') {
+    await loadEndScreenPreview();
+    return;
+  }
 
   if (await tryResumeActiveRoom()) return;
 
