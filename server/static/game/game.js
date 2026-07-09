@@ -383,45 +383,16 @@ function selectMemeFromModal(idx) {
 }
 
 // ── Top meme preview (game end) ───────────────────────────────────────────────
+// Ouvre le mème dans le vrai composant de la galerie (lecteur Plyr, tag bar,
+// rogner, copier le lien, télécharger, historique des légendes) plutôt que
+// de dupliquer une mini-modale ici — ce markup/CSS n'existe que sur la page
+// d'accueil (index.html a #video-overlay, la page /game/ ne l'a pas), donc
+// on y navigue via le deep-link ?m=UUID déjà utilisé ailleurs dans l'app.
+// Nouvel onglet pour ne pas perdre l'écran de fin de partie en cours.
 function openTopMeme(idx) {
-  closeMemeModal();
   const meme = S.topMemes[idx];
-  if (!meme) return;
-
-  const overlay = document.createElement('div');
-  overlay.id    = 'meme-modal';
-  overlay.innerHTML = `
-    <div class="meme-modal-backdrop" onclick="closeMemeModal()"></div>
-    <div class="meme-modal-panel">
-      <button class="meme-modal-close" onclick="closeMemeModal()">✕</button>
-      <video class="meme-modal-video"
-             src="${esc(meme.media_url)}"
-             autoplay playsinline controls loop></video>
-      <div class="meme-modal-footer">
-        <div class="top-meme-caption" style="text-align:center">${esc(meme.text) || '<em style="opacity:.4">— pas de légende —</em>'}</div>
-        <div class="top-meme-meta" style="justify-content:center;margin-top:6px">
-          <span class="top-meme-author">${esc(meme.pseudo)}</span>
-          <span class="top-meme-score">${meme.avg}/100</span>
-        </div>
-      </div>
-    </div>`;
-
-  document.body.appendChild(overlay);
-  document.body.style.overflow = 'hidden';
-
-  const vid = overlay.querySelector('video');
-  const savedVol   = sessionStorage.getItem('plyr-volume');
-  const savedMuted = sessionStorage.getItem('plyr-muted');
-  if (savedVol !== null) vid.volume = parseFloat(savedVol);
-  vid.muted = savedMuted === 'true' ? true : false;
-  vid.play().catch(() => { vid.muted = true; vid.play(); });
-  vid.addEventListener('volumechange', () => {
-    sessionStorage.setItem('plyr-volume', vid.volume);
-    sessionStorage.setItem('plyr-muted',  vid.muted);
-  });
-
-  document._memeEsc = e => { if (e.key === 'Escape') closeMemeModal(); };
-  document.addEventListener('keydown', document._memeEsc);
+  if (!meme || !meme.media_uuid) return;
+  window.open(`/?m=${encodeURIComponent(meme.media_uuid)}`, '_blank', 'noopener');
 }
 
 function doSubmit() {
@@ -582,6 +553,7 @@ function renderGameEnd() {
                    src="${esc(feature.media_url)}" poster="${esc(feature.thumb)}"
                    playsinline loop></video>
             <div class="legend-feature-crown">🏅 Meilleure légende</div>
+            <button class="legend-feature-sound" id="legend-feature-sound" hidden title="Activer le son">🔇</button>
             <div class="legend-feature-overlay">
               <div class="legend-feature-caption">${esc(feature.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
               <div class="legend-feature-meta">
@@ -626,15 +598,41 @@ function renderGameEnd() {
 // plutôt que de redémarrer à un volume arbitraire à chaque fin de partie.
 function initFeatureVideo() {
   const vid = document.getElementById('legend-feature-video');
+  const btn = document.getElementById('legend-feature-sound');
   if (!vid) return;
+
   const savedVol   = sessionStorage.getItem('plyr-volume');
   const savedMuted = sessionStorage.getItem('plyr-muted');
   vid.volume = savedVol !== null ? parseFloat(savedVol) : 1;
   vid.muted  = savedMuted === 'true';
-  // Les navigateurs bloquent l'autoplay avec son sans interaction préalable —
-  // improbable ici vu qu'on arrive sur cet écran après avoir voté/cliqué
-  // pendant toute la partie, mais on retombe sur muet plutôt que rien.
-  vid.play().catch(() => { vid.muted = true; vid.play().catch(() => {}); });
+
+  const syncButton = () => { if (btn) btn.hidden = !vid.muted; };
+
+  // Le navigateur bloque quasi systématiquement l'autoplay avec son ici :
+  // le message game_end arrive par WebSocket, pas par un clic direct, donc
+  // ça ne compte jamais comme "geste utilisateur" même si on a cliqué/voté
+  // sans arrêt pendant la partie. On retombe sur muet + bouton pour
+  // l'activer manuellement (un vrai clic, ça marche toujours).
+  vid.play().then(syncButton).catch(() => {
+    vid.muted = true;
+    vid.play().catch(() => {});
+    syncButton();
+  });
+
+  if (btn) {
+    btn.onclick = e => {
+      e.stopPropagation(); // ne pas déclencher l'ouverture du mème en grand
+      vid.muted = false;
+      vid.play().catch(() => {});
+      sessionStorage.setItem('plyr-muted', 'false');
+      btn.hidden = true;
+    };
+  }
+  vid.addEventListener('volumechange', () => {
+    sessionStorage.setItem('plyr-volume', vid.volume);
+    sessionStorage.setItem('plyr-muted',  vid.muted);
+    syncButton();
+  });
 }
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────

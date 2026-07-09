@@ -791,6 +791,25 @@ hr.divider { border:none; border-top:1px solid var(--b0); margin:22px 0; }
   padding: 4px 9px;
   border-radius: 20px;
 }
+/* Masqué par défaut (voir initFeatureVideo) — visible seulement quand
+   l'autoplay avec son a été bloqué par le navigateur ou que le choix
+   précédent était muet, pour donner un vrai clic qui active le son. */
+.legend-feature-sound {
+  position: absolute;
+  top: 8px; right: 8px;
+  z-index: 3;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem;
+  color: #fff;
+  background: rgba(0,0,0,.5);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 50%;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background .15s;
+}
+.legend-feature-sound:hover { background: rgba(0,0,0,.7); }
 .legend-feature-overlay {
   position: absolute;
   inset: auto 0 0 0;
