@@ -382,19 +382,6 @@ function selectMemeFromModal(idx) {
   closeMemeModal();
 }
 
-// ── Top meme preview (game end) ───────────────────────────────────────────────
-// Ouvre le mème dans le vrai composant de la galerie (lecteur Plyr, tag bar,
-// rogner, copier le lien, télécharger, historique des légendes) plutôt que
-// de dupliquer une mini-modale ici — ce markup/CSS n'existe que sur la page
-// d'accueil (index.html a #video-overlay, la page /game/ ne l'a pas), donc
-// on y navigue via le deep-link ?m=UUID déjà utilisé ailleurs dans l'app.
-// Nouvel onglet pour ne pas perdre l'écran de fin de partie en cours.
-function openTopMeme(idx) {
-  const meme = S.topMemes[idx];
-  if (!meme || !meme.media_uuid) return;
-  window.open(`/?m=${encodeURIComponent(meme.media_uuid)}`, '_blank', 'noopener');
-}
-
 function doSubmit() {
   if (!S.selectedMeme) return;
   S.ws?.send(JSON.stringify({
@@ -548,12 +535,12 @@ function renderGameEnd() {
         <div class="top-memes">
           <p class="top-memes-title">🏅 Meilleures légendes</p>
 
-          <div class="legend-feature" onclick="openTopMeme(0)">
+          <div class="legend-feature">
             <video class="legend-feature-video" id="legend-feature-video"
                    src="${esc(feature.media_url)}" poster="${esc(feature.thumb)}"
                    playsinline loop></video>
             <div class="legend-feature-crown">🏅 Meilleure légende</div>
-            <button class="legend-feature-sound" id="legend-feature-sound" hidden title="Activer le son">🔇</button>
+            <button class="legend-feature-sound" id="legend-feature-sound" title="Activer/couper le son">🔇</button>
             <div class="legend-feature-overlay">
               <div class="legend-feature-caption">${esc(feature.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
               <div class="legend-feature-meta">
@@ -566,7 +553,7 @@ function renderGameEnd() {
           ${rest.length ? `
             <div class="legend-rest">
               ${rest.map((m, i) => `
-                <div class="legend-item" onclick="openTopMeme(${i + 1})">
+                <div class="legend-item">
                   <video class="legend-item-video" src="${esc(m.media_url)}" poster="${esc(m.thumb)}"
                          autoplay muted loop playsinline></video>
                   <span class="legend-item-rank">${['🥈','🥉'][i] || `${i+2}`}</span>
@@ -594,8 +581,9 @@ function renderGameEnd() {
 
 // La légende gagnante joue avec le son (contrairement aux autres, muettes en
 // boucle façon GIF) — on reprend le volume/mute déjà choisi par l'utilisateur
-// ailleurs dans l'app (mêmes clés sessionStorage que le modal openTopMeme),
-// plutôt que de redémarrer à un volume arbitraire à chaque fin de partie.
+// ailleurs dans l'app (mêmes clés sessionStorage que la modale plein écran
+// de la galerie), plutôt que de redémarrer à un volume arbitraire à chaque
+// fin de partie.
 function initFeatureVideo() {
   const vid = document.getElementById('legend-feature-video');
   const btn = document.getElementById('legend-feature-sound');
@@ -606,26 +594,26 @@ function initFeatureVideo() {
   vid.volume = savedVol !== null ? parseFloat(savedVol) : 1;
   vid.muted  = savedMuted === 'true';
 
-  const syncButton = () => { if (btn) btn.hidden = !vid.muted; };
+  const syncButton = () => { if (btn) btn.textContent = vid.muted ? '🔇' : '🔊'; };
+  syncButton();
 
   // Le navigateur bloque quasi systématiquement l'autoplay avec son ici :
   // le message game_end arrive par WebSocket, pas par un clic direct, donc
   // ça ne compte jamais comme "geste utilisateur" même si on a cliqué/voté
-  // sans arrêt pendant la partie. On retombe sur muet + bouton pour
-  // l'activer manuellement (un vrai clic, ça marche toujours).
-  vid.play().then(syncButton).catch(() => {
+  // sans arrêt pendant la partie. On retombe sur muet, le bouton reste un
+  // vrai toggle ON/OFF (pas juste un "activer" à usage unique).
+  vid.play().catch(() => {
     vid.muted = true;
     vid.play().catch(() => {});
     syncButton();
   });
 
   if (btn) {
-    btn.onclick = e => {
-      e.stopPropagation(); // ne pas déclencher l'ouverture du mème en grand
-      vid.muted = false;
-      vid.play().catch(() => {});
-      sessionStorage.setItem('plyr-muted', 'false');
-      btn.hidden = true;
+    btn.onclick = () => {
+      vid.muted = !vid.muted;
+      if (!vid.muted) vid.play().catch(() => {});
+      sessionStorage.setItem('plyr-muted', String(vid.muted));
+      syncButton();
     };
   }
   vid.addEventListener('volumechange', () => {
