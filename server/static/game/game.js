@@ -554,6 +554,8 @@ function renderRoundEnd() {
 function renderGameEnd() {
   const sorted = [...S.players].sort((a,b) => b.score - a.score);
   const winner = sorted[0];
+  const [feature, ...rest] = S.topMemes;
+
   app.innerHTML = `
     <div class="card">
       <div class="winner-banner">
@@ -571,24 +573,40 @@ function renderGameEnd() {
           </div>`).join('')}
       </div>
 
-      ${S.topMemes.length ? `
+      ${feature ? `
         <div class="top-memes">
           <p class="top-memes-title">🏅 Meilleures légendes</p>
-          ${S.topMemes.map((m,i) => `
-            <div class="top-meme-item">
-              <span class="top-meme-rank">${['🥇','🥈','🥉'][i] || `${i+1}`}</span>
-              <div class="top-meme-thumb" onclick="openTopMeme(${i})">
-                <img src="${esc(m.thumb)}" loading="lazy" onerror="this.style.opacity=0.2">
-                <div class="top-meme-play">▶</div>
+
+          <div class="legend-feature" onclick="openTopMeme(0)">
+            <video class="legend-feature-video" id="legend-feature-video"
+                   src="${esc(feature.media_url)}" poster="${esc(feature.thumb)}"
+                   playsinline loop></video>
+            <div class="legend-feature-crown">🏅 Meilleure légende</div>
+            <div class="legend-feature-overlay">
+              <div class="legend-feature-caption">${esc(feature.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
+              <div class="legend-feature-meta">
+                <span class="legend-feature-author">${esc(feature.pseudo)}</span>
+                <span class="legend-feature-score">${feature.avg}/100${feature.vote_count ? ` · ${feature.vote_count} vote${feature.vote_count > 1 ? 's' : ''}` : ''}</span>
               </div>
-              <div class="top-meme-body">
-                <div class="top-meme-caption">${esc(m.text) || '<em style="opacity:.4">— pas de légende —</em>'}</div>
-                <div class="top-meme-meta">
-                  <span class="top-meme-author">${esc(m.pseudo)}</span>
-                  <span class="top-meme-score">${m.avg}/100${m.vote_count ? ` · ${m.vote_count} vote${m.vote_count > 1 ? 's' : ''}` : ''}</span>
-                </div>
-              </div>
-            </div>`).join('')}
+            </div>
+          </div>
+
+          ${rest.length ? `
+            <div class="legend-rest">
+              ${rest.map((m, i) => `
+                <div class="legend-item" onclick="openTopMeme(${i + 1})">
+                  <video class="legend-item-video" src="${esc(m.media_url)}" poster="${esc(m.thumb)}"
+                         autoplay muted loop playsinline></video>
+                  <span class="legend-item-rank">${['🥈','🥉'][i] || `${i+2}`}</span>
+                  <div class="legend-item-body">
+                    <div class="legend-item-caption">${esc(m.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
+                    <div class="legend-item-meta">
+                      <span class="legend-item-author">${esc(m.pseudo)}</span>
+                      <span class="legend-item-score">${m.avg}</span>
+                    </div>
+                  </div>
+                </div>`).join('')}
+            </div>` : ''}
         </div>` : ''}
 
       <p style="text-align:center;color:var(--text-2);font-size:.82rem;margin-top:8px">
@@ -598,6 +616,25 @@ function renderGameEnd() {
         ← Retour à la galerie
       </button>
     </div>`;
+
+  if (feature) initFeatureVideo();
+}
+
+// La légende gagnante joue avec le son (contrairement aux autres, muettes en
+// boucle façon GIF) — on reprend le volume/mute déjà choisi par l'utilisateur
+// ailleurs dans l'app (mêmes clés sessionStorage que le modal openTopMeme),
+// plutôt que de redémarrer à un volume arbitraire à chaque fin de partie.
+function initFeatureVideo() {
+  const vid = document.getElementById('legend-feature-video');
+  if (!vid) return;
+  const savedVol   = sessionStorage.getItem('plyr-volume');
+  const savedMuted = sessionStorage.getItem('plyr-muted');
+  vid.volume = savedVol !== null ? parseFloat(savedVol) : 1;
+  vid.muted  = savedMuted === 'true';
+  // Les navigateurs bloquent l'autoplay avec son sans interaction préalable —
+  // improbable ici vu qu'on arrive sur cet écran après avoir voté/cliqué
+  // pendant toute la partie, mais on retombe sur muet plutôt que rien.
+  vid.play().catch(() => { vid.muted = true; vid.play().catch(() => {}); });
 }
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────

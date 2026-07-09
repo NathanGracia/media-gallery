@@ -762,7 +762,64 @@ hr.divider { border:none; border-top:1px solid var(--b0); margin:22px 0; }
   color: var(--text-2);
   margin-bottom: 4px;
 }
-.top-meme-item {
+
+/* Légende gagnante : grand format, son activé (voir initFeatureVideo en JS —
+   object-fit:contain comme .meme-modal-video, pas de crop, la vidéo garde
+   son ratio d'origine plutôt que d'être forcée dans un cadre fixe. */
+.legend-feature {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(251,191,36,.35);
+  cursor: pointer;
+  background: #000;
+}
+.legend-feature-video {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  background: #000;
+}
+.legend-feature-crown {
+  position: absolute;
+  top: 10px; left: 10px;
+  z-index: 2;
+  font-size: .7rem; font-weight: 700; letter-spacing: .02em;
+  color: #1a1300;
+  background: var(--gold);
+  padding: 4px 9px;
+  border-radius: 20px;
+}
+.legend-feature-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  padding: 28px 14px 12px;
+  background: linear-gradient(0deg, rgba(4,4,8,.92) 0%, rgba(4,4,8,.55) 60%, transparent 100%);
+  pointer-events: none;
+}
+/* Légende jusqu'à 100 caractères : pas de clamp ici, l'overlay grandit avec
+   le texte (contrairement aux vignettes .legend-item, taille fixe en-dessous). */
+.legend-feature-caption {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+  word-break: break-word;
+}
+.legend-feature-meta {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 6px;
+  font-size: .78rem;
+}
+.legend-feature-author { color: rgba(255,255,255,.75); font-weight: 600; }
+.legend-feature-score { color: var(--gold); font-weight: 700; margin-left: auto; font-variant-numeric: tabular-nums; }
+
+/* Les 2 suivantes : muettes, en boucle façon GIF, format compact liste. */
+.legend-rest { display: flex; flex-direction: column; gap: 8px; }
+.legend-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -770,45 +827,41 @@ hr.divider { border:none; border-top:1px solid var(--b0); margin:22px 0; }
   border: 1px solid var(--b0);
   border-radius: 12px;
   padding: 8px 10px;
+  cursor: pointer;
 }
-.top-meme-rank { font-size: 1.3rem; flex-shrink: 0; }
-.top-meme-thumb {
-  position: relative;
-  width: 64px;
-  height: 64px;
+.legend-item-video {
+  width: 84px; height: 84px;
   flex-shrink: 0;
   border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
+  object-fit: cover;
   background: #000;
 }
-.top-meme-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.top-meme-play {
+.legend-item-rank {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 1.1rem;
-  background: rgba(0,0,0,.3);
-  opacity: .75;
-  transition: opacity .15s;
+  top: 12px; left: 12px;
+  font-size: 1.05rem;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.7));
 }
-.top-meme-thumb:hover .top-meme-play { opacity: 1; background: rgba(0,0,0,.45); }
-.top-meme-body { flex: 1; min-width: 0; }
-.top-meme-caption {
-  font-size: .9rem;
+.legend-item-body { flex: 1; min-width: 0; }
+/* Clamp à 3 lignes ici (contrairement à la vedette) : ce sont des cartes
+   compactes, pas la place d'afficher 100 caractères en entier sans casser
+   la mise en page — le survol/clic ouvre le mème en grand si besoin. */
+.legend-item-caption {
+  font-size: .88rem;
   color: var(--text-1, #e2e8f0);
-  line-height: 1.25;
+  line-height: 1.28;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.top-meme-meta {
+.legend-item-meta {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 4px;
   font-size: .74rem;
 }
-.top-meme-author { color: var(--text-2); font-weight: 600; }
-.top-meme-score { color: var(--gold); font-weight: 700; margin-left: auto; }
+.legend-item-author { color: var(--text-2); font-weight: 600; }
+.legend-item-score { color: var(--gold); font-weight: 700; margin-left: auto; }
