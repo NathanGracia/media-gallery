@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="game.css?v=16">
+  <link rel="stylesheet" href="game.css?v=17">
 </head>
 <body>
   <div class="orb orb-1"></div>
@@ -31,8 +31,10 @@
         </svg>
         <span class="brand-name">Memoss</span>
       </a>
-      <a href="/timeline" class="btn-game-link">Légendes</a>
-      <a href="/game/" class="btn-game-link btn-game-link--active">Jouer</a>
+      <div class="nav-links">
+        <a href="/timeline" class="btn-game-link">Légendes</a>
+        <a href="/game/" class="btn-game-link btn-game-link--active">Jouer</a>
+      </div>
       <span class="room-code-display" id="room-code-display"></span>
       <div id="account-widget"></div>
     </div>
@@ -42,7 +44,7 @@
     <!-- Screens rendered by JS -->
   </main>
 
-  <script src="../account-widget.js?v=1"></script>
+  <script src="../account-widget.js?v=2"></script>
   <script src="game.js?v=37"></script>
 </body>
 </html>

@@ -82,6 +82,9 @@ header {
   50%  { border-color: rgba(34,211,238,0.38); }
   100% { border-color: rgba(34,211,238,0.18); }
 }
+.nav-links {
+  display: flex; align-items: center; gap: 24px; flex-shrink: 0;
+}
 .btn-game-link {
   padding: 7px 18px;
   background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(99,102,241,0.06) 100%);
@@ -730,6 +733,18 @@ hr.divider { border:none; border-top:1px solid var(--b0); margin:22px 0; }
 .debug-row:last-child { border-bottom: none; }
 .debug-row span:first-child { color: var(--text-3); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
 .debug-row span:last-child  { color: var(--text-2); font-family: monospace; }
+
+@media (max-width: 600px) {
+  header { padding: 0 14px; }
+  .header-inner { flex-wrap: wrap; row-gap: 8px; gap: 10px; padding: 10px 0 8px; }
+  .brand { order: 1; }
+  .brand-name { font-size: 1.05rem; }
+  .brand-logo { width: 24px; height: 24px; }
+  #account-widget { order: 2; margin-left: auto; }
+  .nav-links { order: 3; flex-basis: 100%; justify-content: center; gap: 8px; }
+  .btn-game-link { padding: 6px 14px; font-size: 0.72rem; }
+  .room-code-display { order: 4; flex-basis: 100%; text-align: center; margin-left: 0; }
+}
 
 /* ── Responsive ── */
 @media (max-width:500px) {

@@ -98,6 +98,9 @@
       50%  { border-color: rgba(34,211,238,0.38); }
       100% { border-color: rgba(34,211,238,0.18); }
     }
+    .nav-links {
+      display: flex; align-items: center; gap: 24px; flex-shrink: 0;
+    }
     .btn-game-link {
       padding: 7px 18px;
       background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(99,102,241,0.06) 100%);
@@ -118,6 +121,17 @@
       background: rgba(34,211,238,0.14);
       border-color: rgba(34,211,238,0.5);
       color: #fff;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 0 14px; }
+      .header-inner { flex-wrap: wrap; row-gap: 8px; gap: 10px; padding: 10px 0 8px; }
+      .brand { order: 1; }
+      .brand-name { font-size: 1.05rem; }
+      .brand-logo { width: 24px; height: 24px; }
+      #account-widget { order: 2; margin-left: auto; }
+      .nav-links { order: 3; flex-basis: 100%; justify-content: center; gap: 8px; }
+      .btn-game-link { padding: 6px 14px; font-size: 0.72rem; }
     }
 
     /* — Account widget — */
@@ -391,8 +405,10 @@
       </svg>
       <span class="brand-name">Memoss</span>
     </a>
-    <a href="/timeline" class="btn-game-link btn-game-link--active">Légendes</a>
-    <a href="/game/"    class="btn-game-link">Jouer</a>
+    <div class="nav-links">
+      <a href="/timeline" class="btn-game-link btn-game-link--active">Légendes</a>
+      <a href="/game/"    class="btn-game-link">Jouer</a>
+    </div>
     <div id="account-widget"></div>
   </div>
 </header>
@@ -455,7 +471,7 @@
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script>window.TIMELINE_MODE = true;</script>
-<script src="account-widget.js?v=1"></script>
+<script src="account-widget.js?v=2"></script>
 <script src="app.js?v=40"></script>
 <script>
 async function openMediaCard(e, uuid) {
