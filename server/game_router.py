@@ -15,21 +15,26 @@ from sqlalchemy import func
 
 from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote
 from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
+from shardoss_client import notify_shardoss
 
 log            = logging.getLogger(__name__)
 router         = APIRouter()
 _engine        = None
 _Media         = None
 _shared_secret = ""
+_shardoss_base_url    = ""
+_shardoss_webhook_key = ""
 
 TOTAL_ROUNDS = 3
 
 
-def init(engine, MediaModel, shared_secret: str = ""):
-    global _engine, _Media, _shared_secret
+def init(engine, MediaModel, shared_secret: str = "", shardoss_base_url: str = "", shardoss_webhook_key: str = ""):
+    global _engine, _Media, _shared_secret, _shardoss_base_url, _shardoss_webhook_key
     _engine        = engine
     _Media         = MediaModel
     _shared_secret = shared_secret
+    _shardoss_base_url    = shardoss_base_url
+    _shardoss_webhook_key = shardoss_webhook_key
     SQLModel.metadata.create_all(_engine)
     log.info("Game router initialisé.")
 
@@ -231,6 +236,52 @@ async def my_room(request: Request):
             if p.get("account_uid") == uid:
                 return {"room_code": code, "player_id": pid}
     return {"room_code": None}
+
+
+@router.get("/game/api/account/{uid}/summary")
+def get_account_summary(uid: int):
+    """
+    Résumé public des stats d'un compte cooloss (parties jouées/gagnées,
+    note moyenne des légendes) — consommé par la page profil de cooloss.
+    Pas d'auth : même niveau d'exposition qu'un classement, rien de sensible.
+    """
+    with Session(_engine) as s:
+        rows = s.exec(
+            select(GamePlayer, GameRoom.status)
+            .join(GameRoom, GamePlayer.room_id == GameRoom.id)
+            .where(GamePlayer.account_uid == uid)
+        ).all()
+
+        games_played = 0
+        games_won = 0
+        for player, status in rows:
+            if status != "finished":
+                continue
+            games_played += 1
+            room_scores = s.exec(
+                select(GamePlayer.score).where(GamePlayer.room_id == player.room_id)
+            ).all()
+            max_score = max(room_scores) if room_scores else 0
+            if max_score > 0 and player.score == max_score:
+                games_won += 1
+
+        answers = s.exec(
+            select(GameAnswer.total_stars, GameAnswer.vote_count)
+            .where(GameAnswer.account_uid == uid)
+            .where(GameAnswer.vote_count > 0)
+        ).all()
+        legends_count = len(answers)
+        avg_legend_rating = (
+            round(sum(stars / votes for stars, votes in answers) / legends_count, 2)
+            if legends_count else None
+        )
+
+        return {
+            "gamesPlayed": games_played,
+            "gamesWon": games_won,
+            "legendsCount": legends_count,
+            "avgLegendRating": avg_legend_rating,
+        }
 
 
 @router.get("/game/api/timeline", dependencies=[Depends(require_admin_or_habitue)])
@@ -712,6 +763,26 @@ async def end_game(code: str):
     })
 
     await _save_to_db(code)
+
+    # Notification Shardoss (jeu idle connecté) — fire-and-forget, jamais
+    # awaité : une panne/lenteur de Shardoss ne doit jamais retarder ou
+    # casser le retour au lobby d'une partie Memoss. Le rang qui compte côté
+    # Shardoss est celui des légendes (voir NathanGracia/shardoss), pas celui
+    # des joueurs — on envoie donc toutes les légendes brutes, pas de tri ici.
+    shardoss_payload = {
+        "game_room_id": state["db_room_id"],
+        "player_count": len(state["players"]),
+        "legends": [
+            {
+                "account_uid": a.get("account_uid"),
+                "media_id":    a["media_uuid"],
+                "total_stars": a["total_stars"],
+                "vote_count":  a["vote_count"],
+            }
+            for a in state["all_answers"]
+        ],
+    }
+    asyncio.create_task(notify_shardoss(_shardoss_base_url, _shardoss_webhook_key, shardoss_payload))
 
     # Retour au lobby après 10s pour une nouvelle partie
     await asyncio.sleep(10)

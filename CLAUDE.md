@@ -64,6 +64,16 @@ Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://
 | `POST` | `/game/api/rooms` | non (identité optionnelle via cookie) | Créer une partie |
 | `POST` | `/game/api/rooms/{code}/join` | non (identité optionnelle via cookie) | Rejoindre une partie |
 | `GET` | `/game/api/my-room` | non (identité optionnelle via cookie) | Room active du compte connecté, pour reprise auto |
+| `GET` | `/api/shardoss/stats` | `x-api-key` (clé dédiée Shardoss) | Population complète des médias tag=cinema/vidéo (popularité/qualité/durée), pour le recalcul quotidien de Shardoss |
+
+## Shardoss (jeu idle connecté)
+
+Depuis juillet 2026, Memoss notifie un service séparé, **Shardoss** (repo `NathanGracia/shardoss`, sa propre DB), à la fin de chaque partie — un jeu idle/clicker où la collection de memes dérive des stats d'usage réelles de Memoss. Voir `docs/plan.md` et `docs/whitepaper.md` dans le repo Shardoss pour l'architecture complète.
+
+- `server/shardoss_client.py::notify_shardoss()` : appelé en fire-and-forget (`asyncio.create_task`, jamais awaité) depuis `end_game()` dans `game_router.py`, juste après `_save_to_db()`. Timeout court (3s), avale toute exception — une panne/lenteur de Shardoss ne doit **jamais** impacter une partie Memoss en cours. `shardoss_base_url`/`shardoss_webhook_key` vides en dev = no-op silencieux.
+- Le payload envoyé contient les légendes brutes de toute la partie (`account_uid`, `media_uuid`, `total_stars`, `vote_count`) — c'est Shardoss qui trie et calcule les rangs, pas Memoss. Ne pas essayer de "simplifier" ce payload en renvoyant un classement déjà calculé : le rang qui compte côté Shardoss est celui des légendes, pas celui des joueurs, et cette logique vit uniquement côté Shardoss.
+- `GET /api/shardoss/stats` (gated par une clé API dédiée dans `api_keys:`, distincte de celle du feeder) expose la galerie complète (y compris médias à 0 vue) — Shardoss en a besoin pour calculer des percentiles corrects sur toute la population, pas seulement les médias déjà joués.
+- `Media.duration_seconds` : extrait via `ffprobe` à l'upload (`gen_video_duration()`, à côté de `gen_video_thumb()`). Backfill ponctuel pour les vidéos déjà en base : `docker compose exec gallery python scripts/backfill_duration.py`.
 
 ## Crop vidéo
 

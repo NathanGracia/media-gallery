@@ -12,7 +12,9 @@ alert_threshold_pct: 80
 # URL du webhook Discord pour les alertes de stockage (laisser vide pour désactiver)
 discord_webhook_url: ""
 
-# Clés API autorisées pour les feeders
+# Clés API autorisées pour les feeders — et aussi pour Shardoss côté pull de
+# stats (GET /api/shardoss/stats), ajouter une clé dédiée à la liste plutôt
+# que de réutiliser celle du feeder.
 # Générer avec : python3 -c "import secrets; print(secrets.token_hex(32))"
 api_keys:
   - "REMPLACE_MOI_AVEC_UNE_CLE_SECRETE"
@@ -28,3 +30,10 @@ public_url: ""
 # SHARED_SESSION_SECRET dans cooloss/.env, sinon les sessions ne sont pas
 # reconnues. Ne réutilise pas une clé api_keys existante.
 shared_session_secret: ""
+
+# Shardoss (jeu idle connecté, repo séparé NathanGracia/shardoss). Laisser
+# vide en dev pour désactiver silencieusement la notification de fin de
+# partie (server/shardoss_client.py). shardoss_webhook_key doit être
+# IDENTIQUE à memoss_webhook_key dans le config.yaml de Shardoss.
+shardoss_base_url: ""
+shardoss_webhook_key: ""

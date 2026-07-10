@@ -51,6 +51,11 @@ API_KEYS       = set(cfg.get("api_keys", []))
 PUBLIC_URL     = cfg.get("public_url", "").rstrip("/")
 SHARED_SESSION_SECRET = cfg.get("shared_session_secret", "")
 
+# Shardoss (jeu idle connecté, service séparé — voir NathanGracia/shardoss).
+# Vide en dev par défaut : notify_shardoss() devient un no-op silencieux.
+SHARDOSS_BASE_URL   = cfg.get("shardoss_base_url", "").rstrip("/")
+SHARDOSS_WEBHOOK_KEY = cfg.get("shardoss_webhook_key", "")
+
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 THUMB_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -72,10 +77,11 @@ class Media(SQLModel, table=True):
     feeder_name:   str
     tag:           str                 = Field(default="todo")  # "osef" | "cinema" | "todo"
     uploaded_at:   datetime.datetime  = Field(default_factory=datetime.datetime.utcnow)
+    duration_seconds: Optional[float] = Field(default=None)  # vidéos uniquement — voir gen_video_duration
 
 
 SQLModel.metadata.create_all(engine)
-init_game(engine, Media, SHARED_SESSION_SECRET)
+init_game(engine, Media, SHARED_SESSION_SECRET, SHARDOSS_BASE_URL, SHARDOSS_WEBHOOK_KEY)
 
 # Migration : ajoute la colonne tag si elle n'existe pas encore (DB existante)
 with engine.connect() as _conn:
@@ -103,6 +109,15 @@ with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE game_answers ADD COLUMN account_uid INTEGER"))
         _conn.commit()
         log.info("Migration : colonne 'account_uid' ajoutée à game_players/game_answers.")
+    except Exception:
+        pass  # Colonne déjà présente
+
+# Migration : ajoute duration_seconds (consommé par Shardoss, voir /api/shardoss/stats)
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE media ADD COLUMN duration_seconds FLOAT"))
+        _conn.commit()
+        log.info("Migration : colonne 'duration_seconds' ajoutée à media.")
     except Exception:
         pass  # Colonne déjà présente
 
@@ -199,6 +214,19 @@ def gen_video_thumb(src: Path, dst: Path) -> bool:
         return False
 
 
+def gen_video_duration(src: Path) -> Optional[float]:
+    """Consommé par Shardoss (voir /api/shardoss/stats) pour le rythme d'affichage des gains — jamais pour le calcul du taux économique lui-même."""
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(src)],
+            capture_output=True, timeout=15, text=True,
+        )
+        return float(r.stdout.strip())
+    except Exception as e:
+        log.warning(f"ffprobe duration échoué pour {src.name}: {e}")
+        return None
+
+
 def gen_image_thumb(src: Path, dst: Path) -> bool:
     try:
         with Image.open(src) as img:
@@ -243,10 +271,12 @@ async def upload(
     async with aiofiles.open(file_path, "wb") as f:
         await f.write(content)
 
-    # Thumbnail
+    # Thumbnail + durée (vidéo uniquement)
     thumb_path = THUMB_DIR / f"{file_uuid}.jpg"
+    duration: Optional[float] = None
     if media_type == "video":
         gen_video_thumb(file_path, thumb_path)
+        duration = gen_video_duration(file_path)
     else:
         gen_image_thumb(file_path, thumb_path)
 
@@ -259,6 +289,7 @@ async def upload(
             extension=ext,
             size_bytes=size,
             feeder_name=feeder_name,
+            duration_seconds=duration,
         ))
         session.commit()
 
@@ -341,6 +372,47 @@ def get_media_meta(media_uuid: str):
             "url":           f"/media/{m.filename}",
             "thumbnail":     f"/thumbnail/{m.uuid}.jpg",
         }
+
+
+@app.get("/api/shardoss/stats")
+def shardoss_stats(_: str = Depends(require_api_key)):
+    """
+    Population complète des médias éligibles au jeu (tag=cinema, vidéo),
+    y compris ceux à 0 vue — Shardoss a besoin de la galerie entière pour
+    calculer des percentiles de popularité/qualité corrects, pas seulement
+    des médias déjà joués. Gated par la même clé API que le feeder, avec une
+    entrée dédiée à Shardoss dans api_keys: (voir config.yaml.example).
+    """
+    with Session(engine) as session:
+        media_rows = session.exec(
+            select(Media).where(Media.tag == "cinema", Media.media_type == "video")
+        ).all()
+        uuids = [m.uuid for m in media_rows]
+
+        agg_map: dict[str, tuple[int, int, int]] = {}
+        if uuids:
+            agg_rows = session.exec(
+                select(
+                    GameAnswer.media_uuid,
+                    func.count(GameAnswer.id).label("play_count"),
+                    func.sum(GameAnswer.total_stars).label("stars_sum"),
+                    func.sum(GameAnswer.vote_count).label("votes_sum"),
+                )
+                .where(GameAnswer.media_uuid.in_(uuids))
+                .group_by(GameAnswer.media_uuid)
+            ).all()
+            agg_map = {r.media_uuid: (r.play_count, r.stars_sum or 0, r.votes_sum or 0) for r in agg_rows}
+
+        return [
+            {
+                "uuid": m.uuid,
+                "duration_seconds": m.duration_seconds,
+                "play_count": agg_map.get(m.uuid, (0, 0, 0))[0],
+                "total_stars_sum": agg_map.get(m.uuid, (0, 0, 0))[1],
+                "vote_count_sum": agg_map.get(m.uuid, (0, 0, 0))[2],
+            }
+            for m in media_rows
+        ]
 
 
 @app.patch("/api/media/{media_uuid}/tag")
