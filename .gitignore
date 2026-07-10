@@ -1,6 +1,10 @@
 # ── Secrets & config locaux ───────────────────────────────────────────────────
-server/config.yaml          # Contient clés API et webhook — NE JAMAIS COMMITTER
-feeder/config.json          # Config feeder locale
+# Contient clés API et webhook — NE JAMAIS COMMITTER.
+# (Le commentaire doit rester sur sa propre ligne : un "# ..." en fin de ligne
+# de pattern n'est PAS un commentaire pour git, il fait partie du pattern
+# littéral — ce qui désactivait silencieusement cette règle jusqu'ici.)
+server/config.yaml
+feeder/config.json
 
 # ── Données serveur (volumes Docker) ─────────────────────────────────────────
 server/db.sqlite
