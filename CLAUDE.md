@@ -6,13 +6,15 @@
 
 **Toujours tester en local avant de push.**
 
+> ⚠️ **Sur le VPS de prod, `/opt/media-gallery/server` EST le déploiement de prod** (bind-mount Docker direct sur ce dossier). `config.yaml`, `db.sqlite`, `media/`, `thumbnails/` y sont les vrais fichiers de prod. Un incident similaire s'est produit sur Shardoss (2026-07-10) : test local dans le dossier de prod, nettoyage a supprimé le config.yaml + la DB réels. Si tu es sur ce VPS : teste dans une copie à part (`cp -r /opt/media-gallery/server /tmp/media-gallery-test`), jamais en place.
+
 ```bash
-# Lancer le serveur local
+# Lancer le serveur local (sur une VRAIE machine de dev séparée du VPS de prod)
 cd server && python main.py
 # → http://127.0.0.1:8000
 ```
 
-Le serveur local a sa propre DB (`server/db.sqlite`) et ses médias (`server/media/`).  
+Le serveur local a sa propre DB (`server/db.sqlite`) et ses médias (`server/media/`) — **seulement si c'est un dossier distinct de la prod**, voir avertissement ci-dessus.  
 Ne pas committer `server/db.sqlite`, `server/media/`, `server/thumbnails/`, `server/config.yaml`.
 
 ## Stack
