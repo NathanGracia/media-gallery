@@ -12,6 +12,7 @@ import requests as req
 from game_router import router as game_router, init as init_game
 import aiofiles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel, Field, Session, create_engine, select, col
@@ -123,6 +124,20 @@ with engine.connect() as _conn:
 
 # ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Media Gallery v3", docs_url=None, redoc_url=None)
+
+# Shardoss (server/static/app.js) fetch() les métadonnées média cross-origin
+# (GET /api/media/{uuid}) pour construire l'URL de la vidéo — sans CORS le
+# navigateur bloque silencieusement la lecture de la réponse, meta reste
+# null côté client et aucune vidéo ne se charge jamais (bug constaté en
+# prod). Scope à l'origine Shardoss uniquement, endpoint public/sans
+# credentials donc pas de risque à l'élargir un peu, mais pas de wildcard
+# non plus par cohérence avec le reste des configs CORS de ces apps.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://shardoss.nathangracia.com"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
