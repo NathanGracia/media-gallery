@@ -239,6 +239,22 @@ function goPage(p) {
 // ── Plyr video player ─────────────────────────────────────────────────────────
 let player = null;
 
+// Écrit le réglage de volume partagé (voir cooloss/prisma/schema.prisma,
+// User.volume) — même origine "same-site" que memoss.nathangracia.com, le
+// cookie de session part automatiquement (voir CORS côté cooloss).
+let _sharedVolumeDebounce = null;
+function persistSharedVolume(v) {
+  if (_sharedVolumeDebounce) clearTimeout(_sharedVolumeDebounce);
+  _sharedVolumeDebounce = setTimeout(() => {
+    fetch('https://cooloss.nathangracia.com/api/profile', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume: v }),
+    }).catch(() => {});
+  }, 300);
+}
+
 const FOOTER_H  = 80;   // hauteur footer en px (inclut padding + border)
 const MAX_VH    = 0.92; // 92vh
 const MAX_VW    = 0.92; // 92vw
@@ -283,13 +299,22 @@ function vpInit(url) {
     player.on('volumechange', () => {
       sessionStorage.setItem('plyr-volume', player.volume);
       sessionStorage.setItem('plyr-muted',  player.muted);
+      // Compte connecté : le volume Plyr alimente aussi le réglage partagé
+      // entre toutes les apps "-oss" (invité sans compte -> sessionStorage
+      // seul, comme avant).
+      if (AccountWidget.session.loggedIn && !player.muted) persistSharedVolume(player.volume);
     });
   }
 
-  // Restaure le volume de la session
+  // Volume : priorité au réglage partagé du compte connecté ; repli sur
+  // sessionStorage (comportement historique, pour les invités ou tant que
+  // /api/whoami n'a pas encore répondu).
   const savedVolume = sessionStorage.getItem('plyr-volume');
   const savedMuted  = sessionStorage.getItem('plyr-muted');
-  if (savedVolume !== null) {
+  if (AccountWidget.session.loggedIn) {
+    player.volume = AccountWidget.session.volume;
+    player.muted  = false;
+  } else if (savedVolume !== null) {
     player.volume = parseFloat(savedVolume);
     player.muted  = savedMuted === 'true';
   }
