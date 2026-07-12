@@ -431,6 +431,35 @@ def shardoss_stats(_: str = Depends(require_api_key)):
         ]
 
 
+@app.get("/api/shardoss/legend/{media_uuid}")
+def shardoss_legend(media_uuid: str, _: str = Depends(require_api_key)):
+    """
+    Meilleure légende (réponse du jeu de mèmes) pour un média donné —
+    classée par note moyenne (total_stars/vote_count) puis total_stars,
+    même ordre que le classement affiché en jeu (voir game_router.py).
+    GameAnswer n'a pas de statut de modération : seul vote_count > 0 est
+    filtré, pour ne jamais remonter une réponse jamais notée. Renvoie null
+    si aucune réponse notée n'existe pour ce média. Même gate que
+    /api/shardoss/stats (clé API dédiée à Shardoss dans api_keys:).
+    """
+    with Session(engine) as session:
+        rows = session.exec(
+            select(GameAnswer).where(
+                GameAnswer.media_uuid == media_uuid,
+                GameAnswer.vote_count > 0,
+            )
+        ).all()
+        if not rows:
+            return None
+        best = max(rows, key=lambda r: (r.total_stars / r.vote_count, r.total_stars))
+        return {
+            "text": best.text,
+            "pseudo": best.player_pseudo,
+            "avg": round(best.total_stars / best.vote_count, 2),
+            "vote_count": best.vote_count,
+        }
+
+
 @app.patch("/api/media/{media_uuid}/tag")
 def update_tag(media_uuid: str, tag: str = Query(...), _: None = Depends(require_admin_or_api_key)):
     if tag not in ("osef", "cinema", "todo"):
