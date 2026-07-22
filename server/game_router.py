@@ -15,7 +15,7 @@ from sqlalchemy import func
 
 from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote
 from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
-from shardoss_client import notify_shardoss
+from shardoss_client import fetch_pinned_cards, notify_shardoss
 
 log            = logging.getLogger(__name__)
 router         = APIRouter()
@@ -141,7 +141,8 @@ def new_state(db_room_id: int, host_id: int, host_pseudo: str, host_account_uid:
         "reveal_round":    0,      # index du round de révélation en cours (0-based)
         "host_id":         host_id,
         "players":         {host_id: {"pseudo": host_pseudo, "score": 0, "connected": False, "account_uid": host_account_uid}},
-        "player_memes":    {},     # pid -> [{uuid,url,thumb}] pour le round courant
+        "player_memes":    {},     # pid -> [{uuid,url,thumb}] pour le round courant (5 aléatoires + bonus vitrine Shardoss, voir start_pick_round)
+        "player_bonus_uuids": {},  # pid -> {uuid, ...} sous-ensemble bonus de player_memes, voir start_pick_round
         "player_drafts":   {},     # pid -> {media_uuid, text} — brouillon en cours de frappe
         "submissions":     {},     # pid -> {media_uuid, text} pour le round courant
         "all_submissions": {},     # pick_round_idx -> {pid -> {media_uuid, text}}
@@ -383,12 +384,21 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
 
     # Reconnexion en cours de partie : renvoie l'état courant au joueur
     if state["status"] == "picking":
-        memes = state["player_memes"].get(player_id, [])
+        all_memes   = state["player_memes"].get(player_id, [])
+        bonus_uuids = state.get("player_bonus_uuids", {}).get(player_id, set())
+        # state["player_memes"] est une liste à plat (voir start_pick_round) —
+        # on la re-sépare ici pour que le front retrouve les deux groupes
+        # distincts (memes/bonus_memes) au même format qu'un round_start
+        # normal, sinon les bonus réapparaîtraient mélangés dans la grille
+        # normale après une reconnexion en cours de manche.
+        memes       = [m for m in all_memes if m["uuid"] not in bonus_uuids]
+        bonus_memes = [m for m in all_memes if m["uuid"] in bonus_uuids]
         msg   = {
             "type":         "round_start",
             "round":        state["pick_round"] + 1,
             "total_rounds": TOTAL_ROUNDS,
             "memes":        memes,
+            "bonus_memes":  bonus_memes,
         }
         if player_id in state["submissions"]:
             connected_pids         = [pid for pid, p in state["players"].items() if p["connected"]]
@@ -396,7 +406,7 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
             msg["submitted_count"]   = sum(1 for pid in connected_pids if pid in state["submissions"])
             msg["total_connected"]   = len(connected_pids)
             sub                      = state["submissions"][player_id]
-            msg["submitted_meme"]    = next((m for m in memes if m["uuid"] == sub["media_uuid"]), None)
+            msg["submitted_meme"]    = next((m for m in all_memes if m["uuid"] == sub["media_uuid"]), None)
             msg["submitted_text"]    = sub["text"]
         await websocket.send_json(msg)
 
@@ -486,18 +496,40 @@ async def start_game(code: str):
 async def start_pick_round(code: str):
     state = game_states[code]
     n = state["pick_round"]
-    state["submissions"]   = {}
-    state["player_memes"]  = {}
-    state["player_drafts"] = {}
+    state["submissions"]      = {}
+    state["player_memes"]     = {}
+    # uuid des bonus vitrine Shardoss par joueur — state["player_memes"] doit
+    # rester une liste À PLAT (5 aléatoires + bonus) pour la validation dans
+    # handle_submit/auto_submit_missing, ce Set-ci sert uniquement à
+    # reconstituer les deux groupes séparément si le joueur se reconnecte en
+    # cours de manche (voir game_ws, branche "Reconnexion en cours de partie").
+    state["player_bonus_uuids"] = {}
+    state["player_drafts"]    = {}
 
-    for pid in state["players"]:
+    for pid, player in state["players"].items():
         memes = get_random_memes(5, state.get("mode", "all"))
-        state["player_memes"][pid] = memes
+
+        # Bonus vitrine Shardoss (voir shardoss_client.fetch_pinned_cards) —
+        # invité (account_uid None) ou pas de carte épinglée : liste vide,
+        # le front affiche alors les 3 emplacements comme vides plutôt que
+        # de masquer la section. Jamais bloquant pour la manche (best-effort
+        # avec repli sur [] déjà géré côté fetch_pinned_cards).
+        account_uid = player.get("account_uid")
+        bonus_media_ids = await fetch_pinned_cards(_shardoss_base_url, _shardoss_webhook_key, account_uid) if account_uid else []
+        bonus_memes = [meme_info(uuid) for uuid in bonus_media_ids[:3]]
+
+        # Les bonus rejoignent la liste "offerte" utilisée par handle_submit
+        # (validation) et auto_submit_missing (repli aléatoire) — mais le
+        # message envoyé au front garde les deux groupes séparés (memes vs
+        # bonus_memes) pour un rendu visuellement distinct.
+        state["player_memes"][pid] = memes + bonus_memes
+        state["player_bonus_uuids"][pid] = {m["uuid"] for m in bonus_memes}
         await manager.send_to(code, pid, {
             "type":         "round_start",
             "round":        n + 1,
             "total_rounds": TOTAL_ROUNDS,
             "memes":        memes,
+            "bonus_memes":  bonus_memes,
         })
 
     if state["timer_task"]:

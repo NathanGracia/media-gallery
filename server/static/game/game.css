@@ -13,6 +13,7 @@
   --gn-glow:   rgba(74,222,128,0.25);
   --gold:      #fbbf24;
   --gd-dim:    rgba(251,191,36,0.10);
+  --gd-glow:   rgba(251,191,36,0.25);
   --red:       #f87171;
   --text:      #f1f5f9;
   --text-2:    #94a3b8;
@@ -413,6 +414,61 @@ h2 {
 .meme-pick-card.selected .meme-pick-btn {
   background:var(--gn-dim); color:var(--green); border-top-color:rgba(74,222,128,.2);
 }
+
+/* ── Bonus vitrine Shardoss (voir game_router.py::start_pick_round) ── */
+.meme-pick-bonus { margin-bottom:20px; }
+.meme-pick-bonus-label {
+  display:flex; align-items:center; gap:6px;
+  font-size:.72rem; font-weight:700; letter-spacing:.06em;
+  color:var(--gold); text-transform:uppercase;
+  margin-bottom:10px;
+}
+.meme-pick-grid--bonus { margin-bottom:0; }
+.meme-pick-card--bonus { border-color:rgba(251,191,36,0.3); }
+.meme-pick-card--bonus.selected { border-color:var(--gold); box-shadow:0 0 20px var(--gd-glow); }
+.meme-pick-card--bonus .meme-pick-btn:hover { background:var(--gd-dim); color:var(--gold); }
+.meme-pick-card--bonus.selected .meme-pick-btn {
+  background:var(--gd-dim); color:var(--gold); border-top-color:rgba(251,191,36,.2);
+}
+.meme-pick-bonus-tag {
+  position:absolute; top:6px; left:6px;
+  width:22px; height:22px; border-radius:50%;
+  background:var(--gold); color:#000;
+  font-size:.65rem; font-weight:900;
+  display:flex; align-items:center; justify-content:center;
+}
+/* Emplacement vide (invité ou vitrine pas encore remplie) — pas de mème à
+   prévisualiser, donc pas de hover play/clic, juste un repère visuel. */
+.meme-pick-card--empty { background:transparent; border:2px dashed rgba(255,255,255,0.12); }
+.meme-pick-thumb--empty {
+  display:flex; align-items:center; justify-content:center; cursor:default;
+  font-size:.68rem; letter-spacing:.06em; color:var(--text-3); text-align:center; padding:8px;
+}
+
+/* Tooltip minimal — aucun composant existant dans Memoss à réutiliser
+   (grep fait, rien trouvé), inventé ici plutôt que d'ajouter une lib. */
+.info-icon {
+  position:relative;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:16px; height:16px; border-radius:50%;
+  background:var(--s2); color:var(--text-2);
+  font-size:.68rem; font-weight:400; text-transform:none; letter-spacing:normal;
+  cursor:help;
+}
+.info-icon::after {
+  content: attr(data-tooltip);
+  position:absolute; bottom:calc(100% + 8px); left:50%;
+  transform:translateX(-50%);
+  width:240px;
+  background:#0d0d18; border:1px solid var(--b1);
+  color:var(--text-2); font-size:.72rem; font-weight:400;
+  line-height:1.4; letter-spacing:normal; text-transform:none;
+  padding:10px 12px; border-radius:var(--r-xs);
+  opacity:0; pointer-events:none; transition:opacity .15s;
+  z-index:20;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.info-icon:hover::after, .info-icon:focus::after { opacity:1; }
 
 /* ── Meme modal ── */
 #meme-modal {

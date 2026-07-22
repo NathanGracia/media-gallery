@@ -2,6 +2,10 @@
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const TOTAL_ROUNDS = 3;
+// Nombre d'emplacements de la vitrine Shardoss affichés dans le choix de
+// mème — même valeur que MAX_PINNED_CARDS/MAX_PINNED_SLOTS côté Shardoss,
+// dupliquée ici pour afficher les emplacements vides sans aller-retour.
+const SHARDOSS_BONUS_SLOTS = 3;
 
 const S = {
   screen:       'home',   // home|lobby|picking|waiting|revealing|round_end|game_end
@@ -13,7 +17,7 @@ const S = {
   players:      [],
   pickRound:    0,        // round de soumission courant (1-based)
   revealRound:  0,        // round de révélation courant (1-based)
-  memes:        [],       // [{uuid,url,thumb}] proposés pour ce pick round
+  memes:        [],       // [{uuid,url,thumb,_bonus?}] proposés pour ce pick round — _bonus: true = vitrine Shardoss
   selectedMeme: null,
   text:         '',
   submitted:    0,
@@ -243,6 +247,25 @@ function renderLobby() {
 }
 
 // ── Picking ───────────────────────────────────────────────────────────────────
+// `i` reste l'index dans S.memes (mélange mèmes aléatoires + bonus vitrine
+// Shardoss, voir round_start) — selectMeme(i)/openMemeModal(i) indexent
+// dans ce même tableau quelle que soit la grille où la tuile est affichée.
+function renderMemeTile(m, i) {
+  const sel = S.selectedMeme?.uuid === m.uuid;
+  return `
+  <div class="meme-pick-card ${sel ? 'selected' : ''} ${m._bonus ? 'meme-pick-card--bonus' : ''}">
+    <div class="meme-pick-thumb" onclick="openMemeModal(${i})">
+      <img src="${esc(m.thumb)}" loading="lazy" onerror="this.style.opacity=0.2">
+      <div class="meme-pick-play"><div class="meme-pick-play-icon">▶</div></div>
+      ${sel ? '<div class="meme-pick-badge">✓</div>' : ''}
+      ${m._bonus ? '<div class="meme-pick-bonus-tag">★</div>' : ''}
+    </div>
+    <button class="meme-pick-btn" onclick="selectMeme(${i})">
+      ${sel ? '✓ Sélectionné' : 'Choisir ce mème'}
+    </button>
+  </div>`;
+}
+
 function renderPicking() {
   const pills = Array.from({length: TOTAL_ROUNDS}, (_,i) => {
     const cls = i + 1 < S.pickRound ? 'done' : i + 1 === S.pickRound ? 'active' : '';
@@ -263,20 +286,23 @@ function renderPicking() {
       </div>
 
       <div class="meme-pick-grid">
-        ${S.memes.map((m, i) => {
-          const sel = S.selectedMeme?.uuid === m.uuid;
-          return `
-          <div class="meme-pick-card ${sel ? 'selected' : ''}">
-            <div class="meme-pick-thumb" onclick="openMemeModal(${i})">
-              <img src="${esc(m.thumb)}" loading="lazy" onerror="this.style.opacity=0.2">
-              <div class="meme-pick-play"><div class="meme-pick-play-icon">▶</div></div>
-              ${sel ? '<div class="meme-pick-badge">✓</div>' : ''}
+        ${S.memes.map((m, i) => m._bonus ? '' : renderMemeTile(m, i)).join('')}
+      </div>
+
+      <div class="meme-pick-bonus">
+        <p class="meme-pick-bonus-label">
+          VITRINE SHARDOSS
+          <span class="info-icon" tabindex="0"
+            data-tooltip="Les cartes que vous avez épinglées dans votre vitrine sur Shardoss apparaissent ici en bonus, en plus des mèmes tirés au hasard. Connectez-vous et épinglez jusqu'à 3 cartes complétées sur shardoss.nathangracia.com pour en profiter à votre prochaine manche.">ⓘ</span>
+        </p>
+        <div class="meme-pick-grid meme-pick-grid--bonus">
+          ${S.memes.map((m, i) => m._bonus ? renderMemeTile(m, i) : '').join('')}
+          ${Array.from({ length: Math.max(0, SHARDOSS_BONUS_SLOTS - S.memes.filter(m => m._bonus).length) }).map(() => `
+            <div class="meme-pick-card meme-pick-card--empty">
+              <div class="meme-pick-thumb meme-pick-thumb--empty">EMPLACEMENT VIDE</div>
             </div>
-            <button class="meme-pick-btn" onclick="selectMeme(${i})">
-              ${sel ? '✓ Sélectionné' : 'Choisir ce mème'}
-            </button>
-          </div>`;
-        }).join('')}
+          `).join('')}
+        </div>
       </div>
 
       ${S.selectedMeme ? `
@@ -685,7 +711,10 @@ function handleMsg(msg) {
 
     case 'round_start':
       S.pickRound = msg.round;
-      S.memes     = msg.memes;
+      // Les bonus (vitrine Shardoss) rejoignent S.memes (tagués _bonus) —
+      // selectMeme/openMemeModal indexent déjà dans ce tableau, pas la
+      // peine de dupliquer cette logique pour un second tableau séparé.
+      S.memes     = msg.memes.concat((msg.bonus_memes || []).map(m => ({ ...m, _bonus: true })));
       if (msg.already_submitted) {
         S.selectedMeme = msg.submitted_meme || S.memes[0] || null;
         S.text         = msg.submitted_text || '';
