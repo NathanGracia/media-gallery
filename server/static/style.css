@@ -1300,9 +1300,13 @@ main {
   .brand-name { font-size: 1.05rem; }
   .brand-logo { width: 24px; height: 24px; }
   #account-widget { order: 2; margin-left: auto; }
-  .nav-links { order: 3; flex-basis: 100%; justify-content: center; flex-wrap: wrap; row-gap: 4px; gap: 6px; }
-  .nav-link { padding: 6px 12px; font-size: 0.72rem; }
-  .nav-sep { display: none; }
+  .nav-links {
+    order: 3; flex-basis: 100%; gap: 6px;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-link { padding: 6px 12px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
+  .nav-sep { flex-shrink: 0; }
   .toolbar { gap: 2px; }
   .toolbar-right { padding-bottom: 6px; }
   .orb { opacity: 0.3; }
