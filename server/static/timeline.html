@@ -101,39 +101,26 @@
       font-family: 'Syne', sans-serif; font-size: 1.25rem;
       font-weight: 800; letter-spacing: -0.03em; color: var(--text);
     }
-    @keyframes game-pulse {
-      0%,100% { box-shadow: 0 0 0 0 rgba(34,211,238,0), 0 0 6px rgba(34,211,238,0.06); }
-      50%      { box-shadow: 0 0 0 4px rgba(34,211,238,0.04), 0 0 12px rgba(34,211,238,0.12); }
-    }
-    @keyframes game-border-shimmer {
-      0%   { border-color: rgba(34,211,238,0.18); }
-      50%  { border-color: rgba(34,211,238,0.38); }
-      100% { border-color: rgba(34,211,238,0.18); }
-    }
     .nav-links {
-      display: flex; align-items: center; gap: 24px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 2px; flex-shrink: 0;
     }
-    .btn-game-link {
-      padding: 7px 18px;
-      background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(99,102,241,0.06) 100%);
-      border: 1px solid rgba(34,211,238,0.25);
-      border-radius: 9px;
-      color: var(--cyan); font-family: 'Syne', sans-serif;
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;
-      text-transform: uppercase; text-decoration: none;
+    .nav-sep {
+      width: 1px; height: 18px; background: var(--gb); margin: 0 6px; flex-shrink: 0;
+    }
+    .nav-link {
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      color: var(--text-dim);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em;
+      text-decoration: none;
       transition: color 0.15s, background 0.15s; flex-shrink: 0;
-      animation: game-pulse 2.8s ease-in-out infinite, game-border-shimmer 2.8s ease-in-out infinite;
     }
-    .btn-game-link:hover {
-      background: rgba(34,211,238,0.14); color: #fff;
-      animation: none; box-shadow: 0 0 20px rgba(34,211,238,0.25);
-    }
-    .btn-game-link--active {
-      animation: none;
-      background: rgba(34,211,238,0.14);
-      border-color: rgba(34,211,238,0.5);
-      color: #fff;
-    }
+    .nav-link:hover { color: var(--text); background: var(--glass); }
+    .nav-link.active { color: var(--cyan); background: var(--accent-dim); }
+    .nav-link--primary { color: var(--cyan); }
+    .nav-link--primary:hover { color: #fff; background: rgba(34,211,238,0.14); }
+    .nav-link--primary.active { color: #fff; background: rgba(34,211,238,0.14); }
 
     @media (max-width: 600px) {
       header { padding: 0 14px; }
@@ -143,7 +130,7 @@
       .brand-logo { width: 24px; height: 24px; }
       #account-widget { order: 2; margin-left: auto; }
       .nav-links { order: 3; flex-basis: 100%; justify-content: center; gap: 8px; }
-      .btn-game-link { padding: 6px 14px; font-size: 0.72rem; }
+      .nav-link { padding: 6px 12px; font-size: 0.72rem; }
     }
 
     /* — Account widget — */
@@ -293,7 +280,8 @@
 
     /* — Empty — */
     .empty { text-align: center; padding: 5rem 2rem; color: var(--subtle); }
-    .empty-icon { font-size: 2.5rem; margin-bottom: 1.25rem; opacity: 0.45; }
+    .empty-icon { margin-bottom: 1.25rem; opacity: 0.45; display: flex; justify-content: center; }
+    .empty-icon svg { width: 44px; height: 44px; }
     .empty h2 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 0.5rem; }
     .empty p { font-size: 0.9rem; }
 
@@ -421,8 +409,10 @@
       <span class="brand-name">Memoss</span>
     </a>
     <div class="nav-links">
-      <a href="/timeline" class="btn-game-link btn-game-link--active">Légendes</a>
-      <a href="/game/"    class="btn-game-link">Jouer</a>
+      <a href="/" class="nav-link nav-link--primary">Jouer</a>
+      <span class="nav-sep"></span>
+      <a href="/gallery" class="nav-link">Bibliothèque</a>
+      <a href="/timeline" class="nav-link active">Légendes</a>
     </div>
     <div id="account-widget"></div>
   </div>
@@ -487,7 +477,7 @@
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script>window.TIMELINE_MODE = true;</script>
 <script src="account-widget.js?v=3"></script>
-<script src="app.js?v=41"></script>
+<script src="app.js?v=42"></script>
 <script>
 async function openMediaCard(e, uuid) {
   e.preventDefault();
@@ -506,7 +496,7 @@ async function load(days = 7) {
 
   if (!canSeeLegends()) {
     root.innerHTML = `<div class="empty">
-      <div class="empty-icon">🔒</div>
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
       <h2>Réservé aux admins et habitués</h2>
       <p>Connecte-toi (lien en haut de page) avec un compte admin ou habitué pour voir l'historique des légendes.</p>
     </div>`;
@@ -525,7 +515,7 @@ async function load(days = 7) {
     render(root, await res.json());
   } catch {
     root.innerHTML = `<div class="empty">
-      <div class="empty-icon">⚠</div>
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
       <h2>Erreur de chargement</h2>
       <p>Impossible de récupérer l'historique.</p>
     </div>`;
@@ -535,7 +525,7 @@ async function load(days = 7) {
 function render(root, items) {
   if (!items.length) {
     root.innerHTML = `<div class="empty">
-      <div class="empty-icon">💬</div>
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
       <h2>Aucune légende cette semaine</h2>
       <p>Jouez une partie pour alimenter l'historique&nbsp;!</p>
     </div>`;
@@ -595,7 +585,7 @@ function render(root, items) {
         ? `<div class="entry-player-wrap"><video class="entry-player" src="${esc(item.url)}" poster="${esc(item.thumb)}" muted loop playsinline preload="metadata"></video></div>`
         : `<img class="entry-thumb" src="${esc(item.thumb)}" alt="" loading="lazy" onerror="this.style.opacity='0.25'">`;
 
-      html += `<a class="entry ${side}" href="/?m=${item.media_uuid}" onclick="openMediaCard(event,'${item.media_uuid}')">
+      html += `<a class="entry ${side}" href="/gallery?m=${item.media_uuid}" onclick="openMediaCard(event,'${item.media_uuid}')">
         ${mediaEl}
         <div class="entry-body">
           <div class="entry-text">${esc(item.text)}</div>

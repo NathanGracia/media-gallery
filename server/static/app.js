@@ -95,7 +95,7 @@ async function loadMedia(append = false) {
       d.total === 1 ? '1 fichier' : `${d.total} fichiers`;
   } catch (e) {
     document.getElementById('grid').innerHTML =
-      '<div class="empty"><div class="empty-icon">⚠</div>' +
+      '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>' +
       '<div class="empty-title">Erreur de chargement</div>' +
       '<div class="empty-sub">Vérifiez que le serveur est bien lancé</div></div>';
   } finally {
@@ -173,7 +173,7 @@ function renderGrid(items) {
   if (!items.length) {
     grid.innerHTML =
       '<div class="empty">' +
-      '<div class="empty-icon">📭</div>' +
+      '<div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div>' +
       '<div class="empty-title">Aucun média</div>' +
       '<div class="empty-sub">Les fichiers uploadés par vos feeders apparaîtront ici</div>' +
       '</div>';
@@ -352,7 +352,7 @@ function openMedia(id, type, url, name, tag = '', highlightCaption = null) {
   _currentMediaTag = tag;
   if (!window.TIMELINE_MODE) {
     const qs = highlightCaption ? `?m=${id}&l=${highlightCaption}` : `?m=${id}`;
-    history.pushState({ mediaId: id }, '', '/' + qs);
+    history.pushState({ mediaId: id }, '', '/gallery' + qs);
   }
   if (type === 'video') {
     document.getElementById('video-name').textContent = name;
@@ -469,7 +469,7 @@ function copyLink(e, url) {
 
 function copyModalLink() {
   if (!_currentMediaId) return;
-  const full = `${location.origin}/?m=${_currentMediaId}`;
+  const full = `${location.origin}/gallery?m=${_currentMediaId}`;
   navigator.clipboard.writeText(full).then(() => {
     const btn = document.querySelector('.overlay.open .btn-copy-modal');
     if (!btn) return;
@@ -619,8 +619,8 @@ async function loadMemossHistory(uuid, highlightId = null) {
 
     el.innerHTML = `
       <div class="memoss-history-title">
-        💬 Légendes Memoss
-        <a class="game-link" href="/game/">Jouer →</a>
+        Légendes Memoss
+        <a class="game-link" href="/">Jouer →</a>
       </div>
       <div class="memoss-caption-list">
         ${data.map(c => {
@@ -664,7 +664,7 @@ function showToast(msg) {
 
 function shareCaption(event, captionId) {
   event.stopPropagation();
-  const url = `${location.origin}/?m=${_currentMediaId}&l=${captionId}`;
+  const url = `${location.origin}/gallery?m=${_currentMediaId}&l=${captionId}`;
   navigator.clipboard.writeText(url).then(() => {
     showToast('Lien copié');
     const btn = event.target.closest('button');

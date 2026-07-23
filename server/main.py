@@ -628,12 +628,18 @@ app.include_router(game_router)
 async def timeline_page():
     return FileResponse("static/timeline.html")
 
-# Static game SPA
+# Static game SPA — mounté sur /game (alias historique) ET servi comme landing
+# page sur "/" (voir plus bas) : le jeu est la page d'accueil du site depuis
+# juillet 2026, la galerie a déménagé sur /gallery.
 app.mount("/game", StaticFiles(directory="static/game", html=True), name="game-static")
 
-# ── Open Graph preview pour les liens partagés (?m=UUID&l=ID) ─────────────────
 @app.get("/")
-async def index_page(request: Request, m: Optional[str] = None, l: Optional[str] = None):
+async def landing_page():
+    return FileResponse("static/game/index.html")
+
+# ── Open Graph preview pour les liens partagés (?m=UUID&l=ID) ─────────────────
+@app.get("/gallery")
+async def gallery_page(request: Request, m: Optional[str] = None, l: Optional[str] = None):
     if not m:
         return FileResponse("static/index.html")
 
@@ -643,14 +649,14 @@ async def index_page(request: Request, m: Optional[str] = None, l: Optional[str]
         return FileResponse("static/index.html")
 
     base      = PUBLIC_URL or str(request.base_url).rstrip("/")
-    page_url  = f"{base}/?m={m}" + (f"&l={l}" if l else "")
+    page_url  = f"{base}/gallery?m={m}" + (f"&l={l}" if l else "")
     thumb_url = f"{base}/thumbnail/{media.uuid}.jpg"
     video_url = f"{base}/media/{media.filename}"
     is_video  = media.media_type == "video"
 
     # Par défaut (pas de légende)
     title = "Memoss"
-    desc  = "Découvrez ce mème 👀"
+    desc  = "Découvrez ce mème"
 
     if l:
         try:

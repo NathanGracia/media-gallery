@@ -98,7 +98,7 @@ function renderHome() {
     <div class="card">
       <div class="home-logo">
         <div class="home-logo-title">MEMOSS</div>
-        <div class="home-logo-sub">Le jeu de légendes de mèmes 🎬</div>
+        <div class="home-logo-sub">Le jeu de légendes de mèmes</div>
       </div>
 
       ${pseudoFieldHtml('pseudo-input')}
@@ -193,7 +193,7 @@ function renderLobby() {
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button class="btn btn-ghost btn-sm" id="btn-copy-code">Copier le code</button>
-          <button class="btn btn-ghost btn-sm" id="btn-copy-link">🔗 Lien d'invitation</button>
+          <button class="btn btn-ghost btn-sm" id="btn-copy-link">Lien d'invitation</button>
         </div>
       </div>
 
@@ -202,7 +202,7 @@ function renderLobby() {
           <li class="player-item">
             <span class="player-dot ${p.connected ? '' : 'off'}"></span>
             ${p.id === S.playerId ? `<strong>${esc(p.pseudo)}</strong>` : esc(p.pseudo)}
-            ${p.id === S.players[0]?.id ? '<span class="crown">👑</span>' : ''}
+            ${p.id === S.players[0]?.id ? '<span class="host-badge">Hôte</span>' : ''}
             ${p.score ? `<span class="score">${p.score} pts</span>` : ''}
           </li>`).join('')}
       </ul>
@@ -210,8 +210,8 @@ function renderLobby() {
       ${S.isHost
         ? `<p class="mode-selector-label">Mode de jeu</p>
            <div class="mode-pills" id="mode-pills">
-             <button class="mode-pill ${S.mode === 'recent' ? 'active' : ''}" data-mode="recent">⏱ 50 Derniers</button>
-             <button class="mode-pill ${S.mode === 'all' ? 'active' : ''}" data-mode="all">🎬 Cinéma</button>
+             <button class="mode-pill ${S.mode === 'recent' ? 'active' : ''}" data-mode="recent">50 Derniers</button>
+             <button class="mode-pill ${S.mode === 'all' ? 'active' : ''}" data-mode="all">Cinéma</button>
            </div>
            <button class="btn btn-cinema" id="btn-start" ${canStart ? '' : 'disabled'}>
              Lancer · ${S.players.length} joueur${S.players.length > 1 ? 's' : ''}
@@ -226,10 +226,10 @@ function renderLobby() {
     });
   });
   document.getElementById('btn-copy-link')?.addEventListener('click', () => {
-    const url = `${location.origin}/game?join=${S.roomCode}`;
+    const url = `${location.origin}/?join=${S.roomCode}`;
     navigator.clipboard.writeText(url).then(() => {
       const btn = document.getElementById('btn-copy-link');
-      if (btn) { btn.textContent = '✓ Lien copié !'; setTimeout(() => { if (btn) btn.textContent = '🔗 Lien d\'invitation'; }, 2000); }
+      if (btn) { btn.textContent = '✓ Lien copié !'; setTimeout(() => { if (btn) btn.textContent = 'Lien d\'invitation'; }, 2000); }
     });
   });
   if (S.isHost) {
@@ -427,7 +427,7 @@ function renderWaiting() {
 
   app.innerHTML = `
     <div class="card waiting-card">
-      <div class="waiting-emoji">✅</div>
+      <div class="waiting-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 17.01"/></svg></div>
       <div class="waiting-title">Manche ${S.pickRound}/${TOTAL_ROUNDS} soumise</div>
       <div class="waiting-sub">${S.pickRound < TOTAL_ROUNDS ? 'En attente des autres pour passer à la manche suivante…' : 'En attente des autres pour lancer les votes…'}</div>
 
@@ -467,7 +467,7 @@ function renderReveal() {
 
       <div class="vote-section">
         ${isAuthor
-          ? `<div class="is-author-label">C'est ta légende ! 🎤<br><small style="opacity:.6">Les autres votent…</small></div>`
+          ? `<div class="is-author-label">C'est ta légende !<br><small style="opacity:.6">Les autres votent…</small></div>`
           : `<p class="vote-label">Note cette légende</p>
              <div class="vote-slider-wrap">
                <div class="vote-slider-row">
@@ -523,7 +523,7 @@ function renderRoundEnd() {
       <div class="podium">
         ${sorted.map((p,i) => `
           <div class="podium-item ${i===0?'first':i===1?'second':''}">
-            <span class="podium-rank">${['🥇','🥈','🥉'][i] || `${i+1}.`}</span>
+            <span class="podium-rank ${i===0?'rank-gold':i===1?'rank-silver':i===2?'rank-bronze':''}">${i+1}</span>
             <span class="podium-pseudo">${esc(p.pseudo)}</span>
             <span class="podium-score">${p.score} pts</span>
           </div>`).join('')}
@@ -543,7 +543,7 @@ function renderGameEnd() {
   app.innerHTML = `
     <div class="card">
       <div class="winner-banner">
-        <div class="winner-trophy">🏆</div>
+        <div class="winner-trophy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4M17 6h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"/></svg></div>
         <div class="winner-name">${winner ? esc(winner.pseudo) : '—'}</div>
         <div class="winner-label">${winner ? `${winner.score} pts · Champion Memoss` : 'Fin de partie'}</div>
       </div>
@@ -551,7 +551,7 @@ function renderGameEnd() {
       <div class="podium">
         ${sorted.map((p,i) => `
           <div class="podium-item ${i===0?'first':i===1?'second':''}">
-            <span class="podium-rank">${['🥇','🥈','🥉'][i] || `${i+1}`}</span>
+            <span class="podium-rank ${i===0?'rank-gold':i===1?'rank-silver':i===2?'rank-bronze':''}">${i+1}</span>
             <span class="podium-pseudo">${esc(p.pseudo)}${p.id === S.playerId ? ' <span style="color:var(--text-3);font-weight:400">(toi)</span>' : ''}</span>
             <span class="podium-score">${p.score} pts</span>
           </div>`).join('')}
@@ -559,14 +559,14 @@ function renderGameEnd() {
 
       ${feature ? `
         <div class="top-memes">
-          <p class="top-memes-title">🏅 Meilleures légendes</p>
+          <p class="top-memes-title">Meilleures légendes</p>
 
           <div class="legend-feature">
             <video class="legend-feature-video" id="legend-feature-video"
                    src="${esc(feature.media_url)}" poster="${esc(feature.thumb)}"
                    playsinline loop></video>
-            <div class="legend-feature-crown">🏅 Meilleure légende</div>
-            <button class="legend-feature-sound" id="legend-feature-sound" title="Activer/couper le son">🔇</button>
+            <div class="legend-feature-crown">Meilleure légende</div>
+            <button class="legend-feature-sound" id="legend-feature-sound" title="Activer/couper le son"></button>
             <div class="legend-feature-overlay">
               <div class="legend-feature-caption">${esc(feature.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
               <div class="legend-feature-meta">
@@ -582,7 +582,7 @@ function renderGameEnd() {
                 <div class="legend-item">
                   <video class="legend-item-video" src="${esc(m.media_url)}" poster="${esc(m.thumb)}"
                          autoplay muted loop playsinline></video>
-                  <span class="legend-item-rank">${['🥈','🥉'][i] || `${i+2}`}</span>
+                  <span class="legend-item-rank ${i===0?'rank-silver':i===1?'rank-bronze':''}">${i+2}</span>
                   <div class="legend-item-body">
                     <div class="legend-item-caption">${esc(m.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
                     <div class="legend-item-meta">
@@ -597,7 +597,7 @@ function renderGameEnd() {
       <p style="text-align:center;color:var(--text-2);font-size:.82rem;margin-top:8px">
         Retour au lobby dans <span id="lobby-countdown">10</span>s…
       </p>
-      <button class="btn btn-ghost" onclick="location.href='/'" style="width:100%;margin-top:14px">
+      <button class="btn btn-ghost" onclick="location.href='/gallery'" style="width:100%;margin-top:14px">
         ← Retour à la galerie
       </button>
     </div>`;
@@ -620,7 +620,9 @@ function initFeatureVideo() {
   vid.volume = savedVol !== null ? parseFloat(savedVol) : 1;
   vid.muted  = savedMuted === 'true';
 
-  const syncButton = () => { if (btn) btn.textContent = vid.muted ? '🔇' : '🔊'; };
+  const ICON_MUTED   = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+  const ICON_UNMUTED = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+  const syncButton = () => { if (btn) btn.innerHTML = vid.muted ? ICON_MUTED : ICON_UNMUTED; };
   syncButton();
 
   // Le navigateur bloque quasi systématiquement l'autoplay avec son ici :
@@ -665,7 +667,7 @@ function connectWS() {
     const round = S.pickRound || S.revealRound;
     app.innerHTML = `
       <div class="card" style="text-align:center;padding:32px 24px">
-        <p style="color:var(--red);font-size:1.15rem;font-weight:700;margin-bottom:14px">⚡ Connexion perdue</p>
+        <p style="color:var(--red);font-size:1.15rem;font-weight:700;margin-bottom:14px">Connexion perdue</p>
         <div class="debug-box">
           <div class="debug-row"><span>Heure</span><span>${now}</span></div>
           <div class="debug-row"><span>Phase</span><span>${phase}</span></div>
@@ -804,14 +806,12 @@ function showRevealResult(msg) {
     background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);`;
 
   const avg    = msg.vote_count ? Math.round(msg.total_stars / msg.vote_count) : 0;
-  const emoji  = avg >= 80 ? '🔥' : avg >= 50 ? '👍' : avg >= 20 ? '😐' : '💀';
   const color  = avg >= 80 ? 'var(--green)' : avg >= 50 ? 'var(--accent)' : avg >= 20 ? 'var(--gold)' : 'var(--red)';
 
   overlay.innerHTML = `
     <div style="background:rgba(10,10,20,0.95);border:1px solid rgba(255,255,255,0.1);
                 border-radius:18px;padding:40px;text-align:center;max-width:320px;width:90%">
       <p style="font-size:0.85rem;color:var(--text-2);margin-bottom:8px">${esc(msg.pseudo)}</p>
-      <p style="font-size:3rem;margin-bottom:12px">${emoji}</p>
       <p style="font-size:2.4rem;font-weight:800;color:${color};margin-bottom:4px;font-family:'Syne',sans-serif">${avg}</p>
       <p style="font-size:0.8rem;color:var(--text-2)">sur 100 · ${msg.vote_count} vote${msg.vote_count > 1 ? 's' : ''}</p>
     </div>`;
@@ -921,7 +921,20 @@ function showInviteModal(code) {
   overlay.id = 'invite-overlay';
   overlay.innerHTML = `
     <div class="invite-modal">
-      <div class="invite-emoji">🎬</div>
+      <div class="invite-icon">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="13" height="13" rx="3" fill="url(#gi)" opacity="0.9"/>
+          <rect x="17" y="2" width="13" height="13" rx="3" fill="url(#gi)" opacity="0.5"/>
+          <rect x="2" y="17" width="13" height="13" rx="3" fill="url(#gi)" opacity="0.5"/>
+          <rect x="17" y="17" width="13" height="13" rx="3" fill="url(#gi)" opacity="0.9"/>
+          <defs>
+            <linearGradient id="gi" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#22d3ee"/>
+              <stop offset="100%" stop-color="#6366f1"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
       <div class="invite-code-display">${esc(code)}</div>
       <p class="invite-sub">Tu as été invité à rejoindre cette room</p>
       ${pseudoFieldHtml('invite-pseudo')}
@@ -960,14 +973,14 @@ function showInviteModal(code) {
     S.isHost   = false;
     setRoomCode(code);
     overlay.remove();
-    history.replaceState({}, '', '/game');
+    history.replaceState({}, '', '/');
     connectWS();
   }
 
   document.getElementById('invite-join-btn').onclick = doInviteJoin;
   document.getElementById('invite-cancel-btn').onclick = () => {
     overlay.remove();
-    history.replaceState({}, '', '/game');
+    history.replaceState({}, '', '/');
   };
   if (pseudoInput) pseudoInput.addEventListener('keydown', e => { if (e.key === 'Enter') doInviteJoin(); });
 }
@@ -1000,7 +1013,7 @@ async function tryResumeActiveRoom() {
 }
 
 // ── Preview d'écran (debug/design, hors flux de jeu) ────────────────────────
-// Usage : /game/?preview=end — construit un faux message game_end avec de
+// Usage : /?preview=end — construit un faux message game_end avec de
 // vrais médias (vignettes/vidéos chargent normalement) et le fait passer par
 // handleMsg(), exactement comme un vrai message serveur. Ça évite de dupliquer
 // le rendu ailleurs : si renderGameEnd() change, la preview suit sans y
