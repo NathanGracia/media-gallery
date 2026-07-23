@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="nav.css?v=1">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -89,53 +90,12 @@
       display: flex; align-items: center; gap: 24px;
       padding: 14px 0 10px;
     }
-    .brand {
-      display: flex; align-items: center; gap: 10px;
-      text-decoration: none; color: inherit; flex-shrink: 0;
-    }
-    .brand-logo {
-      width: 28px; height: 28px; flex-shrink: 0;
-      filter: drop-shadow(0 0 8px rgba(34,211,238,0.5));
-    }
-    .brand-name {
-      font-family: 'Syne', sans-serif; font-size: 1.25rem;
-      font-weight: 800; letter-spacing: -0.03em; color: var(--text);
-    }
-    .nav-links {
-      display: flex; align-items: center; gap: 2px; flex-shrink: 0;
-    }
-    .nav-sep {
-      width: 1px; height: 18px; background: var(--gb); margin: 0 6px; flex-shrink: 0;
-    }
-    .nav-link {
-      padding: 8px 14px;
-      border-radius: var(--radius-sm);
-      color: var(--text-dim);
-      font-family: 'Syne', sans-serif;
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em;
-      text-decoration: none;
-      transition: color 0.15s, background 0.15s; flex-shrink: 0;
-    }
-    .nav-link:hover { color: var(--text); background: var(--glass); }
-    .nav-link.active { color: var(--cyan); background: var(--accent-dim); }
-    .nav-link--primary { color: var(--cyan); }
-    .nav-link--primary:hover { color: #fff; background: rgba(34,211,238,0.14); }
-    .nav-link--primary.active { color: #fff; background: rgba(34,211,238,0.14); }
+    /* Brand + nav links : voir nav.css (composant partagé SiteNav, nav.js) */
 
     @media (max-width: 600px) {
       header { padding: 0 14px; }
-      .header-inner { flex-wrap: wrap; row-gap: 8px; gap: 10px; padding: 10px 0 8px; }
-      .brand { order: 1; }
-      .brand-name { font-size: 1.05rem; }
-      .brand-logo { width: 24px; height: 24px; }
-      #account-widget { order: 2; margin-left: auto; }
-      .nav-links {
-        order: 3; flex-basis: 100%; gap: 6px;
-        overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-      }
-      .nav-links::-webkit-scrollbar { display: none; }
-      .nav-link { padding: 6px 12px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
-      .nav-sep { flex-shrink: 0; }
+      .header-inner { gap: 10px; padding: 10px 0 8px; }
+      #site-nav { flex: 1; min-width: 0; }
     }
 
     /* — Account widget — */
@@ -398,28 +358,7 @@
 
 <header>
   <div class="header-inner">
-    <a class="brand" href="/" style="text-decoration:none">
-      <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2"  y="2"  width="13" height="13" rx="3" fill="url(#tg)" opacity="0.9"/>
-        <rect x="17" y="2"  width="13" height="13" rx="3" fill="url(#tg)" opacity="0.5"/>
-        <rect x="2"  y="17" width="13" height="13" rx="3" fill="url(#tg)" opacity="0.5"/>
-        <rect x="17" y="17" width="13" height="13" rx="3" fill="url(#tg)" opacity="0.9"/>
-        <defs>
-          <linearGradient id="tg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop offset="0%"   stop-color="#22d3ee"/>
-            <stop offset="100%" stop-color="#6366f1"/>
-          </linearGradient>
-        </defs>
-      </svg>
-      <span class="brand-name">Memoss</span>
-    </a>
-    <div class="nav-links">
-      <a href="/" class="nav-link nav-link--primary">Jouer</a>
-      <span class="nav-sep"></span>
-      <a href="/gallery" class="nav-link">Bibliothèque</a>
-      <a href="/timeline" class="nav-link active">Légendes</a>
-      <a href="/how-it-works.html" class="nav-link">Comment ça marche</a>
-    </div>
+    <div id="site-nav"></div>
     <div id="account-widget"></div>
   </div>
 </header>
@@ -482,6 +421,8 @@
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script>window.TIMELINE_MODE = true;</script>
+<script src="nav.js?v=1"></script>
+<script>SiteNav.mount('site-nav', 'timeline');</script>
 <script src="account-widget.js?v=3"></script>
 <script src="app.js?v=42"></script>
 <script>

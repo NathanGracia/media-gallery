@@ -73,39 +73,7 @@ header {
   display: flex; align-items: center; gap: 24px;
   padding: 14px 0 10px;
 }
-.brand {
-  display: flex; align-items: center; gap: 10px;
-  flex-shrink: 0; cursor: pointer; color: inherit;
-}
-.brand-logo {
-  width: 28px; height: 28px; flex-shrink: 0;
-  filter: drop-shadow(0 0 8px rgba(34,211,238,0.5));
-}
-.brand-name {
-  font-family: 'Syne', sans-serif; font-size: 1.25rem;
-  font-weight: 800; letter-spacing: -0.03em; color: var(--text);
-}
-
-.nav-links {
-  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
-}
-.nav-sep {
-  width: 1px; height: 18px; background: var(--b0); margin: 0 6px; flex-shrink: 0;
-}
-.nav-link {
-  padding: 8px 14px;
-  border-radius: var(--r-sm);
-  color: var(--text-2);
-  font-family: 'Syne', sans-serif; font-size: 0.78rem;
-  font-weight: 700; letter-spacing: 0.03em;
-  text-decoration: none;
-  transition: color 0.15s, background 0.15s; flex-shrink: 0;
-}
-.nav-link:hover { color: var(--text); background: var(--s1); }
-.nav-link.active { color: var(--accent); background: var(--ac-dim); }
-.nav-link--primary { color: var(--accent); }
-.nav-link--primary:hover { color: #fff; background: rgba(34,211,238,0.14); }
-.nav-link--primary.active { color: #fff; background: rgba(34,211,238,0.14); }
+/* Brand + nav links : voir nav.css (composant partagé SiteNav, nav.js) */
 
 .room-code-display {
   margin-left: auto;
@@ -797,19 +765,9 @@ hr.divider { border:none; border-top:1px solid var(--b0); margin:22px 0; }
 
 @media (max-width: 600px) {
   header { padding: 0 14px; }
-  .header-inner { flex-wrap: wrap; row-gap: 8px; gap: 10px; padding: 10px 0 8px; }
-  .brand { order: 1; }
-  .brand-name { font-size: 1.05rem; }
-  .brand-logo { width: 24px; height: 24px; }
-  #account-widget { order: 2; margin-left: auto; }
-  .nav-links {
-    order: 3; flex-basis: 100%; gap: 6px;
-    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  }
-  .nav-links::-webkit-scrollbar { display: none; }
-  .nav-link { padding: 6px 12px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
-  .nav-sep { flex-shrink: 0; }
-  .room-code-display { order: 4; flex-basis: 100%; text-align: center; margin-left: 0; }
+  .header-inner { gap: 10px; padding: 10px 0 8px; }
+  #site-nav { flex: 1; min-width: 0; }
+  .room-code-display { display: none; }
 }
 
 /* ── Responsive ── */

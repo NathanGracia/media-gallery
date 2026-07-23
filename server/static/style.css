@@ -140,60 +140,7 @@ header {
   padding: 14px 0 10px;
 }
 
-/* Brand */
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-  cursor: pointer;
-  color: inherit;
-}
-
-.brand-logo {
-  width: 28px;
-  height: 28px;
-  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5));
-  flex-shrink: 0;
-}
-
-/* ── Nav links ────────────────────────────────────────────────────────────── */
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-/* Séparateur entre le lien primaire (Jouer) et les liens secondaires
-   (Bibliothèque, Légendes) — hiérarchie visuelle plutôt qu'une rangée de
-   boutons identiques. */
-.nav-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--gb);
-  margin: 0 6px;
-  flex-shrink: 0;
-}
-
-.nav-link {
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--text-dim);
-  font-family: 'Syne', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-decoration: none;
-  transition: color 0.15s, background 0.15s;
-  flex-shrink: 0;
-}
-.nav-link:hover { color: var(--text); background: var(--glass); }
-.nav-link.active { color: var(--accent); background: var(--accent-dim); }
-
-.nav-link--primary { color: var(--accent); }
-.nav-link--primary:hover { color: #fff; background: rgba(34,211,238,0.14); }
-.nav-link--primary.active { color: #fff; background: rgba(34,211,238,0.14); }
+/* Brand + nav links : voir nav.css (composant partagé SiteNav, nav.js) */
 
 /* ── Account widget ───────────────────────────────────────────────────────── */
 #account-widget { margin-left: auto; flex-shrink: 0; position: relative; }
@@ -304,14 +251,6 @@ body.admin-mode .overlay-tag-bar.admin-only { display: flex !important; }
   border-color: var(--gb); background: transparent; color: var(--text-dim);
 }
 .admin-modal-btn--cancel:hover { background: var(--glass); color: var(--text); }
-
-.brand-name {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--text);
-}
 
 /* Storage */
 .storage-widget {
@@ -1295,18 +1234,8 @@ main {
   .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .grid.mosaic { grid-template-columns: repeat(5, 1fr); gap: 2px; }
   .storage-widget { display: none; }
-  .header-inner { flex-wrap: wrap; row-gap: 8px; gap: 10px; padding: 10px 0 8px; }
-  .brand { order: 1; }
-  .brand-name { font-size: 1.05rem; }
-  .brand-logo { width: 24px; height: 24px; }
-  #account-widget { order: 2; margin-left: auto; }
-  .nav-links {
-    order: 3; flex-basis: 100%; gap: 6px;
-    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  }
-  .nav-links::-webkit-scrollbar { display: none; }
-  .nav-link { padding: 6px 12px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
-  .nav-sep { flex-shrink: 0; }
+  .header-inner { gap: 10px; padding: 10px 0 8px; }
+  #site-nav { flex: 1; min-width: 0; }
   .toolbar { gap: 2px; }
   .toolbar-right { padding-bottom: 6px; }
   .orb { opacity: 0.3; }

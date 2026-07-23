@@ -1,0 +1,80 @@
+/* Styles de la navbar partagée (voir nav.js). Valeurs codées en dur plutôt
+   que des var(--...) : chaque page a ses propres noms de variables CSS
+   (--accent ici, --ac-dim là, --cyan ailleurs...) — coder en dur ici évite
+   toute divergence entre pages sans devoir renommer les variables de
+   chacune. #site-nav (l'id du conteneur monté par SiteNav.mount) sert de
+   racine pour ne rien faire fuiter sur le reste de la page. */
+
+#site-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+}
+
+#site-nav .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
+}
+#site-nav .brand-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5));
+}
+#site-nav .brand-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #f1f5f9;
+}
+
+#site-nav .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+#site-nav .nav-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+#site-nav .nav-link {
+  padding: 8px 14px;
+  border-radius: 9px;
+  color: #64748b;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+#site-nav .nav-link:hover { color: #f1f5f9; background: rgba(255, 255, 255, 0.04); }
+#site-nav .nav-link.active { color: #22d3ee; background: rgba(34, 211, 238, 0.15); }
+#site-nav .nav-link--primary { color: #22d3ee; }
+#site-nav .nav-link--primary:hover { color: #fff; background: rgba(34, 211, 238, 0.14); }
+#site-nav .nav-link--primary.active { color: #fff; background: rgba(34, 211, 238, 0.14); }
+
+@media (max-width: 600px) {
+  #site-nav { gap: 14px; }
+  #site-nav .brand-name { font-size: 1.05rem; }
+  #site-nav .brand-logo { width: 24px; height: 24px; }
+  #site-nav .nav-links {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  #site-nav .nav-links::-webkit-scrollbar { display: none; }
+  #site-nav .nav-link { padding: 6px 12px; font-size: 0.72rem; }
+}
