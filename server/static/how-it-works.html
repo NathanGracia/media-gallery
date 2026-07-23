@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comment ça marche — Memoss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  :root {
+    --bg:          #06060f;
+    --glass:       rgba(255, 255, 255, 0.04);
+    --glass-md:    rgba(255, 255, 255, 0.06);
+    --gb:          rgba(255, 255, 255, 0.08);
+    --accent:      #22d3ee;
+    --accent-dim:  rgba(34, 211, 238, 0.15);
+    --indigo:      #6366f1;
+    --cinema:      #4ade80;
+    --cinema-dim:  rgba(74, 222, 128, 0.15);
+    --osef:        #94a3b8;
+    --osef-dim:    rgba(148, 163, 184, 0.1);
+    --todo:        #fbbf24;
+    --todo-dim:    rgba(251, 191, 36, 0.12);
+    --gold:        #fbbf24;
+    --silver:      #cbd5e1;
+    --bronze:      #d08a4f;
+    --text:        #f1f5f9;
+    --text-dim:    #64748b;
+    --text-muted:  #334155;
+    --radius:      14px;
+    --radius-sm:   9px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Figtree', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Fond vidéo (même pattern que le reste du site) ── */
+  .page-wallpaper {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; z-index: -3;
+  }
+  .page-wallpaper-scrim {
+    position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(6, 6, 15, 0.45) 0%, rgba(6, 6, 15, 0.82) 55%, rgba(6, 6, 15, 0.95) 100%),
+      linear-gradient(160deg, rgba(20, 12, 40, 0.6), rgba(6, 6, 15, 0.82));
+  }
+
+  /* ── Header ── */
+  header {
+    position: sticky; top: 0; z-index: 200;
+    background: rgba(6, 6, 15, 0.7);
+    border-bottom: 1px solid var(--gb);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+  }
+  .header-inner {
+    max-width: 880px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+  .brand-logo { width: 26px; height: 26px; filter: drop-shadow(0 0 8px rgba(34,211,238,0.5)); }
+  .brand-name { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+  .back-link {
+    font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-decoration: none;
+    letter-spacing: 0.02em; transition: color 0.15s;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  /* ── Layout ── */
+  .page { max-width: 880px; margin: 0 auto; padding: 0 24px 100px; }
+
+  /* ── Hero ── */
+  .hero { padding: 64px 0 20px; }
+  .hero-kicker {
+    font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 12px;
+  }
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.1rem, 6vw, 3.2rem);
+    font-weight: 800; line-height: 1.08; letter-spacing: -0.02em;
+    margin-bottom: 18px;
+    background: linear-gradient(135deg, var(--text) 0%, var(--text) 55%, var(--accent) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub { max-width: 60ch; font-size: 0.95rem; color: var(--text-dim); }
+  .hero-sub strong { color: var(--text); font-weight: 600; }
+
+  /* ── Sections ── */
+  .section { margin-top: 64px; }
+  .section-num {
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 10px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif; font-size: clamp(1.4rem, 3.4vw, 1.9rem); font-weight: 800;
+    letter-spacing: -0.01em; margin-bottom: 14px;
+  }
+  .section-body { font-size: 0.88rem; color: var(--text-dim); max-width: 64ch; }
+  .section-body p + p { margin-top: 10px; }
+  .section-body strong { color: var(--text); font-weight: 600; }
+  .section-body code {
+    background: var(--glass-md); border: 1px solid var(--gb); border-radius: 5px;
+    padding: 1px 6px; font-size: 0.86em; font-family: 'Figtree', monospace;
+  }
+
+  .divider { border: none; border-top: 1px solid var(--gb); margin-top: 64px; }
+
+  /* ── Glass card ── */
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--gb);
+    border-radius: var(--radius);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* ── Pipeline vertical (feeder) ── */
+  .pipeline { margin-top: 22px; display: flex; flex-direction: column; }
+  .pipe-row { display: grid; grid-template-columns: 132px 1fr; gap: 16px; align-items: center; position: relative; }
+  .pipe-step {
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius-sm);
+    padding: 12px; text-align: center; position: relative;
+  }
+  .pipe-step::after {
+    content: '↓'; position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+    color: var(--text-muted); font-size: 0.9rem; background: var(--bg); padding: 0 4px; z-index: 2;
+  }
+  .pipe-row:last-child .pipe-step::after { display: none; }
+  .pipe-step-label { font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px; }
+  .pipe-step-name { font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700; }
+  .pipe-step.hi { border-color: rgba(34,211,238,0.4); background: var(--accent-dim); }
+  .pipe-step.hi .pipe-step-name { color: var(--accent); }
+  .pipe-detail { padding: 8px 0 8px 4px; }
+  .pipe-detail-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .pipe-detail-body { font-size: 0.8rem; color: var(--text-dim); line-height: 1.6; }
+  .pipe-connector { height: 30px; display: flex; align-items: center; padding-left: 66px; color: var(--text-muted); font-size: 0.76rem; }
+
+  /* ── Tag chips ── */
+  .tag-rules { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .tag-rule { border: 1px solid var(--gb); border-radius: var(--radius-sm); padding: 13px 15px; background: var(--glass); }
+  .tag-pill {
+    display: inline-block; padding: 3px 11px; border-radius: 99px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 8px;
+  }
+  .tag-pill.todo   { color: var(--todo);   background: var(--todo-dim); }
+  .tag-pill.cinema { color: var(--cinema); background: var(--cinema-dim); }
+  .tag-pill.osef   { color: var(--osef);   background: var(--osef-dim); }
+  .tag-rule p { font-size: 0.8rem; color: var(--text-dim); }
+
+  /* ── Flow horizontal (cycle de manche) ── */
+  .flow { margin-top: 22px; display: flex; align-items: stretch; gap: 6px; flex-wrap: wrap; }
+  .flow-step { flex: 1 1 130px; background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius-sm); padding: 13px 14px; }
+  .flow-step-num { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+  .flow-step-val { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+  .flow-step-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 3px; }
+  .flow-arrow { align-self: center; color: var(--text-muted); font-size: 1.1rem; padding: 0 2px; }
+
+  /* ── Podium mini ── */
+  .podium-demo { margin-top: 22px; display: flex; flex-direction: column; gap: 7px; }
+  .pd-row { display: flex; align-items: center; gap: 13px; padding: 11px 15px; background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius-sm); }
+  .pd-rank { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 800; width: 24px; text-align: center; color: var(--text-dim); }
+  .pd-rank.gold   { color: var(--gold); }
+  .pd-rank.silver { color: var(--silver); }
+  .pd-rank.bronze { color: var(--bronze); }
+  .pd-body { flex: 1; }
+  .pd-caption { font-size: 0.84rem; font-weight: 600; color: var(--text); }
+  .pd-meta { font-size: 0.72rem; color: var(--text-dim); margin-top: 1px; }
+  .pd-score { font-family: 'Syne', sans-serif; font-weight: 800; color: var(--accent); font-size: 0.95rem; }
+
+  /* ── Rule/fact grid (2 col) ── */
+  .fact-grid { margin-top: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--gb); border-radius: var(--radius-sm); overflow: hidden; }
+  .fact-cell { background: rgba(9,9,18,0.9); padding: 14px 16px; }
+  .fact-cell.full { grid-column: 1 / -1; }
+  @media (max-width: 560px) { .fact-grid { grid-template-columns: 1fr; } .fact-cell.full { grid-column: auto; } }
+  .fact-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; }
+  .fact-value { font-size: 0.83rem; font-weight: 600; color: var(--text); }
+
+  /* ── Callout ── */
+  .callout { margin-top: 18px; border: 1px solid rgba(34,211,238,0.3); background: var(--accent-dim); border-radius: var(--radius-sm); padding: 14px 17px; }
+  .callout-title { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+  .callout-body { font-size: 0.82rem; color: var(--text-dim); line-height: 1.6; }
+  .callout-body strong { color: var(--text); }
+
+  /* ── Bridge diagram (cooloss / shardoss) ── */
+  .bridge { margin-top: 22px; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 10px; }
+  .bridge-box { background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius-sm); padding: 16px; text-align: center; }
+  .bridge-box.hi { border-color: rgba(34,211,238,0.35); background: var(--accent-dim); }
+  .bridge-box-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+  .bridge-box-name { font-family: 'Syne', sans-serif; font-size: 0.98rem; font-weight: 800; }
+  .bridge-box.hi .bridge-box-name { color: var(--accent); }
+  .bridge-box-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+  .bridge-arrow { color: var(--text-muted); font-size: 1.2rem; }
+  @media (max-width: 560px) { .bridge { grid-template-columns: 1fr; } .bridge-arrow { transform: rotate(90deg); } }
+
+  /* ── Stack footer grid ── */
+  .stack-grid { margin-top: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--gb); border-radius: var(--radius-sm); overflow: hidden; }
+  .stack-cell.full { grid-column: 1 / -1; }
+  @media (max-width: 480px) { .stack-grid { grid-template-columns: 1fr; } .stack-cell.full { grid-column: auto; } }
+  .stack-cell { background: rgba(9,9,18,0.9); padding: 14px 16px; }
+  .stack-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; }
+  .stack-value { font-size: 0.83rem; font-weight: 600; color: var(--text); }
+
+  .doc-footer {
+    max-width: 880px; margin: 70px auto 0; padding: 24px 24px 0;
+    border-top: 1px solid var(--gb);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    font-size: 0.75rem; color: var(--text-muted);
+  }
+  .doc-footer a { color: var(--accent); text-decoration: none; }
+  .doc-footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 620px) {
+    .pipe-row { grid-template-columns: 84px 1fr; }
+    .pipe-step { padding: 8px; }
+    .pipe-connector { padding-left: 42px; }
+  }
+</style>
+</head>
+<body>
+
+<video class="page-wallpaper" src="wallpaper.mp4?v=1" autoplay muted loop playsinline></video>
+<div class="page-wallpaper-scrim"></div>
+
+<header>
+  <div class="header-inner">
+    <a class="brand" href="/">
+      <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="13" height="13" rx="3" fill="url(#g1)" opacity="0.9"/>
+        <rect x="17" y="2" width="13" height="13" rx="3" fill="url(#g1)" opacity="0.5"/>
+        <rect x="2" y="17" width="13" height="13" rx="3" fill="url(#g1)" opacity="0.5"/>
+        <rect x="17" y="17" width="13" height="13" rx="3" fill="url(#g1)" opacity="0.9"/>
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#22d3ee"/>
+            <stop offset="100%" stop-color="#6366f1"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="brand-name">Memoss</span>
+    </a>
+    <a href="/" class="back-link">← Retour au site</a>
+  </div>
+</header>
+
+<main class="page">
+
+  <div class="hero">
+    <p class="hero-kicker">Documentation</p>
+    <h1 class="hero-title">Comment marche Memoss</h1>
+    <p class="hero-sub">
+      Memoss, c'est une bibliothèque de mèmes alimentée automatiquement par ceux que tu envoies à tes potes,
+      plus un <strong>jeu de légendes</strong> par-dessus pour les revivre à plusieurs. Cette page explique
+      comment un fichier posé dans un dossier finit dans le jeu, et comment tout ça se relie au reste
+      (cooloss, Shardoss).
+    </p>
+  </div>
+
+  <!-- 01 — Bibliothèque -->
+  <hr class="divider">
+  <div class="section">
+    <p class="section-num">01 — La bibliothèque</p>
+    <h2 class="section-title">D'un dossier local à la galerie</h2>
+    <div class="section-body">
+      <p>
+        Le <strong>feeder</strong> est un petit programme qui tourne en arrière-plan sur ta machine
+        (icône dans la barre système). Il surveille un dossier local — typiquement celui où atterrissent
+        les mèmes que tes potes t'envoient — et upload automatiquement tout nouveau fichier vers Memoss,
+        sans que tu aies besoin d'y toucher.
+      </p>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipe-row">
+        <div class="pipe-step">
+          <p class="pipe-step-label">Source</p>
+          <p class="pipe-step-name">Dossier local</p>
+        </div>
+        <div class="pipe-detail">
+          <p class="pipe-detail-title">Le dossier surveillé</p>
+          <p class="pipe-detail-body">N'importe quel dossier — configuré une fois dans le feeder. Récursif : les sous-dossiers sont couverts aussi.</p>
+        </div>
+      </div>
+      <div class="pipe-connector">↓ un nouveau fichier apparaît</div>
+      <div class="pipe-row">
+        <div class="pipe-step">
+          <p class="pipe-step-label">Étape 1</p>
+          <p class="pipe-step-name">Hash MD5</p>
+        </div>
+        <div class="pipe-detail">
+          <p class="pipe-detail-title">Déduplication</p>
+          <p class="pipe-detail-body">Chaque fichier est empreinté par hash avant envoi. Un fichier déjà uploadé (même renommé, même redéplacé) n'est jamais renvoyé deux fois.</p>
+        </div>
+      </div>
+      <div class="pipe-connector">↓ nouveau hash → upload</div>
+      <div class="pipe-row">
+        <div class="pipe-step hi">
+          <p class="pipe-step-label">Étape 2</p>
+          <p class="pipe-step-name">Upload</p>
+        </div>
+        <div class="pipe-detail">
+          <p class="pipe-detail-title"><code>POST /upload</code></p>
+          <p class="pipe-detail-body">Authentifié par une clé API propre à chaque feeder — pratique pour savoir qui a fourni quoi, sans jamais partager de mot de passe de compte.</p>
+        </div>
+      </div>
+      <div class="pipe-connector">↓ à l'arrivée sur le serveur</div>
+      <div class="pipe-row">
+        <div class="pipe-step">
+          <p class="pipe-step-label">Résultat</p>
+          <p class="pipe-step-name">Galerie</p>
+        </div>
+        <div class="pipe-detail">
+          <p class="pipe-detail-title">Miniature générée, tag <code>todo</code> par défaut</p>
+          <p class="pipe-detail-body">Le média apparaît dans la <strong>Bibliothèque</strong>, prêt à être trié — et immédiatement piochable par le jeu s'il passe en tag <code>cinema</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-body" style="margin-top:22px">Une fois dans la bibliothèque, chaque média porte un <strong>tag</strong> :</p>
+    <div class="tag-rules">
+      <div class="tag-rule">
+        <span class="tag-pill todo">Todo</span>
+        <p>Le tag par défaut à l'upload — pas encore trié.</p>
+      </div>
+      <div class="tag-rule">
+        <span class="tag-pill cinema">Cinema</span>
+        <p>Les meilleurs — c'est <strong>uniquement dans ce tag</strong> que le jeu pioche ses mèmes.</p>
+      </div>
+      <div class="tag-rule">
+        <span class="tag-pill osef">Osef</span>
+        <p>Gardé, mais mis de côté — n'apparaît jamais dans le jeu.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <p class="callout-title">Rogner une vidéo</p>
+      <p class="callout-body">
+        Un mème filmé trop large peut être <strong>rogné</strong> (haut/bas, en %) directement depuis la galerie.
+        Le rognage crée un <strong>nouveau</strong> média — l'original reste intact à côté.
+      </p>
+    </div>
+  </div>
+
+  <!-- 02 — Le jeu -->
+  <hr class="divider">
+  <div class="section">
+    <p class="section-num">02 — Le jeu</p>
+    <h2 class="section-title">Une partie, trois manches</h2>
+    <div class="section-body">
+      <p>
+        Un joueur crée une room et reçoit un <strong>code à 6 caractères</strong> à partager (ou un lien direct).
+        Une fois tout le monde connecté, l'hôte choisit le mode et lance la partie — <strong>3 manches</strong>,
+        chacune avec le même déroulé.
+      </p>
+    </div>
+
+    <div class="fact-grid">
+      <div class="fact-cell">
+        <p class="fact-label">Mode « 50 Derniers »</p>
+        <p class="fact-value">Pioche uniquement parmi les 50 mèmes tag <code>cinema</code> les plus récents</p>
+      </div>
+      <div class="fact-cell">
+        <p class="fact-label">Mode « Cinéma »</p>
+        <p class="fact-value">Pioche dans toute la collection tag <code>cinema</code></p>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-step">
+        <p class="flow-step-num">1 — Choix</p>
+        <p class="flow-step-val">5 mèmes proposés</p>
+        <p class="flow-step-sub">120s pour choisir + légender</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <p class="flow-step-num">2 — Légende</p>
+        <p class="flow-step-val">100 caractères max</p>
+        <p class="flow-step-sub">Une seule par joueur</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <p class="flow-step-num">3 — Révélation</p>
+        <p class="flow-step-val">Une légende à la fois</p>
+        <p class="flow-step-sub">Tous les joueurs regardent ensemble</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <p class="flow-step-num">4 — Vote</p>
+        <p class="flow-step-val">Curseur 0 à 100</p>
+        <p class="flow-step-sub">Sauf l'auteur, qui attend le score</p>
+      </div>
+    </div>
+
+    <p class="section-body" style="margin-top:22px">
+      La moyenne des votes reçus (arrondie) s'ajoute directement au <strong>score cumulé</strong> du joueur.
+      Après chaque manche, un podium intermédiaire s'affiche ; à la fin des 3 manches, le classement final
+      couronne un gagnant et met en avant les meilleures légendes de la partie — vidéo en grand format, son activé.
+    </p>
+
+    <div class="podium-demo">
+      <div class="pd-row">
+        <span class="pd-rank gold">1</span>
+        <div class="pd-body"><div class="pd-caption">« bro really said skibidi »</div><div class="pd-meta">@quelqu'un · manche 3</div></div>
+        <span class="pd-score">87</span>
+      </div>
+      <div class="pd-row">
+        <span class="pd-rank silver">2</span>
+        <div class="pd-body"><div class="pd-caption">« on est plus à ça près »</div><div class="pd-meta">@quelqu'un d'autre · manche 2</div></div>
+        <span class="pd-score">241 pts</span>
+      </div>
+      <div class="pd-row">
+        <span class="pd-rank bronze">3</span>
+        <div class="pd-body"><div class="pd-caption">« osef »</div><div class="pd-meta">@le troisième · manche 1</div></div>
+        <span class="pd-score">198 pts</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 — Bonus vitrine -->
+  <hr class="divider">
+  <div class="section">
+    <p class="section-num">03 — Bonus vitrine</p>
+    <h2 class="section-title">Les cartes Shardoss dans la partie</h2>
+    <div class="section-body">
+      <p>
+        En te connectant avec ton compte <strong>cooloss</strong>, jusqu'à <strong>3 cartes</strong> que tu as
+        épinglées dans ta vitrine sur <strong>Shardoss</strong> apparaissent en bonus au moment de choisir ton
+        mème — en plus des 5 tirés au hasard. Une façon de rejouer les mèmes que tu as toi-même mis en avant.
+      </p>
+    </div>
+  </div>
+
+  <!-- 04 — Légendes -->
+  <hr class="divider">
+  <div class="section">
+    <p class="section-num">04 — Légendes & historique</p>
+    <h2 class="section-title">Ce qui a été dit ne se perd pas</h2>
+    <div class="section-body">
+      <p>
+        Chaque légende jouée est conservée. Deux façons de les retrouver : la page <strong>Légendes</strong>
+        liste l'historique complet, filtrable par période ; et directement dans la galerie, ouvrir un mème
+        affiche toutes les légendes qui lui ont déjà été attribuées, triées par score.
+      </p>
+    </div>
+    <div class="callout">
+      <p class="callout-title">Accès restreint</p>
+      <p class="callout-body">
+        La page Légendes est réservée aux comptes <strong>admin</strong> et <strong>habitué</strong>
+        (statut attribué depuis cooloss) — pas besoin d'avoir joué pour consulter, mais il faut être connecté.
+      </p>
+    </div>
+  </div>
+
+  <!-- 05 — Cooloss & Shardoss -->
+  <hr class="divider">
+  <div class="section">
+    <p class="section-num">05 — Le reste de l'écosystème</p>
+    <h2 class="section-title">Un compte, plusieurs apps</h2>
+    <div class="section-body">
+      <p>
+        Memoss ne gère pas ses propres comptes : la connexion passe par <strong>cooloss</strong>, le hub de
+        compte partagé entre les apps du réseau. Un seul cookie de session, valable partout — pas besoin de
+        se reconnecter en passant de l'une à l'autre.
+      </p>
+    </div>
+
+    <div class="bridge">
+      <div class="bridge-box">
+        <p class="bridge-box-label">Connexion</p>
+        <p class="bridge-box-name">cooloss</p>
+        <p class="bridge-box-sub">Compte partagé, cookie unique</p>
+      </div>
+      <div class="bridge-arrow">→</div>
+      <div class="bridge-box hi">
+        <p class="bridge-box-label">Tu joues</p>
+        <p class="bridge-box-name">Memoss</p>
+        <p class="bridge-box-sub">Légendes, votes, scores</p>
+      </div>
+      <div class="bridge-arrow">→</div>
+      <div class="bridge-box">
+        <p class="bridge-box-label">Fin de partie</p>
+        <p class="bridge-box-name">Shardoss</p>
+        <p class="bridge-box-sub">Jeu idle nourri par tes stats réelles</p>
+      </div>
+    </div>
+
+    <p class="section-body" style="margin-top:18px">
+      À la fin de chaque partie, Memoss notifie Shardoss avec les légendes jouées — c'est Shardoss qui calcule
+      ensuite ses propres classements et fait évoluer sa collection de cartes en fonction de l'usage réel de
+      Memoss, pas d'un tirage random déconnecté du jeu.
+    </p>
+  </div>
+
+  <!-- Stack -->
+  <hr class="divider">
+  <div class="section">
+    <p class="section-num">Sous le capot</p>
+    <h2 class="section-title">La stack</h2>
+    <div class="stack-grid">
+      <div class="stack-cell">
+        <p class="stack-label">Serveur</p>
+        <p class="stack-value">FastAPI + SQLModel (SQLite)</p>
+      </div>
+      <div class="stack-cell">
+        <p class="stack-label">Temps réel</p>
+        <p class="stack-value">WebSocket natif (rooms, votes, reveal)</p>
+      </div>
+      <div class="stack-cell">
+        <p class="stack-label">Frontend</p>
+        <p class="stack-value">Vanilla JS/CSS/HTML, Plyr pour la vidéo</p>
+      </div>
+      <div class="stack-cell">
+        <p class="stack-label">Feeder</p>
+        <p class="stack-value">Python + watchdog, packagé en .exe</p>
+      </div>
+      <div class="stack-cell full">
+        <p class="stack-label">Déploiement</p>
+        <p class="stack-value">Docker Compose + Nginx, CI/CD sur push</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="doc-footer">
+  <span>Memoss · <a href="/">memoss.nathangracia.com</a></span>
+  <span>FastAPI · WebSocket · Docker</span>
+</div>
+
+</body>
+</html>
