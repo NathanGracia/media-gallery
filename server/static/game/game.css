@@ -35,6 +35,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* — Vidéo de fond (voir style.css racine pour le détail) — */
+.page-wallpaper {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; z-index: -3;
+}
+.page-wallpaper-scrim {
+  position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(6, 6, 15, 0.35) 0%, rgba(6, 6, 15, 0.75) 55%, rgba(6, 6, 15, 0.92) 100%),
+    linear-gradient(160deg, rgba(20, 12, 40, 0.55), rgba(6, 6, 15, 0.75));
+}
+
 /* ── Orbs ── */
 .orb { position:fixed; border-radius:50%; filter:blur(90px); opacity:.4; pointer-events:none; z-index:0; }
 .orb-1 {
