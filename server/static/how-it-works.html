@@ -70,16 +70,65 @@
   .header-inner {
     max-width: 880px; margin: 0 auto;
     padding: 14px 24px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    display: flex; align-items: center; gap: 24px;
   }
-  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; flex-shrink: 0; }
   .brand-logo { width: 26px; height: 26px; filter: drop-shadow(0 0 8px rgba(34,211,238,0.5)); }
   .brand-name { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
-  .back-link {
-    font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-decoration: none;
-    letter-spacing: 0.02em; transition: color 0.15s;
+
+  /* ── Nav links (identiques aux autres pages du site) ── */
+  .nav-links { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .nav-sep { width: 1px; height: 18px; background: var(--gb); margin: 0 6px; flex-shrink: 0; }
+  .nav-link {
+    padding: 8px 14px; border-radius: var(--radius-sm);
+    color: var(--text-dim); font-family: 'Syne', sans-serif;
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em;
+    text-decoration: none; transition: color 0.15s, background 0.15s; flex-shrink: 0;
   }
-  .back-link:hover { color: var(--accent); }
+  .nav-link:hover { color: var(--text); background: var(--glass); }
+  .nav-link.active { color: var(--accent); background: var(--accent-dim); }
+  .nav-link--primary { color: var(--accent); }
+  .nav-link--primary:hover { color: #fff; background: rgba(34,211,238,0.14); }
+  .nav-link--primary.active { color: #fff; background: rgba(34,211,238,0.14); }
+
+  /* ── Account widget (identique aux autres pages) ── */
+  #account-widget { margin-left: auto; flex-shrink: 0; position: relative; }
+  .account-widget-login {
+    padding: 5px 11px; border-radius: var(--radius-sm);
+    font-family: 'Figtree', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+    color: rgba(100,116,139,0.7); text-decoration: none; transition: all 0.2s; border: 1px solid transparent;
+  }
+  .account-widget-login:hover { color: var(--text-dim); border-color: var(--gb); background: var(--glass); }
+  .account-widget-trigger {
+    display: flex; align-items: center; gap: 7px; padding: 4px 9px 4px 4px;
+    background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
+    cursor: pointer; color: var(--text-dim);
+    font-family: 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 600; transition: all 0.2s;
+  }
+  .account-widget-trigger:hover { border-color: var(--gb); background: var(--glass); }
+  .account-widget-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .account-widget-avatar--fallback {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-dim); color: var(--accent); font-size: 0.65rem; font-weight: 700;
+  }
+  .account-widget-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .account-widget-chevron { color: var(--text-muted); flex-shrink: 0; }
+  .account-widget-menu {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 300;
+    min-width: 190px; padding: 6px;
+    background: #0d1420; border: 1px solid var(--gb); border-radius: var(--radius-sm);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+  .account-widget-badge {
+    padding: 4px 10px; margin-bottom: 4px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--accent); background: var(--accent-dim); border-radius: var(--radius-sm); text-align: center;
+  }
+  .account-widget-menu a {
+    display: block; padding: 8px 10px; border-radius: var(--radius-sm);
+    color: var(--text-dim); text-decoration: none; font-size: 0.82rem; transition: background 0.15s, color 0.15s;
+  }
+  .account-widget-menu a:hover { background: var(--glass); color: var(--text); }
 
   /* ── Layout ── */
   .page { max-width: 880px; margin: 0 auto; padding: 0 24px 100px; }
@@ -254,7 +303,14 @@
       </svg>
       <span class="brand-name">Memoss</span>
     </a>
-    <a href="/" class="back-link">← Retour au site</a>
+    <div class="nav-links">
+      <a href="/" class="nav-link nav-link--primary">Jouer</a>
+      <span class="nav-sep"></span>
+      <a href="/gallery" class="nav-link">Bibliothèque</a>
+      <a href="/timeline" class="nav-link">Légendes</a>
+      <a href="/how-it-works.html" class="nav-link active">Comment ça marche</a>
+    </div>
+    <div id="account-widget"></div>
   </div>
 </header>
 
@@ -542,5 +598,9 @@
   <span>FastAPI · WebSocket · Docker</span>
 </div>
 
+<script src="account-widget.js?v=3"></script>
+<script>
+  AccountWidget.load().then(() => AccountWidget.mount('account-widget'));
+</script>
 </body>
 </html>
