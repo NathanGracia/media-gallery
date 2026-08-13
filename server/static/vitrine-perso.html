@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vitrine publique — Memoss</title>
-<meta name="description" content="Les meilleures légendes publiques de Memoss.">
+<title>Vitrine perso — Memoss</title>
+<meta name="description" content="Ton historique de légendes sur Memoss.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -81,18 +81,10 @@
   main { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
 
   .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1.75rem; }
-  .page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 3.5vw, 1.9rem); margin-right: auto; }
-  .toolbar-label { font-size: 0.78rem; color: var(--text-dim); }
-  select {
-    appearance: none; -webkit-appearance: none;
-    background: var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
-    border: 1px solid var(--gb); border-radius: var(--radius-sm);
-    color: var(--text); font-family: inherit; font-size: 0.82rem; font-weight: 600;
-    padding: 0.35rem 1.8rem 0.35rem 0.65rem; cursor: pointer;
-  }
-  select option { background: #0f172a; }
+  .page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 3.5vw, 1.9rem); }
+  .count-label { font-size: 0.78rem; color: var(--text-dim); margin-left: auto; }
 
-  /* — Cartes (repris de landing.html) — */
+  /* — Cartes (repris de vitrine.html) — */
   .examples-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
   a.example-card {
     background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
@@ -105,9 +97,16 @@
   .example-body { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
   .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; color: var(--text); }
   .example-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
-  .example-pseudo { color: #94a3b8; font-weight: 600; }
-  .example-score { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
+  .example-score { font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
+  .example-score--none { color: var(--text-muted); font-weight: 600; font-family: inherit; }
+  .vis-badge {
+    margin-left: auto; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
+  }
+  .vis-badge--public  { background: rgba(74,222,128,0.15); color: var(--cinema); }
+  .vis-badge--private { background: rgba(255,255,255,0.07); color: var(--text-dim); }
   .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 3rem; grid-column: 1 / -1; }
+  .examples-empty a { color: var(--accent); }
   .load-more-row { text-align: center; margin-top: 2rem; }
   .btn-load-more {
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
@@ -143,13 +142,8 @@
 
 <main>
   <div class="toolbar">
-    <h1 class="page-title">Vitrine publique</h1>
-    <span class="toolbar-label">Période&nbsp;:</span>
-    <select id="f-days" onchange="reload()">
-      <option value="0">Tout</option>
-      <option value="30">1 mois</option>
-      <option value="7">7 jours</option>
-    </select>
+    <h1 class="page-title">Vitrine perso</h1>
+    <span class="count-label" id="count-label"></span>
   </div>
 
   <div class="examples-grid" id="grid">
@@ -162,7 +156,7 @@
 </main>
 
 <script src="/nav.js?v=2"></script>
-<script>SiteNav.mount('site-nav', 'vitrine-public');</script>
+<script>SiteNav.mount('site-nav', 'vitrine-perso');</script>
 <script src="/account-widget.js?v=3"></script>
 <script>
 let _page = 1;
@@ -174,17 +168,22 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function isLoggedIn() { return !!AccountWidget.session.loggedIn; }
+
 function cardHtml(ex) {
+  const hasScore = ex.avg !== null && ex.avg !== undefined;
   return `
     <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}">
       ${ex.media_type === 'video' && ex.url
         ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
         : `<img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`}
       <div class="example-body">
-        <div class="example-text">${esc(ex.text)}</div>
+        <div class="example-text">${esc(ex.text) || '<em style="opacity:.45">Pas de légende</em>'}</div>
         <div class="example-meta">
-          <span class="example-pseudo">@${esc(ex.pseudo)}</span>
-          <span class="example-score">${ex.avg}<span style="opacity:.6;font-weight:600"> /100</span></span>
+          ${hasScore
+            ? `<span class="example-score">${ex.avg}<span style="opacity:.6;font-weight:600"> /100</span></span>`
+            : `<span class="example-score--none">Pas encore noté</span>`}
+          <span class="vis-badge vis-badge--${ex.visibility}">${ex.visibility === 'public' ? 'Public' : 'Privé'}</span>
         </div>
       </div>
     </a>`;
@@ -201,14 +200,21 @@ function observeVideos(root) {
 }
 
 async function fetchPage(page) {
-  const days = document.getElementById('f-days').value;
-  const res = await fetch(`/api/legends/public?days=${days}&page=${page}&per_page=${PER_PAGE}`);
+  const res = await fetch(`/api/legends/mine?page=${page}&per_page=${PER_PAGE}`);
+  if (res.status === 401) { const e = new Error('unauthorized'); e.code = 401; throw e; }
   if (!res.ok) throw new Error();
   return res.json();
 }
 
 async function reload() {
   const grid = document.getElementById('grid');
+
+  if (!isLoggedIn()) {
+    grid.innerHTML = `<div class="examples-empty">Connecte-toi (bouton en haut de page) pour voir ton historique de légendes.</div>`;
+    document.getElementById('count-label').textContent = '';
+    return;
+  }
+
   grid.innerHTML = '<div class="examples-empty">Chargement…</div>';
   document.getElementById('load-more-row').style.display = 'none';
   _page = 1;
@@ -216,8 +222,9 @@ async function reload() {
   try {
     const data = await fetchPage(1);
     _total = data.total;
+    document.getElementById('count-label').textContent = `${_total} légende${_total > 1 ? 's' : ''}`;
     if (!data.items.length) {
-      grid.innerHTML = '<div class="examples-empty">Pas encore de légendes publiques validées pour cette période.</div>';
+      grid.innerHTML = `<div class="examples-empty">Pas encore de légende — <a href="/game">va en écrire une</a> !</div>`;
       return;
     }
     grid.innerHTML = data.items.map(ex => cardHtml(ex)).join('');
@@ -225,7 +232,7 @@ async function reload() {
     observeVideos(grid);
     document.getElementById('load-more-row').style.display = _loaded < _total ? 'block' : 'none';
   } catch {
-    grid.innerHTML = '<div class="examples-empty">Impossible de charger la vitrine pour le moment.</div>';
+    grid.innerHTML = '<div class="examples-empty">Impossible de charger ta vitrine pour le moment.</div>';
   }
 }
 
@@ -249,8 +256,11 @@ async function loadMore() {
   }
 }
 
-(async () => { await AccountWidget.load(); AccountWidget.mount('account-widget'); })();
-reload();
+(async () => {
+  await AccountWidget.load();
+  AccountWidget.mount('account-widget');
+  reload();
+})();
 </script>
 
 </body>

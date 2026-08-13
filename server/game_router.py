@@ -83,6 +83,19 @@ def require_admin(request: Request):
         raise HTTPException(401, "Réservé aux admins")
 
 
+def require_login(request: Request) -> dict:
+    """
+    Gate "connecté, peu importe le rôle" — pour la vitrine perso (voir mes
+    propres légendes, quel que soit isAdmin/isHabitue). Retourne les claims
+    (contrairement aux gates ci-dessus) : l'endpoint a besoin de account_uid
+    pour filtrer.
+    """
+    claims = get_account_claims(request)
+    if not claims:
+        raise HTTPException(401, "Connexion requise")
+    return claims
+
+
 # ── Connection Manager ─────────────────────────────────────────────────────────
 class ConnectionManager:
     def __init__(self):
@@ -497,6 +510,60 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24):
                     "thumb":       f"/thumbnail/{a.media_uuid}.jpg",
                     "url":         info.get(a.media_uuid, {}).get("url"),
                     "media_type":  info.get(a.media_uuid, {}).get("type"),
+                }
+                for a in rows
+            ],
+        }
+
+
+@router.get("/api/legends/mine")
+async def my_legends(claims: dict = Depends(require_login), page: int = 1, per_page: int = 24):
+    """
+    Historique personnel — connexion requise, aucune restriction de
+    visibility/reviewed (c'est le contenu de l'auteur, il voit tout ce
+    qu'il a écrit, y compris ce qui est resté privé). Triée par récence
+    (id desc), pas par note — c'est un historique, pas un classement.
+    """
+    per_page = min(max(per_page, 1), 60)
+    page     = max(page, 1)
+    account_uid = claims["uid"]
+
+    with Session(_engine) as s:
+        base = (
+            select(GameAnswer)
+            .where(GameAnswer.account_uid == account_uid)
+            .where(GameAnswer.text != "")
+        )
+
+        total = s.exec(select(func.count()).select_from(base.subquery())).one()
+
+        rows = s.exec(
+            base
+            .order_by(GameAnswer.id.desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        ).all()
+
+        uuids   = list({a.media_uuid for a in rows})
+        medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
+        info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+
+        return {
+            "total":    total,
+            "page":     page,
+            "per_page": per_page,
+            "items": [
+                {
+                    "id":          a.id,
+                    "text":        a.text,
+                    "avg":         round(a.total_stars / a.vote_count, 1) if a.vote_count else None,
+                    "vote_count":  a.vote_count,
+                    "media_uuid":  a.media_uuid,
+                    "thumb":       f"/thumbnail/{a.media_uuid}.jpg",
+                    "url":         info.get(a.media_uuid, {}).get("url"),
+                    "media_type":  info.get(a.media_uuid, {}).get("type"),
+                    "visibility":  a.visibility,
+                    "reviewed":    a.reviewed,
                 }
                 for a in rows
             ],

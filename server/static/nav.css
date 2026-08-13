@@ -66,6 +66,31 @@
 #site-nav .nav-link--primary:hover { color: #fff; background: rgba(34, 211, 238, 0.14); }
 #site-nav .nav-link--primary.active { color: #fff; background: rgba(34, 211, 238, 0.14); }
 
+/* Dropdown (ex: Vitrine publique/perso) — même pattern visuel que le menu
+   du account-widget (voir static/*.html : .account-widget-menu), mais
+   codé en dur ici comme le reste de nav.css. */
+#site-nav .nav-dropdown { position: relative; }
+#site-nav .nav-dropdown-trigger {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer; font: inherit;
+}
+#site-nav .nav-dropdown-chevron { flex-shrink: 0; opacity: 0.7; }
+#site-nav .nav-dropdown-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 300;
+  min-width: 170px; padding: 6px;
+  background: #0d1420; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 9px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+#site-nav .nav-dropdown-menu a {
+  display: block; padding: 8px 10px; border-radius: 9px;
+  color: #64748b; text-decoration: none;
+  font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+#site-nav .nav-dropdown-menu a:hover { color: #f1f5f9; background: rgba(255, 255, 255, 0.04); }
+#site-nav .nav-dropdown-menu a.active { color: #22d3ee; background: rgba(34, 211, 238, 0.15); }
+
 @media (max-width: 600px) {
   #site-nav { gap: 14px; }
   #site-nav .brand-name { font-size: 1.05rem; }
