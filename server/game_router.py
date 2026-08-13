@@ -463,7 +463,18 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24):
 
         rows = s.exec(
             base
-            .order_by((GameAnswer.total_stars * 1.0 / GameAnswer.vote_count).desc())
+            .order_by(
+                # Sans tri secondaire, l'ordre entre ex-aequo (ex: plusieurs
+                # 100/100) est indéterminé côté SQLite — ça peut même casser
+                # la pagination (un item vu deux fois ou sauté entre deux
+                # "Charger plus" si l'ordre change entre requêtes). Un
+                # meilleur score gagne d'abord ; à score égal, plus de votes
+                # = jugement plus fiable ; à égalité totale, id décroissant
+                # (le plus récent) pour un ordre 100% stable.
+                (GameAnswer.total_stars * 1.0 / GameAnswer.vote_count).desc(),
+                GameAnswer.vote_count.desc(),
+                GameAnswer.id.desc(),
+            )
             .offset((page - 1) * per_page)
             .limit(per_page)
         ).all()

@@ -108,15 +108,6 @@
   .example-pseudo { color: #94a3b8; font-weight: 600; }
   .example-score { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
   .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 3rem; grid-column: 1 / -1; }
-  .rank-badge {
-    position: absolute; top: 8px; left: 8px; z-index: 2;
-    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.7rem;
-    background: rgba(6,6,15,0.75); color: var(--accent);
-    border: 1px solid rgba(34,211,238,0.3); border-radius: 999px;
-    padding: 2px 8px;
-  }
-  .example-thumb-wrap { position: relative; }
-
   .load-more-row { text-align: center; margin-top: 2rem; }
   .btn-load-more {
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
@@ -183,15 +174,12 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function cardHtml(ex, rank) {
+function cardHtml(ex) {
   return `
     <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}">
-      <div class="example-thumb-wrap">
-        <span class="rank-badge">#${rank}</span>
-        ${ex.media_type === 'video' && ex.url
-          ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
-          : `<img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`}
-      </div>
+      ${ex.media_type === 'video' && ex.url
+        ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
+        : `<img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`}
       <div class="example-body">
         <div class="example-text">${esc(ex.text)}</div>
         <div class="example-meta">
@@ -232,7 +220,7 @@ async function reload() {
       grid.innerHTML = '<div class="examples-empty">Pas encore de légendes publiques validées pour cette période.</div>';
       return;
     }
-    grid.innerHTML = data.items.map((ex, i) => cardHtml(ex, i + 1)).join('');
+    grid.innerHTML = data.items.map(ex => cardHtml(ex)).join('');
     _loaded = data.items.length;
     observeVideos(grid);
     document.getElementById('load-more-row').style.display = _loaded < _total ? 'block' : 'none';
@@ -249,8 +237,7 @@ async function loadMore() {
     _page += 1;
     const data = await fetchPage(_page);
     const grid = document.getElementById('grid');
-    const startRank = _loaded + 1;
-    grid.insertAdjacentHTML('beforeend', data.items.map((ex, i) => cardHtml(ex, startRank + i)).join(''));
+    grid.insertAdjacentHTML('beforeend', data.items.map(ex => cardHtml(ex)).join(''));
     _loaded += data.items.length;
     observeVideos(grid);
     document.getElementById('load-more-row').style.display = _loaded < _total ? 'block' : 'none';
