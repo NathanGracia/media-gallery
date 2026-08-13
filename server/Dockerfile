@@ -17,6 +17,7 @@ COPY game_models.py .
 COPY game_router.py .
 COPY shared_auth.py .
 COPY shardoss_client.py .
+COPY legend_moderation.py .
 COPY scripts/ scripts/
 COPY static/ static/
 
