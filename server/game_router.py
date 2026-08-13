@@ -864,46 +864,65 @@ async def delete_legend(legend_id: int):
         return {"ok": True}
 
 
-@router.post("/game/api/legends/classify", dependencies=[Depends(require_admin)])
-async def classify_legends(body: dict | None = None):
+_classify_running = False  # garde-fou anti-chevauchement, voir _classify_pending
+
+
+async def _classify_pending(limit: int = 200) -> dict:
     """
-    Lance une classification Gemini (chunkée, voir legend_moderation.py) sur
-    les légendes pas encore `reviewed` — une décision manuelle n'est jamais
+    Classification Gemini (chunkée, voir legend_moderation.py) sur les
+    légendes pas encore `reviewed` — une décision manuelle n'est jamais
     écrasée. Met à jour visibility directement (effective immédiatement) ainsi
     qu'ai_label/ai_reason pour la relecture admin ; reviewed reste False tant
     qu'un admin n'a pas confirmé/corrigé via PATCH, pour que la file de
     modération sache ce qui a déjà été vérifié par un humain.
+
+    Partagée entre le bouton admin (POST .../classify) et le déclenchement
+    automatique en fin de partie (voir end_game) — mêmes garanties dans les
+    deux cas. _classify_running évite que deux parties qui finissent à peu
+    près en même temps ne lancent deux passages concurrents sur le même lot
+    (gaspillage d'appels Gemini, pas de corruption de données ceci dit).
     """
+    global _classify_running
+    if _classify_running:
+        return {"classified": 0, "public": 0, "private": 0, "skipped": 0, "already_running": True}
+    _classify_running = True
+    try:
+        with Session(_engine) as s:
+            pending = s.exec(
+                select(GameAnswer)
+                .where(GameAnswer.reviewed == False)  # noqa: E712 — comparaison SQL, pas `is False`
+                .where(GameAnswer.text != "")
+                .order_by(GameAnswer.id.desc())
+                .limit(limit)
+            ).all()
+            if not pending:
+                return {"classified": 0, "public": 0, "private": 0, "skipped": 0}
+
+            items   = [{"id": a.id, "text": a.text} for a in pending]
+            results = await classify_legends_batch(items, _gemini_api_key, _gemini_model)
+
+            counts = {"public": 0, "private": 0}
+            for answer in pending:
+                result = results.get(answer.id)
+                if not result:
+                    continue  # échec de classification pour cet item — laissé tel quel, reviewed reste False
+                answer.visibility = result["label"]
+                answer.ai_label   = result["label"]
+                answer.ai_reason  = result["reason"]
+                counts[result["label"]] += 1
+                s.add(answer)
+            s.commit()
+            return {"classified": sum(counts.values()), **counts, "skipped": len(pending) - sum(counts.values())}
+    finally:
+        _classify_running = False
+
+
+@router.post("/game/api/legends/classify", dependencies=[Depends(require_admin)])
+async def classify_legends(body: dict | None = None):
     if not _gemini_api_key:
         raise HTTPException(503, "Classification IA non configurée (gemini_api_key vide dans config.yaml)")
-
     limit = min(max(int((body or {}).get("limit", 200)), 1), 500)
-    with Session(_engine) as s:
-        pending = s.exec(
-            select(GameAnswer)
-            .where(GameAnswer.reviewed == False)  # noqa: E712 — comparaison SQL, pas `is False`
-            .where(GameAnswer.text != "")
-            .order_by(GameAnswer.id.desc())
-            .limit(limit)
-        ).all()
-        if not pending:
-            return {"classified": 0, "public": 0, "private": 0, "skipped": 0}
-
-        items   = [{"id": a.id, "text": a.text} for a in pending]
-        results = await classify_legends_batch(items, _gemini_api_key, _gemini_model)
-
-        counts = {"public": 0, "private": 0}
-        for answer in pending:
-            result = results.get(answer.id)
-            if not result:
-                continue  # échec de classification pour cet item — laissé tel quel, reviewed reste False
-            answer.visibility = result["label"]
-            answer.ai_label   = result["label"]
-            answer.ai_reason  = result["reason"]
-            counts[result["label"]] += 1
-            s.add(answer)
-        s.commit()
-        return {"classified": sum(counts.values()), **counts, "skipped": len(pending) - sum(counts.values())}
+    return await _classify_pending(limit)
 
 
 # ── WebSocket ──────────────────────────────────────────────────────────────────
@@ -1356,6 +1375,15 @@ async def end_game(code: str):
     })
 
     await _save_to_db(code)
+
+    # Classification IA public/privé (voir legend_moderation.py) — fire-
+    # and-forget comme la notification Shardoss juste en dessous : ne doit
+    # jamais retarder le retour au lobby. Reprend TOUT ce qui est encore
+    # reviewed=False (pas juste cette partie), donc rattrape aussi tout lot
+    # resté en attente d'un run précédent. Silencieux si la clé Gemini n'est
+    # pas configurée (config.yaml de dev) plutôt que d'échouer bruyamment.
+    if _gemini_api_key:
+        asyncio.create_task(_classify_pending())
 
     # Notification Shardoss (jeu idle connecté) — fire-and-forget, jamais
     # awaité : une panne/lenteur de Shardoss ne doit jamais retarder ou
