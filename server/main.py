@@ -170,6 +170,26 @@ app.add_middleware(
 )
 
 
+# Cloudflare (devant ce domaine) injecte Cache-Control: max-age=14400 (4h)
+# par défaut sur les fichiers statiques (extension .js/.css/.html...) quand
+# l'origine n'envoie elle-même aucun header de cache — FastAPI/StaticFiles
+# n'en envoie aucun par défaut. Ça a déjà causé plusieurs bugs de navbar
+# figée en cache (nav.js/nav.css modifiés mais servis depuis le cache du
+# navigateur malgré le déploiement), avant qu'on pense à bumper le ?v= —
+# fragile, oublié deux fois de suite. Plutôt que de compter sur cette
+# discipline manuelle, on force explicitement la revalidation sur tout sauf
+# les médias (uploadés une fois, jamais modifiés, où le cache long reste
+# désirable). Coût : un aller-retour ETag/304 par requête au lieu d'un
+# cache silencieux — négligeable vu le trafic de ce site.
+@app.middleware("http")
+async def no_stale_cache(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if not (path.startswith("/media/") or path.startswith("/thumbnail/")):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 # ── Auth ───────────────────────────────────────────────────────────────────────
 def require_api_key(x_api_key: str = Header(...)):
     """Réservé au feeder .exe — clé API brute, inchangé."""
