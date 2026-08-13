@@ -649,6 +649,11 @@ app.include_router(game_router)
 async def timeline_page():
     return FileResponse("static/timeline.html")
 
+
+@app.get("/admin/legendes")
+async def admin_legends_page():
+    return FileResponse("static/admin-legends.html")
+
 # Static game SPA — mounté sur /game (alias historique) ET servi comme landing
 # page sur "/" (voir plus bas) : le jeu est la page d'accueil du site depuis
 # juillet 2026, la galerie a déménagé sur /gallery.

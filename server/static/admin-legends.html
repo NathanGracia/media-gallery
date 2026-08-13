@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modération des légendes — Memoss</title>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="nav.css?v=1">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #05070d;
+      --surface: rgba(255,255,255,0.03);
+      --row-alt: rgba(255,255,255,0.015);
+      --border:  rgba(255,255,255,0.07);
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --subtle:  #475569;
+      --accent:  #22d3ee;
+      --accent-dim: rgba(34,211,238,0.15);
+      --red:     #f87171;
+      --green:   #4ade80;
+      --radius:  10px;
+      --radius-sm: 6px;
+    }
+
+    body {
+      font-family: 'Figtree', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      background: rgba(5,7,13,0.9);
+      backdrop-filter: blur(8px);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header-inner {
+      max-width: 1400px; margin: 0 auto; padding: 0 20px;
+      display: flex; align-items: center; justify-content: space-between; height: 56px;
+    }
+
+    main { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    .page-title { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .page-title a.back { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 9px; }
+    .page-title a.back:hover { color: var(--accent); border-color: rgba(34,211,238,0.35); }
+
+    /* — Toolbar — */
+    .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .toolbar-label { font-size: 0.78rem; color: var(--muted); }
+    select {
+      appearance: none; -webkit-appearance: none;
+      background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); font-family: inherit; font-size: 0.82rem; font-weight: 600;
+      padding: 0.35rem 1.8rem 0.35rem 0.65rem; cursor: pointer;
+    }
+    select option { background: #0f172a; }
+    .btn-classify {
+      margin-left: auto; font-size: 0.82rem; font-weight: 600; padding: 0.4rem 0.85rem; border-radius: var(--radius-sm);
+      border: 1px solid rgba(34,211,238,0.35); background: rgba(34,211,238,0.1); color: var(--accent);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-classify:hover:not(:disabled) { background: rgba(34,211,238,0.2); }
+    .btn-classify:disabled { opacity: 0.55; cursor: default; }
+    .count-label { font-size: 0.78rem; color: var(--muted); }
+
+    /* — Table — */
+    .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    thead th {
+      text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--muted); background: var(--surface); padding: 9px 10px; border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:nth-child(even) { background: var(--row-alt); }
+    tbody tr:hover { background: rgba(34,211,238,0.04); }
+    tbody tr.row-reviewed { opacity: 0.55; }
+    tbody tr.row-reviewed:hover { opacity: 1; }
+    td { padding: 7px 10px; vertical-align: middle; }
+
+    .thumb {
+      width: 56px; height: 40px; object-fit: cover; border-radius: 5px;
+      background: rgba(255,255,255,0.04); display: block; flex-shrink: 0;
+    }
+    .cell-text { max-width: 340px; }
+    .legend-text { font-weight: 500; line-height: 1.35; }
+    .legend-reason { font-size: 0.72rem; color: var(--subtle); margin-top: 2px; }
+    .cell-pseudo { color: #94a3b8; font-weight: 600; white-space: nowrap; }
+    .cell-score { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .score-high { color: var(--green); }
+    .score-mid  { color: #fbbf24; }
+    .score-low  { color: var(--muted); }
+
+    .badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
+    }
+    .badge--public  { background: rgba(74,222,128,0.15); color: var(--green); }
+    .badge--private { background: rgba(255,255,255,0.07); color: var(--muted); }
+    .badge-reviewed { font-size: 0.65rem; color: var(--muted); }
+    .badge-reviewed--yes { color: var(--green); }
+
+    .row-actions { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .act-btn {
+      font-size: 0.72rem; font-weight: 600; padding: 3px 8px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+    .act-btn:hover { border-color: rgba(34,211,238,0.4); color: var(--accent); background: rgba(34,211,238,0.08); }
+    .act-btn--reviewed:hover { border-color: rgba(74,222,128,0.4); color: var(--green); background: rgba(74,222,128,0.08); }
+    .act-btn--danger:hover { border-color: rgba(248,113,113,0.4); color: var(--red); background: rgba(248,113,113,0.08); }
+    .act-btn--active { border-color: rgba(74,222,128,0.4); color: var(--green); }
+
+    .empty { text-align: center; padding: 4rem 1rem; color: var(--muted); font-size: 0.9rem; }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #0f172a; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 8px 16px; font-size: 0.82rem; color: var(--text); z-index: 100;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div id="site-nav"></div>
+    <div id="account-widget"></div>
+  </div>
+</header>
+
+<main>
+  <div class="page-title" style="margin-bottom:14px">
+    <a class="back" href="/timeline">← Légendes</a>
+    <span>Modération — vue tableau</span>
+  </div>
+
+  <div class="toolbar">
+    <span class="toolbar-label">Visibilité&nbsp;:</span>
+    <select id="f-visibility" onchange="load()">
+      <option value="all">Toutes</option>
+      <option value="public">Publiques</option>
+      <option value="private">Privées</option>
+    </select>
+    <span class="toolbar-label">Revue&nbsp;:</span>
+    <select id="f-reviewed" onchange="load()">
+      <option value="all">Toutes</option>
+      <option value="false" selected>Non revues</option>
+      <option value="true">Déjà revues</option>
+    </select>
+    <span class="toolbar-label">Période&nbsp;:</span>
+    <select id="f-days" onchange="load()">
+      <option value="7">7 jours</option>
+      <option value="30" selected>1 mois</option>
+      <option value="0">Tout</option>
+    </select>
+    <span class="count-label" id="count-label"></span>
+    <button class="btn-classify" id="btn-classify" onclick="runClassify()">Classifier les nouvelles légendes</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Légende</th>
+          <th>Auteur</th>
+          <th>Score</th>
+          <th>Visibilité</th>
+          <th>Revue</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="7" class="empty">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script src="nav.js?v=1"></script>
+<script>SiteNav.mount('site-nav', 'timeline');</script>
+<script src="account-widget.js?v=3"></script>
+<script>
+let _rows = [];
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function isAdmin() { return !!AccountWidget.session.isAdmin; }
+
+let _toastTimer = null;
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.remove(), 1800);
+}
+
+async function load() {
+  const tbody = document.getElementById('tbody');
+  if (!isAdmin()) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Réservé aux admins.</td></tr>';
+    document.getElementById('btn-classify').style.display = 'none';
+    return;
+  }
+
+  const visibility = document.getElementById('f-visibility').value;
+  const reviewed   = document.getElementById('f-reviewed').value;
+  const days       = document.getElementById('f-days').value;
+
+  const params = new URLSearchParams({ days, limit: '500' });
+  if (visibility !== 'all') params.set('visibility', visibility);
+  if (reviewed   !== 'all') params.set('reviewed', reviewed);
+
+  tbody.innerHTML = '<tr><td colspan="7" class="empty">Chargement…</td></tr>';
+  try {
+    const res = await fetch(`/game/api/legends?${params}`);
+    if (!res.ok) throw new Error();
+    _rows = await res.json();
+    render();
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Erreur de chargement.</td></tr>';
+  }
+}
+
+function render() {
+  const tbody = document.getElementById('tbody');
+  document.getElementById('count-label').textContent = `${_rows.length} légende${_rows.length > 1 ? 's' : ''}`;
+
+  if (!_rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Rien à afficher pour ces filtres.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = _rows.map(r => {
+    const isPublic = r.visibility === 'public';
+    const scoreCls = !r.vote_count ? 'score-low' : r.avg >= 70 ? 'score-high' : r.avg >= 40 ? 'score-mid' : 'score-low';
+    return `
+      <tr id="row-${r.id}" class="${r.reviewed ? 'row-reviewed' : ''}">
+        <td><img class="thumb" src="${esc(r.thumb)}" alt="" loading="lazy" onerror="this.style.opacity='0.2'"></td>
+        <td class="cell-text">
+          <div class="legend-text">${esc(r.text)}</div>
+          ${r.ai_reason ? `<div class="legend-reason">IA (${esc(r.ai_label)}) : ${esc(r.ai_reason)}</div>` : ''}
+        </td>
+        <td class="cell-pseudo">@${esc(r.pseudo)}</td>
+        <td class="cell-score ${scoreCls}">${r.vote_count ? r.avg : '—'}</td>
+        <td><span class="badge badge--${r.visibility}">${isPublic ? 'Public' : 'Privé'}</span></td>
+        <td><span class="badge-reviewed ${r.reviewed ? 'badge-reviewed--yes' : ''}">${r.reviewed ? '✓ revue' : '⏳ non revue'}</span></td>
+        <td>
+          <div class="row-actions">
+            <button class="act-btn" onclick="setVisibility(${r.id}, '${isPublic ? 'private' : 'public'}')">${isPublic ? 'Rendre privée' : 'Rendre publique'}</button>
+            <button class="act-btn act-btn--reviewed${r.reviewed ? ' act-btn--active' : ''}" onclick="markReviewed(${r.id})" title="Marquer comme revue sans changer la visibilité">✓ Revue</button>
+            <button class="act-btn act-btn--danger" onclick="deleteRow(${r.id})" title="Supprimer">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function patchLocal(id, patch) {
+  const row = _rows.find(r => r.id === id);
+  if (row) Object.assign(row, patch);
+}
+
+async function setVisibility(id, visibility) {
+  try {
+    const res = await fetch(`/game/api/legends/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility }),
+    });
+    if (!res.ok) throw new Error();
+    patchLocal(id, { visibility, reviewed: true });
+    afterMutation(id);
+    showToast(visibility === 'public' ? 'Rendue publique' : 'Rendue privée');
+  } catch {
+    showToast('Échec de la mise à jour');
+  }
+}
+
+// Marque reviewed=True sans toucher à visibility — body vide, le serveur
+// ne change que le champ reviewed (voir PATCH /game/api/legends/{id}).
+async function markReviewed(id) {
+  try {
+    const res = await fetch(`/game/api/legends/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!res.ok) throw new Error();
+    patchLocal(id, { reviewed: true });
+    afterMutation(id);
+    showToast('Marquée comme revue');
+  } catch {
+    showToast('Échec de la mise à jour');
+  }
+}
+
+async function deleteRow(id) {
+  if (!confirm('Supprimer définitivement cette légende ?')) return;
+  try {
+    const res = await fetch(`/game/api/legends/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    _rows = _rows.filter(r => r.id !== id);
+    render();
+    showToast('Légende supprimée');
+  } catch {
+    showToast('Échec de la suppression');
+  }
+}
+
+// Si le filtre "Revue" exclut l'état qu'une ligne vient de prendre (ex: on
+// filtre "Non revues" et on vient de la marquer revue), on la retire de la
+// vue plutôt que de tout recharger — garde le flux de travail rapide.
+function afterMutation(id) {
+  const reviewedFilter   = document.getElementById('f-reviewed').value;
+  const visibilityFilter = document.getElementById('f-visibility').value;
+  const row = _rows.find(r => r.id === id);
+  const stillMatches =
+    (reviewedFilter === 'all' || String(row.reviewed) === reviewedFilter) &&
+    (visibilityFilter === 'all' || row.visibility === visibilityFilter);
+  if (!stillMatches) {
+    _rows = _rows.filter(r => r.id !== id);
+  }
+  render();
+}
+
+async function runClassify() {
+  const btn = document.getElementById('btn-classify');
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Classification en cours…';
+  try {
+    const res = await fetch('/game/api/legends/classify', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Erreur');
+    showToast(`${data.classified} classée(s) (${data.public} publique(s), ${data.private} privée(s))`);
+    load();
+  } catch (e) {
+    showToast(e.message || 'Échec de la classification');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
+}
+
+(async () => {
+  await AccountWidget.load();
+  AccountWidget.mount('account-widget');
+  load();
+})();
+</script>
+
+</body>
+</html>
