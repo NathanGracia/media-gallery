@@ -654,14 +654,14 @@ async def timeline_page():
 async def admin_legends_page():
     return FileResponse("static/admin-legends.html")
 
-# Static game SPA — mounté sur /game (alias historique) ET servi comme landing
-# page sur "/" (voir plus bas) : le jeu est la page d'accueil du site depuis
-# juillet 2026, la galerie a déménagé sur /gallery.
+# Static game SPA — servi sur /game. Jusqu'en août 2026 c'était aussi la
+# page d'accueil ("/") ; remplacé par une vraie landing page de présentation
+# (static/landing.html) qui renvoie vers /game via un CTA "Jouer".
 app.mount("/game", StaticFiles(directory="static/game", html=True), name="game-static")
 
 @app.get("/")
 async def landing_page():
-    return FileResponse("static/game/index.html")
+    return FileResponse("static/landing.html")
 
 # ── Open Graph preview pour les liens partagés (?m=UUID&l=ID) ─────────────────
 @app.get("/gallery")

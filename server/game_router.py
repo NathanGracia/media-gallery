@@ -389,6 +389,51 @@ async def get_history(media_uuid: str):
         ]
 
 
+@router.get("/api/legends/featured")
+async def featured_legends(limit: int = 6):
+    """
+    Sans auth — pour la landing page. Uniquement des légendes visibility=
+    'public' ET reviewed=True (validées par un admin, jamais juste
+    l'avis brut de l'IA — voir legend_moderation.py). Pioche aléatoire dans
+    un pool des mieux notées parmi les plus récentes, pour varier l'affichage
+    à chaque chargement plutôt que montrer toujours le même top fixe.
+    """
+    limit = min(max(limit, 1), 20)
+    with Session(_engine) as s:
+        recent = s.exec(
+            select(GameAnswer)
+            .where(GameAnswer.visibility == "public")
+            .where(GameAnswer.reviewed == True)  # noqa: E712 — comparaison SQL, pas `is True`
+            .where(GameAnswer.text != "")
+            .where(GameAnswer.vote_count > 0)
+            .order_by(GameAnswer.id.desc())
+            .limit(120)
+        ).all()
+        if not recent:
+            return []
+
+        pool   = sorted(recent, key=lambda a: a.total_stars / a.vote_count, reverse=True)[:30]
+        picked = random.sample(pool, min(limit, len(pool)))
+
+        uuids   = list({a.media_uuid for a in picked})
+        medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
+        info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+
+        return [
+            {
+                "text":        a.text,
+                "pseudo":      a.player_pseudo,
+                "avg":         round(a.total_stars / a.vote_count, 1),
+                "vote_count":  a.vote_count,
+                "media_uuid":  a.media_uuid,
+                "thumb":       f"/thumbnail/{a.media_uuid}.jpg",
+                "url":         info.get(a.media_uuid, {}).get("url"),
+                "media_type":  info.get(a.media_uuid, {}).get("type"),
+            }
+            for a in picked
+        ]
+
+
 # ── Modération des légendes (public/privé) ──────────────────────────────────────
 @router.get("/game/api/legends", dependencies=[Depends(require_admin)])
 async def list_legends(

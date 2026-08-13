@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memoss — Le jeu des meilleures légendes</title>
+<meta name="description" content="Un mème apparaît, tout le monde invente une légende, les meilleures gagnent. Memoss est le jeu de légendes + la bibliothèque de mèmes de la bande.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/nav.css?v=1">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  :root {
+    --bg:          #06060f;
+    --glass:       rgba(255, 255, 255, 0.04);
+    --glass-md:    rgba(255, 255, 255, 0.06);
+    --gb:          rgba(255, 255, 255, 0.08);
+    --accent:      #22d3ee;
+    --accent-dim:  rgba(34, 211, 238, 0.15);
+    --indigo:      #6366f1;
+    --cinema:      #4ade80;
+    --cinema-dim:  rgba(74, 222, 128, 0.15);
+    --text:        #f1f5f9;
+    --text-dim:    #64748b;
+    --text-muted:  #334155;
+    --radius:      16px;
+    --radius-sm:   9px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Figtree', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* — Fond vidéo (même pattern que le reste du site) — */
+  .page-wallpaper {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; z-index: -3;
+  }
+  .page-wallpaper-scrim {
+    position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(6, 6, 15, 0.4) 0%, rgba(6, 6, 15, 0.8) 55%, rgba(6, 6, 15, 0.95) 100%),
+      linear-gradient(160deg, rgba(20, 12, 40, 0.6), rgba(6, 6, 15, 0.82));
+  }
+  .orb {
+    position: fixed; border-radius: 50%;
+    filter: blur(110px); opacity: 0.14;
+    pointer-events: none; z-index: 0;
+    animation: drift 22s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 640px; height: 640px; background: var(--accent); top: -200px; left: -180px; }
+  .orb-2 { width: 420px; height: 420px; background: var(--indigo); bottom: -80px; right: -120px; animation-duration: 18s; }
+  @keyframes drift { to { transform: translate(25px, 18px); } }
+
+  /* — Header — */
+  header {
+    position: sticky; top: 0; z-index: 200;
+    background: rgba(6, 6, 15, 0.7);
+    border-bottom: 1px solid var(--gb);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    padding: 0 24px;
+  }
+  .header-inner { display: flex; align-items: center; gap: 24px; padding: 14px 0 10px; max-width: 1100px; margin: 0 auto; }
+  #account-widget { margin-left: auto; flex-shrink: 0; }
+
+  /* — Account widget (identique au reste du site) — */
+  .account-widget-login {
+    padding: 5px 11px; border-radius: var(--radius-sm);
+    font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--text-dim); text-decoration: none; border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .account-widget-login:hover { color: var(--text); border-color: var(--gb); background: var(--glass); }
+  .account-widget { position: relative; }
+  .account-widget-trigger {
+    display: flex; align-items: center; gap: 7px;
+    padding: 4px 9px 4px 4px;
+    background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
+    cursor: pointer; color: var(--text-dim);
+    font-family: 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .account-widget-trigger:hover { border-color: var(--gb); background: var(--glass); }
+  .account-widget-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .account-widget-avatar--fallback { display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); font-size: 0.65rem; font-weight: 700; }
+  .account-widget-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .account-widget-chevron { color: var(--text-muted); flex-shrink: 0; }
+  .account-widget-menu {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 300;
+    min-width: 190px; padding: 6px;
+    background: #0d1420; border: 1px solid var(--gb); border-radius: var(--radius-sm);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+  .account-widget-badge { padding: 4px 10px; margin-bottom: 4px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-dim); border-radius: var(--radius-sm); text-align: center; }
+  .account-widget-menu a { display: block; padding: 8px 10px; border-radius: var(--radius-sm); color: var(--text-dim); text-decoration: none; font-size: 0.82rem; transition: background 0.15s, color 0.15s; }
+  .account-widget-menu a:hover { background: var(--glass); color: var(--text); }
+
+  main { position: relative; z-index: 2; }
+
+  /* — Hero — */
+  .hero {
+    max-width: 780px; margin: 0 auto; padding: 5rem 1.5rem 4rem;
+    text-align: center;
+  }
+  .hero-kicker {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(34,211,238,0.25);
+    border-radius: 999px; padding: 0.35rem 0.9rem; margin-bottom: 1.5rem;
+  }
+  .hero-title {
+    font-family: 'Syne', sans-serif; font-weight: 800; letter-spacing: -0.02em;
+    font-size: clamp(2.1rem, 6vw, 3.4rem); line-height: 1.08;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 1.1rem;
+  }
+  .hero-sub { font-size: 1.05rem; color: #cbd5e1; max-width: 560px; margin: 0 auto 2.2rem; }
+  .hero-ctas { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .btn-cta {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem;
+    padding: 0.85rem 1.7rem; border-radius: 999px; text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-cta--primary {
+    color: #06060f; background: linear-gradient(135deg, var(--accent), #6ee7ff);
+    box-shadow: 0 8px 28px rgba(34,211,238,0.35);
+  }
+  .btn-cta--primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(34,211,238,0.45); }
+  .btn-cta--secondary {
+    color: var(--text); background: var(--glass); border: 1px solid var(--gb);
+  }
+  .btn-cta--secondary:hover { border-color: rgba(34,211,238,0.35); background: var(--glass-md); }
+
+  /* — Sections — */
+  section.block { max-width: 1100px; margin: 0 auto; padding: 3.5rem 1.5rem; }
+  .block-head { text-align: center; max-width: 560px; margin: 0 auto 2.5rem; }
+  .block-kicker { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
+  .block-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.5rem, 3.5vw, 2rem); letter-spacing: -0.01em; margin-bottom: 0.6rem; }
+  .block-sub { color: var(--text-dim); font-size: 0.95rem; }
+
+  /* — Principe : 3 étapes — */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+  .step {
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
+    padding: 1.6rem 1.4rem; position: relative;
+  }
+  .step-num {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem;
+    color: var(--accent); opacity: 0.5; margin-bottom: 0.6rem;
+  }
+  .step-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.02rem; margin-bottom: 0.4rem; }
+  .step-text { color: var(--text-dim); font-size: 0.87rem; line-height: 1.55; }
+  .block-cta { text-align: center; margin-top: 2rem; }
+  .link-more {
+    font-size: 0.85rem; font-weight: 600; color: var(--accent); text-decoration: none;
+    border-bottom: 1px solid rgba(34,211,238,0.3);
+  }
+  .link-more:hover { border-color: var(--accent); }
+
+  /* — Bibliothèque teaser — */
+  .lib-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.6rem;
+    margin-bottom: 1.75rem;
+  }
+  .lib-thumb {
+    aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+    background: var(--glass); border: 1px solid var(--gb);
+  }
+  .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* — Exemples récents — */
+  .examples-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+  }
+  .example-card {
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .example-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
+  .example-thumb { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: rgba(255,255,255,0.03); }
+  .example-body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
+  .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; }
+  .example-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
+  .example-pseudo { color: #94a3b8; font-weight: 600; }
+  .example-score { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
+  .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 2rem; grid-column: 1 / -1; }
+
+  /* — Closing CTA — */
+  .closing { text-align: center; padding: 4rem 1.5rem 6rem; }
+  .closing-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 3vw, 1.9rem); margin-bottom: 1.6rem; }
+
+  @media (max-width: 720px) {
+    header { padding: 0 14px; }
+    .header-inner { gap: 10px; padding: 10px 0 8px; }
+    #site-nav { flex: 1; min-width: 0; }
+    .steps { grid-template-columns: 1fr; }
+    .lib-grid { grid-template-columns: repeat(3, 1fr); }
+    .examples-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .lib-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<video class="page-wallpaper" src="/wallpaper.mp4?v=1" autoplay muted loop playsinline></video>
+<div class="page-wallpaper-scrim"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header>
+  <div class="header-inner">
+    <div id="site-nav"></div>
+    <div id="account-widget"></div>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <span class="hero-kicker">🎬 Le jeu + la bibliothèque de la bande</span>
+    <h1 class="hero-title">Un mème apparaît.<br>Vous inventez la légende.</h1>
+    <p class="hero-sub">Memoss, c'est un jeu de légendes en équipe et une bibliothèque de mèmes qui grossit toute seule. Les meilleures répliques restent, votées par la bande.</p>
+    <div class="hero-ctas">
+      <a class="btn-cta btn-cta--primary" href="/game">Jouer maintenant →</a>
+      <a class="btn-cta btn-cta--secondary" href="/gallery">Voir la bibliothèque</a>
+    </div>
+  </div>
+
+  <section class="block">
+    <div class="block-head">
+      <div class="block-kicker">Le principe</div>
+      <h2 class="block-title">Trois manches, une seule règle : faire rire</h2>
+      <p class="block-sub">Une partie se joue à plusieurs, en trois manches.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">Un mème s'affiche</div>
+        <div class="step-text">Tiré de la bibliothèque commune, alimentée en continu par toute la bande.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">Chacun invente sa légende</div>
+        <div class="step-text">Même mème, autant de légendes que de joueurs — le décalage fait le jeu.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">On vote, les meilleures gagnent</div>
+        <div class="step-text">Chaque légende reçoit des étoiles. Les mieux notées restent dans l'historique.</div>
+      </div>
+    </div>
+    <div class="block-cta">
+      <a class="link-more" href="/how-it-works.html">Comment ça marche en détail →</a>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <div class="block-kicker">La bibliothèque</div>
+      <h2 class="block-title">Tous les mèmes de la bande, au même endroit</h2>
+      <p class="block-sub">Un feeder récupère les fichiers partagés automatiquement — la collection grossit sans effort.</p>
+    </div>
+    <div class="lib-grid" id="lib-grid"></div>
+    <div class="block-cta">
+      <a class="link-more" href="/gallery">Explorer la bibliothèque →</a>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <div class="block-kicker">Exemples récents</div>
+      <h2 class="block-title">Ça, c'est déjà sorti en partie</h2>
+      <p class="block-sub">Une sélection au hasard parmi les légendes les mieux notées.</p>
+    </div>
+    <div class="examples-grid" id="examples-grid">
+      <div class="examples-empty">Chargement…</div>
+    </div>
+  </section>
+
+  <div class="closing">
+    <h2 class="closing-title">Prêt à tenter ta légende ?</h2>
+    <div class="hero-ctas">
+      <a class="btn-cta btn-cta--primary" href="/game">Jouer maintenant →</a>
+    </div>
+  </div>
+</main>
+
+<script src="/nav.js?v=1"></script>
+<script>SiteNav.mount('site-nav', 'landing');</script>
+<script src="/account-widget.js?v=3"></script>
+<script>
+(async () => { await AccountWidget.load(); AccountWidget.mount('account-widget'); })();
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadLibraryTeaser() {
+  const grid = document.getElementById('lib-grid');
+  try {
+    const res = await fetch('/api/media?per_page=6');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (!data.items || !data.items.length) { grid.remove(); return; }
+    grid.innerHTML = data.items.map(m => `
+      <a class="lib-thumb" href="/gallery?m=${esc(m.id)}">
+        <img src="${esc(m.thumbnail)}" alt="" loading="lazy" onerror="this.closest('.lib-thumb').remove()">
+      </a>`).join('');
+  } catch {
+    grid.remove();
+  }
+}
+
+async function loadFeaturedExamples() {
+  const grid = document.getElementById('examples-grid');
+  try {
+    const res = await fetch('/api/legends/featured?limit=6');
+    if (!res.ok) throw new Error();
+    const items = await res.json();
+    if (!items.length) {
+      grid.innerHTML = '<div class="examples-empty">Pas encore assez de légendes publiques validées — reviens bientôt !</div>';
+      return;
+    }
+    grid.innerHTML = items.map(ex => `
+      <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}">
+        <img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">
+        <div class="example-body">
+          <div class="example-text">${esc(ex.text)}</div>
+          <div class="example-meta">
+            <span class="example-pseudo">@${esc(ex.pseudo)}</span>
+            <span class="example-score">${ex.avg}<span style="opacity:.6;font-weight:600"> /100</span></span>
+          </div>
+        </div>
+      </a>`).join('');
+  } catch {
+    grid.innerHTML = '<div class="examples-empty">Impossible de charger les exemples pour le moment.</div>';
+  }
+}
+
+loadLibraryTeaser();
+loadFeaturedExamples();
+</script>
+
+</body>
+</html>

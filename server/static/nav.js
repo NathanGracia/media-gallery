@@ -8,7 +8,7 @@
 // appliqué au widget de compte.
 const SiteNav = (() => {
   const LINKS = [
-    { id: 'game',     href: '/',                  label: 'Jouer',         primary: true },
+    { id: 'game',     href: '/game',               label: 'Jouer',         primary: true },
     { id: 'gallery',  href: '/gallery',            label: 'Bibliothèque' },
     { id: 'timeline', href: '/timeline',           label: 'Légendes' },
     { id: 'howto',    href: '/how-it-works.html',  label: 'Comment ça marche' },
