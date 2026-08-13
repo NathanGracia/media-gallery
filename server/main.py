@@ -88,6 +88,15 @@ class Media(SQLModel, table=True):
     duration_seconds: Optional[float] = Field(default=None)  # vidéos uniquement — voir gen_video_duration
 
 
+# Texte libre affiché sur /credits, éditable depuis la page par un admin
+# (textarea + PUT /api/credits) — toujours une seule ligne (id=1).
+class SiteCredits(SQLModel, table=True):
+    __tablename__ = "site_credits"
+    id:         Optional[int]      = Field(default=None, primary_key=True)
+    content:    str                = Field(default="")
+    updated_at: datetime.datetime  = Field(default_factory=datetime.datetime.utcnow)
+
+
 SQLModel.metadata.create_all(engine)
 init_game(engine, Media, SHARED_SESSION_SECRET, SHARDOSS_BASE_URL, SHARDOSS_WEBHOOK_KEY, GEMINI_API_KEY, GEMINI_MODEL)
 
@@ -204,6 +213,29 @@ def whoami(request: Request):
         "avatarFile": claims.get("avatarFile"),
         "volume": claims.get("volume", 0.15),
     }
+
+
+@app.get("/api/credits")
+def get_credits():
+    with Session(engine) as session:
+        row = session.exec(select(SiteCredits)).first()
+        return {"content": row.content if row else ""}
+
+
+@app.put("/api/credits")
+def update_credits(body: dict, _: None = Depends(require_admin_or_api_key)):
+    content = body.get("content")
+    if not isinstance(content, str):
+        raise HTTPException(400, "content (string) requis")
+    with Session(engine) as session:
+        row = session.exec(select(SiteCredits)).first()
+        if not row:
+            row = SiteCredits()
+        row.content    = content
+        row.updated_at = datetime.datetime.utcnow()
+        session.add(row)
+        session.commit()
+        return {"ok": True}
 
 
 # ── Storage helpers ────────────────────────────────────────────────────────────
@@ -653,6 +685,11 @@ async def timeline_page():
 @app.get("/admin/legendes")
 async def admin_legends_page():
     return FileResponse("static/admin-legends.html")
+
+
+@app.get("/credits")
+async def credits_page():
+    return FileResponse("static/credits.html")
 
 # Static game SPA — servi sur /game. Jusqu'en août 2026 c'était aussi la
 # page d'accueil ("/") ; remplacé par une vraie landing page de présentation

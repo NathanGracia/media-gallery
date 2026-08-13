@@ -12,6 +12,7 @@ const SiteNav = (() => {
     { id: 'gallery',  href: '/gallery',            label: 'Bibliothèque' },
     { id: 'timeline', href: '/timeline',           label: 'Légendes' },
     { id: 'howto',    href: '/how-it-works.html',  label: 'Comment ça marche' },
+    { id: 'credits',  href: '/credits',            label: 'Crédits' },
   ];
 
   function mount(containerId, activePage) {

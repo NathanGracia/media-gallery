@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crédits — Memoss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/nav.css?v=1">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  :root {
+    --bg:          #06060f;
+    --glass:       rgba(255, 255, 255, 0.04);
+    --glass-md:    rgba(255, 255, 255, 0.06);
+    --gb:          rgba(255, 255, 255, 0.08);
+    --accent:      #22d3ee;
+    --accent-dim:  rgba(34, 211, 238, 0.15);
+    --indigo:      #6366f1;
+    --text:        #f1f5f9;
+    --text-dim:    #64748b;
+    --text-muted:  #334155;
+    --radius:      14px;
+    --radius-sm:   9px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Figtree', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-wallpaper { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -3; }
+  .page-wallpaper-scrim {
+    position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(6, 6, 15, 0.45) 0%, rgba(6, 6, 15, 0.82) 55%, rgba(6, 6, 15, 0.95) 100%),
+      linear-gradient(160deg, rgba(20, 12, 40, 0.6), rgba(6, 6, 15, 0.82));
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 200;
+    background: rgba(6, 6, 15, 0.7);
+    border-bottom: 1px solid var(--gb);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    padding: 0 24px;
+  }
+  .header-inner { display: flex; align-items: center; gap: 24px; padding: 14px 0 10px; max-width: 880px; margin: 0 auto; }
+  #account-widget { margin-left: auto; flex-shrink: 0; }
+
+  .account-widget-login { padding: 5px 11px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; color: var(--text-dim); text-decoration: none; border: 1px solid transparent; transition: all 0.2s; }
+  .account-widget-login:hover { color: var(--text); border-color: var(--gb); background: var(--glass); }
+  .account-widget { position: relative; }
+  .account-widget-trigger { display: flex; align-items: center; gap: 7px; padding: 4px 9px 4px 4px; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-dim); font-family: 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 600; transition: all 0.2s; }
+  .account-widget-trigger:hover { border-color: var(--gb); background: var(--glass); }
+  .account-widget-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .account-widget-avatar--fallback { display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); font-size: 0.65rem; font-weight: 700; }
+  .account-widget-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .account-widget-chevron { color: var(--text-muted); flex-shrink: 0; }
+  .account-widget-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 300; min-width: 190px; padding: 6px; background: #0d1420; border: 1px solid var(--gb); border-radius: var(--radius-sm); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+  .account-widget-badge { padding: 4px 10px; margin-bottom: 4px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-dim); border-radius: var(--radius-sm); text-align: center; }
+  .account-widget-menu a { display: block; padding: 8px 10px; border-radius: var(--radius-sm); color: var(--text-dim); text-decoration: none; font-size: 0.82rem; transition: background 0.15s, color 0.15s; }
+  .account-widget-menu a:hover { background: var(--glass); color: var(--text); }
+
+  main { position: relative; z-index: 2; max-width: 720px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+  .page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.6rem, 4vw, 2.1rem); margin-bottom: 0.5rem; }
+  .page-sub { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 2rem; }
+
+  .credits-box {
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
+    padding: 1.6rem 1.7rem; white-space: pre-wrap; word-break: break-word;
+    font-size: 0.95rem; line-height: 1.75;
+  }
+  .credits-box a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(34,211,238,0.3); }
+  .credits-box a:hover { border-color: var(--accent); }
+  .credits-empty { color: var(--text-dim); font-style: italic; }
+
+  .edit-bar { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
+  .btn-edit {
+    font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+    padding: 0.4rem 0.9rem; border-radius: var(--radius-sm);
+    border: 1px solid var(--gb); background: var(--glass); color: var(--text-dim);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-edit:hover { border-color: rgba(34,211,238,0.35); color: var(--accent); }
+
+  #credits-textarea {
+    width: 100%; min-height: 260px; resize: vertical;
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
+    color: var(--text); font-family: 'Figtree', sans-serif; font-size: 0.92rem; line-height: 1.6;
+    padding: 1.2rem 1.3rem;
+  }
+  #credits-textarea:focus { outline: none; border-color: rgba(34,211,238,0.4); }
+  .edit-actions { display: flex; gap: 8px; margin-top: 0.75rem; justify-content: flex-end; }
+  .btn-save {
+    font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700;
+    padding: 0.55rem 1.2rem; border-radius: var(--radius-sm);
+    border: none; background: linear-gradient(135deg, var(--accent), #6ee7ff); color: #06060f;
+    cursor: pointer;
+  }
+  .btn-cancel {
+    font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700;
+    padding: 0.55rem 1.2rem; border-radius: var(--radius-sm);
+    border: 1px solid var(--gb); background: transparent; color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #0f172a; border: 1px solid var(--gb); border-radius: var(--radius-sm);
+    padding: 8px 16px; font-size: 0.82rem; color: var(--text); z-index: 400;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 0 14px; }
+    .header-inner { gap: 10px; padding: 10px 0 8px; }
+    #site-nav { flex: 1; min-width: 0; }
+  }
+</style>
+</head>
+<body>
+
+<video class="page-wallpaper" src="/wallpaper.mp4?v=1" autoplay muted loop playsinline></video>
+<div class="page-wallpaper-scrim"></div>
+
+<header>
+  <div class="header-inner">
+    <div id="site-nav"></div>
+    <div id="account-widget"></div>
+  </div>
+</header>
+
+<main>
+  <h1 class="page-title">Crédits</h1>
+  <p class="page-sub">D'où viennent les mèmes de la bibliothèque.</p>
+
+  <div class="edit-bar admin-only" id="edit-bar" style="display:none">
+    <button class="btn-edit" id="btn-edit" onclick="startEdit()">✏️ Éditer</button>
+  </div>
+
+  <div class="credits-box" id="credits-box">Chargement…</div>
+
+  <div id="edit-panel" style="display:none">
+    <textarea id="credits-textarea"></textarea>
+    <div class="edit-actions">
+      <button class="btn-cancel" onclick="cancelEdit()">Annuler</button>
+      <button class="btn-save" onclick="saveCredits()">Enregistrer</button>
+    </div>
+  </div>
+</main>
+
+<script src="/nav.js?v=1"></script>
+<script>SiteNav.mount('site-nav', 'credits');</script>
+<script src="/account-widget.js?v=3"></script>
+<script>
+let _rawContent = '';
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Échappe d'abord (sécurité), puis ne transforme en lien que ce qui a déjà
+// été échappé comme une URL — pas de risque d'injection via le contenu.
+function renderCredits(text) {
+  const escaped = esc(text);
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+}
+
+let _toastTimer = null;
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.remove(), 1800);
+}
+
+function isAdmin() { return !!AccountWidget.session.isAdmin; }
+
+async function loadCredits() {
+  const box = document.getElementById('credits-box');
+  try {
+    const res = await fetch('/api/credits');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    _rawContent = data.content || '';
+    box.innerHTML = _rawContent.trim()
+      ? renderCredits(_rawContent)
+      : '<span class="credits-empty">Rien pour l\'instant.</span>';
+  } catch {
+    box.innerHTML = '<span class="credits-empty">Impossible de charger les crédits.</span>';
+  }
+}
+
+function startEdit() {
+  document.getElementById('credits-textarea').value = _rawContent;
+  document.getElementById('edit-panel').style.display = 'block';
+  document.getElementById('credits-box').style.display = 'none';
+  document.getElementById('edit-bar').style.display = 'none';
+}
+
+function cancelEdit() {
+  document.getElementById('edit-panel').style.display = 'none';
+  document.getElementById('credits-box').style.display = 'block';
+  document.getElementById('edit-bar').style.display = isAdmin() ? 'flex' : 'none';
+}
+
+async function saveCredits() {
+  const content = document.getElementById('credits-textarea').value;
+  try {
+    const res = await fetch('/api/credits', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) throw new Error();
+    _rawContent = content;
+    cancelEdit();
+    document.getElementById('credits-box').innerHTML = _rawContent.trim()
+      ? renderCredits(_rawContent)
+      : '<span class="credits-empty">Rien pour l\'instant.</span>';
+    showToast('Crédits mis à jour');
+  } catch {
+    showToast('Échec de l\'enregistrement');
+  }
+}
+
+(async () => {
+  await AccountWidget.load();
+  AccountWidget.mount('account-widget');
+  document.getElementById('edit-bar').style.display = isAdmin() ? 'flex' : 'none';
+  loadCredits();
+})();
+</script>
+
+</body>
+</html>
