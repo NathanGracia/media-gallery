@@ -91,12 +91,25 @@
   .example-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
   .example-score { font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
   .example-score--none { color: var(--text-muted); font-weight: 600; font-family: inherit; }
-  .vis-badge {
+  .vis-toggle {
     margin-left: auto; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
     text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
+    font-family: inherit; border: 1px solid transparent; cursor: pointer; transition: all 0.15s;
   }
-  .vis-badge--public  { background: rgba(74,222,128,0.15); color: var(--cinema); }
-  .vis-badge--private { background: rgba(255,255,255,0.07); color: var(--text-dim); }
+  .vis-toggle--public  { background: rgba(74,222,128,0.15); color: var(--cinema); }
+  .vis-toggle--public:hover  { background: rgba(74,222,128,0.25); }
+  .vis-toggle--private { background: rgba(255,255,255,0.07); color: var(--text-dim); }
+  .vis-toggle--private:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+  .vis-toggle:disabled { opacity: 0.5; cursor: default; }
+
+  .info-banner {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius-sm);
+    padding: 0.85rem 1.1rem; margin-bottom: 1.5rem;
+    font-size: 0.85rem; color: var(--text-dim); line-height: 1.55;
+  }
+  .info-banner strong { color: var(--text); }
+  .info-banner a { color: var(--accent); }
   .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 3rem; grid-column: 1 / -1; }
   .examples-empty a { color: var(--accent); }
   .load-more-row { text-align: center; margin-top: 2rem; }
@@ -130,6 +143,11 @@
 </header>
 
 <main>
+  <div class="info-banner">
+    <span>💡</span>
+    <span><strong>Public</strong> = visible par tout le monde dans la <a href="/vitrine">vitrine publique</a>. <strong>Privé</strong> = visible seulement par toi ici. Une légende reste privée par défaut : garde en privé tes private jokes, blagues d'initiés ou trucs incompréhensibles hors contexte, ça évite de flood la vitrine publique avec des légendes que personne d'autre ne peut comprendre. Clique sur le badge d'une carte pour basculer.</span>
+  </div>
+
   <div class="toolbar">
     <h1 class="page-title">Vitrine perso</h1>
     <span class="count-label" id="count-label"></span>
@@ -172,10 +190,32 @@ function cardHtml(ex) {
           ${hasScore
             ? `<span class="example-score">${ex.avg}<span style="opacity:.6;font-weight:600"> /100</span></span>`
             : `<span class="example-score--none">Pas encore noté</span>`}
-          <span class="vis-badge vis-badge--${ex.visibility}">${ex.visibility === 'public' ? 'Public' : 'Privé'}</span>
+          <button type="button" class="vis-toggle vis-toggle--${ex.visibility}" data-id="${ex.id}"
+            title="Cliquer pour basculer public/privé"
+            onclick="event.preventDefault(); event.stopPropagation(); toggleVisibility(${ex.id}, '${ex.visibility}', this)">${ex.visibility === 'public' ? 'Public' : 'Privé'}</button>
         </div>
       </div>
     </a>`;
+}
+
+async function toggleVisibility(id, currentVis, btn) {
+  const newVis = currentVis === 'public' ? 'private' : 'public';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/legends/mine/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility: newVis }),
+    });
+    if (!res.ok) throw new Error();
+    btn.className = `vis-toggle vis-toggle--${newVis}`;
+    btn.textContent = newVis === 'public' ? 'Public' : 'Privé';
+    btn.setAttribute('onclick', `event.preventDefault(); event.stopPropagation(); toggleVisibility(${id}, '${newVis}', this)`);
+  } catch {
+    alert("Impossible de changer la visibilité pour le moment.");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function observeVideos(root) {

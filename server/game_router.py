@@ -570,6 +570,30 @@ async def my_legends(claims: dict = Depends(require_login), page: int = 1, per_p
         }
 
 
+@router.patch("/api/legends/mine/{legend_id}")
+async def toggle_my_legend_visibility(legend_id: int, body: dict, claims: dict = Depends(require_login)):
+    """
+    Toggle public/privé par l'auteur lui-même, depuis sa vitrine perso.
+    Marque reviewed=True comme une correction admin : un choix explicite de
+    l'auteur ne doit jamais être écrasé par un futur passage de classify.
+    """
+    visibility = body.get("visibility")
+    if visibility not in ("public", "private"):
+        raise HTTPException(400, "visibility doit être 'public' ou 'private'")
+
+    with Session(_engine) as s:
+        answer = s.get(GameAnswer, legend_id)
+        if not answer:
+            raise HTTPException(404, "Légende introuvable")
+        if answer.account_uid != claims["uid"]:
+            raise HTTPException(403, "Cette légende ne t'appartient pas")
+        answer.visibility = visibility
+        answer.reviewed = True
+        s.add(answer)
+        s.commit()
+        return {"ok": True, "id": legend_id, "visibility": answer.visibility}
+
+
 # ── Modération des légendes (public/privé) ──────────────────────────────────────
 @router.get("/game/api/legends", dependencies=[Depends(require_admin)])
 async def list_legends(
