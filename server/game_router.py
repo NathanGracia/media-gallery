@@ -444,17 +444,18 @@ async def get_history(media_uuid: str):
 async def featured_legends(limit: int = 6):
     """
     Sans auth — pour la landing page. Uniquement des légendes visibility=
-    'public' ET reviewed=True (validées par un admin, jamais juste
-    l'avis brut de l'IA — voir legend_moderation.py). Pioche aléatoire dans
-    un pool des mieux notées parmi les plus récentes, pour varier l'affichage
-    à chaque chargement plutôt que montrer toujours le même top fixe.
+    'public' (classées par l'IA OU confirmées par un admin — voir
+    legend_moderation.py ; reviewed n'est plus une condition d'affichage,
+    juste un statut de suivi pour la file de modération). Pioche aléatoire
+    dans un pool des mieux notées parmi les plus récentes, pour varier
+    l'affichage à chaque chargement plutôt que montrer toujours le même top
+    fixe.
     """
     limit = min(max(limit, 1), 20)
     with Session(_engine) as s:
         recent = s.exec(
             select(GameAnswer)
             .where(GameAnswer.visibility == "public")
-            .where(GameAnswer.reviewed == True)  # noqa: E712 — comparaison SQL, pas `is True`
             .where(GameAnswer.text != "")
             .where(GameAnswer.vote_count > 0)
             .order_by(GameAnswer.id.desc())
@@ -492,11 +493,12 @@ async def featured_legends(limit: int = 6):
 @router.get("/api/legends/public")
 async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort: str = "score"):
     """
-    Sans auth — page vitrine (/vitrine). Uniquement visibility='public' ET
-    reviewed=True (voir featured_legends ci-dessus pour le même principe).
-    Paginées — contrairement à featured_legends qui pioche un petit
-    échantillon aléatoire, celle-ci sert un vrai classement parcourable en
-    entier. sort="score" (défaut) ou "date".
+    Sans auth — page vitrine (/vitrine). Uniquement visibility='public'
+    (voir featured_legends ci-dessus pour le même principe : reviewed n'est
+    plus une condition d'affichage). Paginées — contrairement à
+    featured_legends qui pioche un petit échantillon aléatoire, celle-ci
+    sert un vrai classement parcourable en entier. sort="score" (défaut) ou
+    "date".
     """
     per_page = min(max(per_page, 1), 60)
     page     = max(page, 1)
@@ -508,7 +510,6 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort:
             .join(GameRound, GameAnswer.round_id == GameRound.id)
             .join(GameRoom, GameRound.room_id == GameRoom.id)
             .where(GameAnswer.visibility == "public")
-            .where(GameAnswer.reviewed == True)  # noqa: E712
             .where(GameAnswer.text != "")
             .where(GameAnswer.vote_count > 0)
         )
@@ -598,7 +599,6 @@ async def user_legends(identifier: str, page: int = 1, per_page: int = 24, sort:
             select(GameAnswer)
             .where(GameAnswer.account_uid == account_uid)
             .where(GameAnswer.visibility == "public")
-            .where(GameAnswer.reviewed == True)  # noqa: E712
             .where(GameAnswer.text != "")
             .where(GameAnswer.vote_count > 0)
         )
