@@ -9,7 +9,7 @@ from typing import Optional
 
 import yaml
 import requests as req
-from game_router import router as game_router, init as init_game
+from game_router import router as game_router, init as init_game, remember_account
 import aiofiles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -224,6 +224,11 @@ def whoami(request: Request):
     claims = get_shared_claims(request)
     if not claims:
         return {"loggedIn": False}
+    # /api/whoami est appelé sur quasi chaque chargement de page (account-
+    # widget.js) — le point le plus fréquent pour tenir à jour le cache
+    # pseudo/avatar (voir game_router.remember_account) sans dépendre d'une
+    # action de jeu, qui peut être rare.
+    remember_account(claims)
     return {
         "loggedIn": True,
         "uid": claims["uid"],

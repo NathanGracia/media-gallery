@@ -93,11 +93,11 @@ def require_login(request: Request) -> dict:
     claims = get_account_claims(request)
     if not claims:
         raise HTTPException(401, "Connexion requise")
-    _remember_account(claims)
+    remember_account(claims)
     return claims
 
 
-def _remember_account(claims: dict | None):
+def remember_account(claims: dict | None):
     """
     Met à jour le cache local AccountProfile (uid -> pseudo/avatar) à partir
     de claims cooloss vus en passant. Appelé à chaque point où on a de toute
@@ -231,7 +231,7 @@ async def create_room(request: Request, body: dict):
     claims = get_account_claims(request)
     if claims:
         pseudo, account_uid = (claims.get("displayName") or claims["username"]), claims["uid"]
-        _remember_account(claims)
+        remember_account(claims)
     else:
         pseudo = body.get("pseudo", "").strip()[:20]
         account_uid = None
@@ -264,7 +264,7 @@ async def join_room(request: Request, code: str, body: dict):
     claims = get_account_claims(request)
     if claims:
         pseudo, account_uid = (claims.get("displayName") or claims["username"]), claims["uid"]
-        _remember_account(claims)
+        remember_account(claims)
     else:
         pseudo = body.get("pseudo", "").strip()[:20]
         account_uid = None
@@ -588,7 +588,7 @@ async def user_legends(account_uid: int, page: int = 1, per_page: int = 24, sort
         total = s.exec(select(func.count()).select_from(base.subquery())).one()
 
         # Pseudo de repli si le compte n'a encore jamais déclenché
-        # _remember_account (ex: n'a joué qu'avant l'ajout du cache) — on
+        # remember_account (ex: n'a joué qu'avant l'ajout du cache) — on
         # prend le pseudo de sa légende publique la plus récente plutôt que
         # de laisser le nom vide.
         pseudo = profile.pseudo if profile else None
