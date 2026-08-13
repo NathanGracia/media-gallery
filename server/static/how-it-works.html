@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comment ça marche — Memoss</title>
+<title>Comment ça marche · Memoss</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -299,13 +299,13 @@
   <!-- 01 — Bibliothèque -->
   <hr class="divider">
   <div class="section">
-    <p class="section-num">01 — La bibliothèque</p>
+    <p class="section-num">01. La bibliothèque</p>
     <h2 class="section-title">D'un dossier local à la galerie</h2>
     <div class="section-body">
       <p>
         Le <strong>feeder</strong> est un petit programme qui tourne en arrière-plan sur la machine de chacun
-        (icône dans la barre système). Il surveille un dossier local — typiquement celui où atterrissent
-        les mèmes reçus des potes — et upload automatiquement tout nouveau fichier vers Memoss,
+        (icône dans la barre système). Il surveille un dossier local, typiquement celui où atterrissent
+        les mèmes reçus des potes, et upload automatiquement tout nouveau fichier vers Memoss,
         sans intervention manuelle.
       </p>
     </div>
@@ -318,7 +318,7 @@
         </div>
         <div class="pipe-detail">
           <p class="pipe-detail-title">Le dossier surveillé</p>
-          <p class="pipe-detail-body">N'importe quel dossier — configuré une fois dans le feeder. Récursif : les sous-dossiers sont couverts aussi.</p>
+          <p class="pipe-detail-body">N'importe quel dossier, configuré une fois dans le feeder. Récursif : les sous-dossiers sont couverts aussi.</p>
         </div>
       </div>
       <div class="pipe-connector">↓ un nouveau fichier apparaît</div>
@@ -340,7 +340,7 @@
         </div>
         <div class="pipe-detail">
           <p class="pipe-detail-title"><code>POST /upload</code></p>
-          <p class="pipe-detail-body">Authentifié par une clé API propre à chaque feeder — pratique pour savoir qui a fourni quoi, sans jamais partager de mot de passe de compte.</p>
+          <p class="pipe-detail-body">Authentifié par une clé API propre à chaque feeder, pratique pour savoir qui a fourni quoi, sans jamais partager de mot de passe de compte.</p>
         </div>
       </div>
       <div class="pipe-connector">↓ à l'arrivée sur le serveur</div>
@@ -351,7 +351,7 @@
         </div>
         <div class="pipe-detail">
           <p class="pipe-detail-title">Miniature générée, tag <code>todo</code> par défaut</p>
-          <p class="pipe-detail-body">Le média apparaît dans la <strong>Bibliothèque</strong>, prêt à être trié — et immédiatement piochable par le jeu s'il passe en tag <code>cinema</code>.</p>
+          <p class="pipe-detail-body">Le média apparaît dans la <strong>Bibliothèque</strong>, prêt à être trié, et immédiatement piochable par le jeu s'il passe en tag <code>cinema</code>.</p>
         </div>
       </div>
     </div>
@@ -360,15 +360,15 @@
     <div class="tag-rules">
       <div class="tag-rule">
         <span class="tag-pill todo">Todo</span>
-        <p>Le tag par défaut à l'upload — pas encore trié.</p>
+        <p>Le tag par défaut à l'upload, pas encore trié.</p>
       </div>
       <div class="tag-rule">
         <span class="tag-pill cinema">Cinema</span>
-        <p>Les meilleurs — c'est <strong>uniquement dans ce tag</strong> que le jeu pioche ses mèmes.</p>
+        <p>Les meilleurs, c'est <strong>uniquement dans ce tag</strong> que le jeu pioche ses mèmes.</p>
       </div>
       <div class="tag-rule">
         <span class="tag-pill osef">Osef</span>
-        <p>Gardé, mais mis de côté — n'apparaît jamais dans le jeu.</p>
+        <p>Gardé, mais mis de côté, n'apparaît jamais dans le jeu.</p>
       </div>
     </div>
 
@@ -376,7 +376,7 @@
       <p class="callout-title">Rogner une vidéo</p>
       <p class="callout-body">
         Un mème filmé trop large peut être <strong>rogné</strong> (haut/bas, en %) directement depuis la galerie.
-        Le rognage crée un <strong>nouveau</strong> média — l'original reste intact à côté.
+        Le rognage crée un <strong>nouveau</strong> média, l'original reste intact à côté.
       </p>
     </div>
   </div>
@@ -384,12 +384,12 @@
   <!-- 02 — Le jeu -->
   <hr class="divider">
   <div class="section">
-    <p class="section-num">02 — Le jeu</p>
+    <p class="section-num">02. Le jeu</p>
     <h2 class="section-title">Une partie, trois manches</h2>
     <div class="section-body">
       <p>
         Un joueur crée une room et reçoit un <strong>code à 6 caractères</strong> à partager (ou un lien direct).
-        Une fois tout le monde connecté, l'hôte choisit le mode et lance la partie — <strong>3 manches</strong>,
+        Une fois tout le monde connecté, l'hôte choisit le mode et lance la partie, <strong>3 manches</strong>,
         chacune avec le même déroulé.
       </p>
     </div>
@@ -407,25 +407,25 @@
 
     <div class="flow">
       <div class="flow-step">
-        <p class="flow-step-num">1 — Choix</p>
+        <p class="flow-step-num">1. Choix</p>
         <p class="flow-step-val">5 mèmes proposés</p>
         <p class="flow-step-sub">120s pour choisir + légender</p>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
-        <p class="flow-step-num">2 — Légende</p>
+        <p class="flow-step-num">2. Légende</p>
         <p class="flow-step-val">100 caractères max</p>
         <p class="flow-step-sub">Une seule par joueur</p>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
-        <p class="flow-step-num">3 — Révélation</p>
+        <p class="flow-step-num">3. Révélation</p>
         <p class="flow-step-val">Une légende à la fois</p>
         <p class="flow-step-sub">Tous les joueurs regardent ensemble</p>
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-step">
-        <p class="flow-step-num">4 — Vote</p>
+        <p class="flow-step-num">4. Vote</p>
         <p class="flow-step-val">Curseur 0 à 100</p>
         <p class="flow-step-sub">Sauf l'auteur, qui attend le score</p>
       </div>
@@ -434,7 +434,7 @@
     <p class="section-body" style="margin-top:22px">
       La moyenne des votes reçus (arrondie) s'ajoute directement au <strong>score cumulé</strong> du joueur.
       Après chaque manche, un podium intermédiaire s'affiche ; à la fin des 3 manches, le classement final
-      couronne un gagnant et met en avant les meilleures légendes de la partie — vidéo en grand format, son activé.
+      couronne un gagnant et met en avant les meilleures légendes de la partie, vidéo en grand format, son activé.
     </p>
 
     <div class="podium-demo">
@@ -459,13 +459,13 @@
   <!-- 03 — Bonus vitrine -->
   <hr class="divider">
   <div class="section">
-    <p class="section-num">03 — Bonus vitrine</p>
+    <p class="section-num">03. Bonus vitrine</p>
     <h2 class="section-title">Les cartes Shardoss dans la partie</h2>
     <div class="section-body">
       <p>
         En se connectant avec un compte <strong>cooloss</strong>, jusqu'à <strong>3 cartes</strong> épinglées
         dans la vitrine <strong>Shardoss</strong> du joueur apparaissent en bonus au moment de choisir un
-        mème — en plus des 5 tirés au hasard. Une façon de rejouer les mèmes que le joueur a lui-même mis en avant.
+        mème, en plus des 5 tirés au hasard. Une façon de rejouer les mèmes que le joueur a lui-même mis en avant.
       </p>
     </div>
   </div>
@@ -473,7 +473,7 @@
   <!-- 04 — Légendes -->
   <hr class="divider">
   <div class="section">
-    <p class="section-num">04 — Légendes & historique</p>
+    <p class="section-num">04. Légendes & historique</p>
     <h2 class="section-title">Ce qui a été dit ne se perd pas</h2>
     <div class="section-body">
       <p>
@@ -486,7 +486,7 @@
       <p class="callout-title">Accès restreint</p>
       <p class="callout-body">
         La page Légendes est réservée aux comptes <strong>admin</strong> et <strong>habitué</strong>
-        (statut attribué depuis cooloss) — pas besoin d'avoir joué pour consulter, mais il faut être connecté.
+        (statut attribué depuis cooloss), pas besoin d'avoir joué pour consulter, mais il faut être connecté.
       </p>
     </div>
   </div>
@@ -494,12 +494,12 @@
   <!-- 05 — Cooloss & Shardoss -->
   <hr class="divider">
   <div class="section">
-    <p class="section-num">05 — Le reste de l'écosystème</p>
+    <p class="section-num">05. Le reste de l'écosystème</p>
     <h2 class="section-title">Un compte, plusieurs apps</h2>
     <div class="section-body">
       <p>
         Memoss ne gère pas ses propres comptes : la connexion passe par <strong>cooloss</strong>, le hub de
-        compte partagé entre les apps du réseau. Un seul cookie de session, valable partout — pas besoin de
+        compte partagé entre les apps du réseau. Un seul cookie de session, valable partout, pas besoin de
         se reconnecter en passant de l'une à l'autre.
       </p>
     </div>
@@ -525,7 +525,7 @@
     </div>
 
     <p class="section-body" style="margin-top:18px">
-      À la fin de chaque partie, Memoss notifie Shardoss avec les légendes jouées — c'est Shardoss qui calcule
+      À la fin de chaque partie, Memoss notifie Shardoss avec les légendes jouées, c'est Shardoss qui calcule
       ensuite ses propres classements et fait évoluer sa collection de cartes en fonction de l'usage réel de
       Memoss, pas d'un tirage random déconnecté du jeu.
     </p>

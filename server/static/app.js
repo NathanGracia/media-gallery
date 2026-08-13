@@ -36,7 +36,7 @@ async function refreshStorage() {
     const r = await fetch('/api/storage');
     const d = await r.json();
     document.getElementById('storage-text').textContent =
-      `${d.used_gb} GB / ${d.max_gb} GB — ${d.percent}%`;
+      `${d.used_gb} GB / ${d.max_gb} GB · ${d.percent}%`;
     const bar = document.getElementById('storage-bar');
     bar.style.width = Math.min(d.percent, 100) + '%';
     bar.className = 'storage-bar' +
@@ -522,7 +522,7 @@ async function deleteMedia(id) {
   const r = await fetch(`/api/media/${id}`, { method: 'DELETE' });
 
   if (r.status === 401) {
-    alert('Non autorisé — reconnecte-toi en admin.');
+    alert('Non autorisé, reconnecte-toi en admin.');
     return;
   }
   if (!r.ok) {
@@ -657,7 +657,7 @@ function legendModerationBar(c, mediaUuid) {
   const isPublic = c.visibility === 'public';
   const badgeTitle = c.reviewed
     ? 'Statut confirmé manuellement'
-    : (isPublic ? 'Classée publique par l\'IA — pas encore relue' : 'Privée (par défaut ou classée par l\'IA) — pas encore relue');
+    : (isPublic ? 'Classée publique par l\'IA, pas encore relue' : 'Privée (par défaut ou classée par l\'IA), pas encore relue');
   return `
     <div class="memoss-mod-bar">
       <span class="memoss-mod-badge memoss-mod-badge--${c.visibility}" title="${esc(badgeTitle)}">

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Modération des légendes — Memoss</title>
+  <title>Modération des légendes · Memoss</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -119,7 +119,7 @@
 <main>
   <div class="page-title">
     <a class="back" href="/timeline">← Légendes</a>
-    <span>Modération — vue tableau</span>
+    <span>Modération · vue tableau</span>
   </div>
 
   <div class="toolbar">
@@ -236,7 +236,7 @@ function render() {
         </td>
         <td><span class="badge badge--${r.visibility}">${isPublic ? 'Public' : 'Privé'}</span></td>
         <td class="cell-pseudo">@${esc(r.pseudo)}</td>
-        <td class="cell-score ${scoreCls}">${r.vote_count ? r.avg : '—'}</td>
+        <td class="cell-score ${scoreCls}">${r.vote_count ? r.avg : '-'}</td>
         <td><span class="badge-reviewed ${r.reviewed ? 'badge-reviewed--yes' : ''}">${r.reviewed ? '✓ revue' : '⏳ non revue'}</span></td>
         <td>
           <div class="row-actions">
@@ -325,7 +325,7 @@ async function runClassify() {
   // Feedback immédiat : avec un gros lot en attente, la réponse peut prendre
   // 20-40s (plusieurs appels Gemini) — sans ce toast, le bouton qui se
   // contente de changer de texte passe facilement inaperçu.
-  showToast('Classification lancée — jusqu\'à ~30-40s pour un gros lot, patiente…');
+  showToast('Classification lancée, jusqu\'à ~30-40s pour un gros lot, patiente…');
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90_000);
@@ -337,7 +337,7 @@ async function runClassify() {
     load();
   } catch (e) {
     showToast(e.name === 'AbortError'
-      ? 'Ça prend trop de temps (>90s) — réessaie, ou vérifie les logs serveur'
+      ? 'Ça prend trop de temps (>90s), réessaie, ou vérifie les logs serveur'
       : (e.message || 'Échec de la classification'));
   } finally {
     clearTimeout(timeoutId);

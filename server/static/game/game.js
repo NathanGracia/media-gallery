@@ -472,7 +472,7 @@ function renderReveal() {
       <video class="reveal-video" id="reveal-video" src="${esc(r.media_url)}"
              autoplay playsinline controls loop></video>
 
-      <div class="reveal-caption">${esc(r.text) || '<em style="opacity:.35">— pas de légende —</em>'}</div>
+      <div class="reveal-caption">${esc(r.text) || '<em style="opacity:.35">pas de légende</em>'}</div>
       <p class="reveal-author">par <strong>${esc(r.pseudo)}</strong></p>
 
       <div class="vote-section">
@@ -518,7 +518,7 @@ function confirmVote() {
   const val = slider ? parseInt(slider.value) : 50;
   S.ws?.send(JSON.stringify({ type: 'submit_vote', stars: val }));
   const btn = document.getElementById('btn-vote-confirm');
-  if (btn) { btn.disabled = true; btn.textContent = `${val} / 100 — envoyé ✓`; }
+  if (btn) { btn.disabled = true; btn.textContent = `${val} / 100 · envoyé ✓`; }
   if (slider) slider.disabled = true;
 }
 
@@ -554,7 +554,7 @@ function renderGameEnd() {
     <div class="card">
       <div class="winner-banner">
         <div class="winner-trophy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4M17 6h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"/></svg></div>
-        <div class="winner-name">${winner ? esc(winner.pseudo) : '—'}</div>
+        <div class="winner-name">${winner ? esc(winner.pseudo) : '-'}</div>
         <div class="winner-label">${winner ? `${winner.score} pts · Champion Memoss` : 'Fin de partie'}</div>
       </div>
 
@@ -578,7 +578,7 @@ function renderGameEnd() {
             <div class="legend-feature-crown">Meilleure légende</div>
             <button class="legend-feature-sound" id="legend-feature-sound" title="Activer/couper le son"></button>
             <div class="legend-feature-overlay">
-              <div class="legend-feature-caption">${esc(feature.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
+              <div class="legend-feature-caption">${esc(feature.text) || '<em style="opacity:.5">pas de légende</em>'}</div>
               <div class="legend-feature-meta">
                 <span class="legend-feature-author">${esc(feature.pseudo)}</span>
                 <span class="legend-feature-score">${feature.avg}/100${feature.vote_count ? ` · ${feature.vote_count} vote${feature.vote_count > 1 ? 's' : ''}` : ''}</span>
@@ -594,7 +594,7 @@ function renderGameEnd() {
                          autoplay muted loop playsinline></video>
                   <span class="legend-item-rank ${i===0?'rank-silver':i===1?'rank-bronze':''}">${i+2}</span>
                   <div class="legend-item-body">
-                    <div class="legend-item-caption">${esc(m.text) || '<em style="opacity:.5">— pas de légende —</em>'}</div>
+                    <div class="legend-item-caption">${esc(m.text) || '<em style="opacity:.5">pas de légende</em>'}</div>
                     <div class="legend-item-meta">
                       <span class="legend-item-author">${esc(m.pseudo)}</span>
                       <span class="legend-item-score">${m.avg}</span>

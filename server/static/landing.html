@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Memoss — Le jeu des meilleures légendes</title>
+<title>Memoss · Le jeu des meilleures légendes</title>
 <meta name="description" content="Un mème apparaît, tout le monde invente une légende, les meilleures gagnent. Memoss est le jeu de légendes + la bibliothèque de mèmes de la bande.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -300,7 +300,7 @@ async function loadFeaturedExamples() {
     if (!res.ok) throw new Error();
     const items = await res.json();
     if (!items.length) {
-      grid.innerHTML = '<div class="examples-empty">Pas encore assez de légendes publiques validées — reviens bientôt !</div>';
+      grid.innerHTML = '<div class="examples-empty">Pas encore assez de légendes publiques validées, reviens bientôt !</div>';
       return;
     }
     // Vidéo = lue en boucle façon gif (muted/loop/playsinline) ; image = statique.

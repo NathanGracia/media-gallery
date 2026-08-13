@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Légendes — Memoss</title>
+  <title>Légendes · Memoss</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -562,7 +562,7 @@ function render(root, items) {
       const hasVote = item.vote_count > 0;
       const avg     = hasVote ? item.avg : null;
       const scoreCls = avg === null ? 'score-low' : avg >= 70 ? 'score-high' : avg >= 40 ? 'score-mid' : 'score-low';
-      const scoreVal = avg !== null ? avg : '—';
+      const scoreVal = avg !== null ? avg : '-';
       const side    = entryIdx++ % 2 === 0 ? 'entry--left' : 'entry--right';
       const mediaEl = item.url
         ? `<div class="entry-player-wrap"><video class="entry-player" src="${esc(item.url)}" poster="${esc(item.thumb)}" muted loop playsinline preload="metadata"></video></div>`
@@ -612,7 +612,7 @@ function legendModerationBar(item) {
   const isPublic = item.visibility === 'public';
   const badgeTitle = item.reviewed
     ? 'Statut confirmé manuellement'
-    : (isPublic ? 'Classée publique par l\'IA — pas encore relue' : 'Privée (par défaut ou classée par l\'IA) — pas encore relue');
+    : (isPublic ? 'Classée publique par l\'IA, pas encore relue' : 'Privée (par défaut ou classée par l\'IA), pas encore relue');
   return `
     <div class="legend-mod-bar" onclick="event.preventDefault();event.stopPropagation()">
       <span class="legend-badge legend-badge--${item.visibility}" title="${esc(badgeTitle)}">
@@ -663,7 +663,7 @@ async function runClassify() {
   // Feedback immédiat : avec un gros lot en attente, la réponse peut prendre
   // 20-40s (plusieurs appels Gemini) — sans ce toast, le bouton qui se
   // contente de changer de texte passe facilement inaperçu.
-  showToast('Classification lancée — jusqu\'à ~30-40s pour un gros lot, patiente…');
+  showToast('Classification lancée, jusqu\'à ~30-40s pour un gros lot, patiente…');
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90_000);
@@ -675,7 +675,7 @@ async function runClassify() {
     reload();
   } catch (e) {
     showToast(e.name === 'AbortError'
-      ? 'Ça prend trop de temps (>90s) — réessaie, ou vérifie les logs serveur'
+      ? 'Ça prend trop de temps (>90s), réessaie, ou vérifie les logs serveur'
       : (e.message || 'Échec de la classification'));
   } finally {
     clearTimeout(timeoutId);

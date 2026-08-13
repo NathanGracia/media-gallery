@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vitrine perso — Memoss</title>
+<title>Vitrine perso · Memoss</title>
 <meta name="description" content="Ton historique de légendes sur Memoss.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -293,7 +293,7 @@ async function reload() {
     _total = data.total;
     document.getElementById('count-label').textContent = `${_total} légende${_total > 1 ? 's' : ''}`;
     if (!data.items.length) {
-      grid.innerHTML = `<div class="examples-empty">Pas encore de légende — <a href="/game">va en écrire une</a> !</div>`;
+      grid.innerHTML = `<div class="examples-empty">Pas encore de légende, <a href="/game">va en écrire une</a> !</div>`;
       return;
     }
     grid.innerHTML = data.items.map(ex => cardHtml(ex)).join('');
