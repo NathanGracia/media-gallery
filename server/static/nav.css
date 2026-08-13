@@ -26,6 +26,8 @@ header {
   align-items: center;
   gap: 24px;
   padding: 14px 0 10px;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 #site-nav {
