@@ -435,13 +435,23 @@ function renderWaiting() {
         <div class="waiting-preview">
           <img src="${esc(S.selectedMeme.thumb)}" alt="">
           <div class="waiting-caption">${esc(S.text) || '<em style="opacity:.45">Pas de légende</em>'}</div>
-        </div>` : ''}
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-edit-submission" onclick="editSubmission()">✏️ Modifier</button>` : ''}
 
       <div class="progress-row">
         <div class="progress-dots" id="progress-dots">${dots}</div>
         <span class="progress-count" id="progress-count">${S.submitted}/${S.total || '?'} soumis</span>
       </div>
     </div>`;
+}
+
+// Retour à l'écran de soumission depuis l'attente, tant que la manche n'a
+// pas avancé côté serveur (round_start/reveal_phase_start le forceraient de
+// toute façon — voir handleMsg). S.selectedMeme/S.text gardent déjà ce qui a
+// été soumis, donc l'écran de sélection rouvre pré-rempli sur le même choix.
+function editSubmission() {
+  S.screen = 'picking';
+  renderPicking();
 }
 
 // ── Reveal ────────────────────────────────────────────────────────────────────

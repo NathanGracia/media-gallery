@@ -684,13 +684,28 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
                     await start_game(code)
 
             elif event == "draft_answer":
-                if state["status"] == "picking" and player_id not in state["submissions"]:
+                # Pas de garde "déjà soumis" : le joueur doit pouvoir continuer
+                # à taper (et donc re-soumettre) après validation, tant que la
+                # manche est encore en phase "picking" — voir submit_answer.
+                if state["status"] == "picking":
                     media_uuid = data.get("media_uuid", "")
                     text       = data.get("text", "")[:100]
                     state["player_drafts"][player_id] = {"media_uuid": media_uuid, "text": text}
 
             elif event == "submit_answer":
-                if state["status"] == "picking" and player_id not in state["submissions"]:
+                # Resoumission autorisée tant que status=="picking" (édition
+                # d'une légende déjà validée, en attendant les autres — voir
+                # game.js::editSubmission). handle_submit écrase simplement
+                # l'entrée existante ; check_all_submitted() ne fait avancer
+                # la manche que si TOUS les joueurs connectés ont une
+                # soumission, donc rééditer avant que les autres aient
+                # terminé ne déclenche jamais d'avance prématurée. Une fois
+                # la manche réellement avancée, state["player_memes"] est
+                # régénéré (nouveaux mèmes) : une resoumission tardive avec
+                # l'ancien media_uuid est rejetée par le check `offered` dans
+                # handle_submit, donc aucun risque de pollution du round
+                # suivant.
+                if state["status"] == "picking":
                     await handle_submit(code, player_id, data)
 
             elif event == "submit_vote":
