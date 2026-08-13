@@ -228,9 +228,36 @@
     .score-mid  { color: #fbbf24; }
     .score-low  { color: var(--muted); }
 
+    /* — Modération des légendes (admin) — */
+    .legend-mod-bar { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .legend-badge {
+      font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
+    }
+    .legend-badge--public  { background: rgba(74,222,128,0.15); color: #4ade80; }
+    .legend-badge--private { background: rgba(148,163,184,0.15); color: #94a3b8; }
+    .btn-legend-action {
+      font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+      cursor: pointer; transition: border-color 0.15s, color 0.15s; white-space: nowrap;
+    }
+    .btn-legend-action:hover { border-color: rgba(34,211,238,0.4); color: var(--accent, #22d3ee); }
+    .btn-legend-action--danger:hover { border-color: rgba(248,113,113,0.4); color: var(--red); }
+    .btn-classify {
+      margin-left: auto; font-size: 0.82rem; font-weight: 600; padding: 0.4rem 0.85rem; border-radius: 8px;
+      border: 1px solid rgba(34,211,238,0.35); background: rgba(34,211,238,0.1); color: #22d3ee;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-classify:hover:not(:disabled) { background: rgba(34,211,238,0.2); }
+    .btn-classify:disabled { opacity: 0.6; cursor: default; }
+
     /* — Toolbar — */
     .toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
     .toolbar-label { font-size: 0.82rem; color: var(--muted); }
+    .admin-only { display: none; }
+    body.admin-mode .admin-only { display: inline-flex; }
+    body.admin-mode .toolbar-label.admin-only { display: inline; }
+    body.admin-mode select.admin-only { display: inline-block; }
     .period-select {
       appearance: none; -webkit-appearance: none;
       background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.65rem center;
@@ -371,6 +398,14 @@
       <option value="30">1 mois</option>
       <option value="0">Tout</option>
     </select>
+    <span class="toolbar-label admin-only">Visibilité&nbsp;:</span>
+    <select class="period-select admin-only" id="visibility-filter" onchange="applyVisibilityFilter()">
+      <option value="all">Toutes</option>
+      <option value="public">Publiques</option>
+      <option value="private">Privées</option>
+      <option value="unreviewed">Non revues</option>
+    </select>
+    <button class="btn-classify admin-only" id="btn-classify" onclick="runClassify()">Classifier les nouvelles légendes</button>
   </div>
   <div id="root">
     <div class="skeleton-wrap">
@@ -424,7 +459,7 @@
 <script src="nav.js?v=1"></script>
 <script>SiteNav.mount('site-nav', 'timeline');</script>
 <script src="account-widget.js?v=3"></script>
-<script src="app.js?v=42"></script>
+<script src="app.js?v=43"></script>
 <script>
 async function openMediaCard(e, uuid) {
   e.preventDefault();
@@ -433,6 +468,8 @@ async function openMediaCard(e, uuid) {
     if (meta) openMedia(meta.id, meta.type, meta.url, meta.original_name, meta.tag);
   } catch (_) {}
 }
+
+let _allItems = [];
 
 function reload() {
   load(document.getElementById('period-select').value);
@@ -459,7 +496,8 @@ async function load(days = 7) {
   try {
     const res = await fetch(`/game/api/timeline?days=${days}`);
     if (!res.ok) throw new Error();
-    render(root, await res.json());
+    _allItems = await res.json();
+    renderFiltered();
   } catch {
     root.innerHTML = `<div class="empty">
       <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
@@ -467,6 +505,21 @@ async function load(days = 7) {
       <p>Impossible de récupérer l'historique.</p>
     </div>`;
   }
+}
+
+// Filtre visibilité (admin uniquement) : appliqué côté client sur les items
+// déjà chargés (timeline renvoie déjà visibility/reviewed), pas de refetch.
+function applyVisibilityFilter() {
+  renderFiltered();
+}
+
+function renderFiltered() {
+  const filter = isAdmin() ? (document.getElementById('visibility-filter')?.value || 'all') : 'all';
+  let items = _allItems;
+  if (filter !== 'all') {
+    items = items.filter(it => filter === 'unreviewed' ? !it.reviewed : it.visibility === filter);
+  }
+  render(document.getElementById('root'), items);
 }
 
 function render(root, items) {
@@ -532,6 +585,8 @@ function render(root, items) {
         ? `<div class="entry-player-wrap"><video class="entry-player" src="${esc(item.url)}" poster="${esc(item.thumb)}" muted loop playsinline preload="metadata"></video></div>`
         : `<img class="entry-thumb" src="${esc(item.thumb)}" alt="" loading="lazy" onerror="this.style.opacity='0.25'">`;
 
+      const modBar = isAdmin() ? legendModerationBar(item) : '';
+
       html += `<a class="entry ${side}" href="/gallery?m=${item.media_uuid}" onclick="openMediaCard(event,'${item.media_uuid}')">
         ${mediaEl}
         <div class="entry-body">
@@ -541,6 +596,7 @@ function render(root, items) {
             <span>· ${time}</span>
             <span class="entry-score ${scoreCls}">${scoreVal}${hasVote ? '<span class="score-unit"> /100</span>' : ''}</span>
           </div>
+          ${modBar}
         </div>
       </a>`;
     }
@@ -562,6 +618,77 @@ function render(root, items) {
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Modération des légendes (admin uniquement) ───────────────────────────────
+// Noms distincts de ceux définis dans app.js (utilisés par la modale
+// memoss-history) pour éviter tout risque de masquage entre les deux
+// scripts chargés sur cette page — même API serveur, comportement de
+// rafraîchissement différent (liste locale _allItems vs refetch modale).
+function legendModerationBar(item) {
+  const isPublic = item.visibility === 'public';
+  const badgeTitle = item.reviewed
+    ? 'Statut confirmé manuellement'
+    : (isPublic ? 'Classée publique par l\'IA — pas encore relue' : 'Privée (par défaut ou classée par l\'IA) — pas encore relue');
+  return `
+    <div class="legend-mod-bar" onclick="event.preventDefault();event.stopPropagation()">
+      <span class="legend-badge legend-badge--${item.visibility}" title="${esc(badgeTitle)}">
+        ${isPublic ? 'Public' : 'Privé'}${item.reviewed ? '' : ' ⏳'}
+      </span>
+      <button class="btn-legend-action" onclick="toggleTimelineLegendVisibility(${item.id}, '${isPublic ? 'private' : 'public'}')" title="${isPublic ? 'Rendre privée' : 'Rendre publique'}">
+        ${isPublic ? '🔒 Rendre privée' : '🌐 Rendre publique'}
+      </button>
+      <button class="btn-legend-action btn-legend-action--danger" onclick="deleteTimelineLegendEntry(${item.id})" title="Supprimer définitivement">🗑️ Supprimer</button>
+    </div>`;
+}
+
+async function toggleTimelineLegendVisibility(id, newVisibility) {
+  try {
+    const res = await fetch(`/game/api/legends/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility: newVisibility }),
+    });
+    if (!res.ok) throw new Error();
+    const item = _allItems.find(it => String(it.id) === String(id));
+    if (item) { item.visibility = newVisibility; item.reviewed = true; }
+    renderFiltered();
+    showToast(newVisibility === 'public' ? 'Légende rendue publique' : 'Légende rendue privée');
+  } catch {
+    showToast('Échec de la mise à jour');
+  }
+}
+
+async function deleteTimelineLegendEntry(id) {
+  if (!confirm('Supprimer définitivement cette légende ?')) return;
+  try {
+    const res = await fetch(`/game/api/legends/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    _allItems = _allItems.filter(it => String(it.id) !== String(id));
+    renderFiltered();
+    showToast('Légende supprimée');
+  } catch {
+    showToast('Échec de la suppression');
+  }
+}
+
+async function runClassify() {
+  const btn = document.getElementById('btn-classify');
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Classification en cours…';
+  try {
+    const res = await fetch('/game/api/legends/classify', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Erreur');
+    showToast(`${data.classified} classée(s) (${data.public} publique(s), ${data.private} privée(s))`);
+    reload();
+  } catch (e) {
+    showToast(e.message || 'Échec de la classification');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
 }
 
 // refreshSession() (définie dans app.js) doit être attendue explicitement

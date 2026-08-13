@@ -57,6 +57,13 @@ SHARED_SESSION_SECRET = cfg.get("shared_session_secret", "")
 SHARDOSS_BASE_URL   = cfg.get("shardoss_base_url", "").rstrip("/")
 SHARDOSS_WEBHOOK_KEY = cfg.get("shardoss_webhook_key", "")
 
+# Classification IA des légendes (voir legend_moderation.py). Vide en dev :
+# POST /game/api/legends/classify répond alors 503 (pas de no-op silencieux
+# ici, contrairement à Shardoss — un admin qui déclenche une classification
+# doit savoir que rien ne s'est passé plutôt que de croire que tout est ok).
+GEMINI_API_KEY = cfg.get("gemini_api_key", "")
+GEMINI_MODEL   = cfg.get("gemini_model", "gemini-2.5-flash")
+
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 THUMB_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -82,7 +89,7 @@ class Media(SQLModel, table=True):
 
 
 SQLModel.metadata.create_all(engine)
-init_game(engine, Media, SHARED_SESSION_SECRET, SHARDOSS_BASE_URL, SHARDOSS_WEBHOOK_KEY)
+init_game(engine, Media, SHARED_SESSION_SECRET, SHARDOSS_BASE_URL, SHARDOSS_WEBHOOK_KEY, GEMINI_API_KEY, GEMINI_MODEL)
 
 # Migration : ajoute la colonne tag si elle n'existe pas encore (DB existante)
 with engine.connect() as _conn:
@@ -121,6 +128,20 @@ with engine.connect() as _conn:
         log.info("Migration : colonne 'duration_seconds' ajoutée à media.")
     except Exception:
         pass  # Colonne déjà présente
+
+# Migration : ajoute les colonnes de modération des légendes (public/privé)
+# — voir legend_moderation.py et game_router.py (GET/PATCH/DELETE /game/api/legends).
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE game_answers ADD COLUMN visibility VARCHAR DEFAULT 'private'"))
+        _conn.execute(text("ALTER TABLE game_answers ADD COLUMN ai_label VARCHAR"))
+        _conn.execute(text("ALTER TABLE game_answers ADD COLUMN ai_reason VARCHAR"))
+        _conn.execute(text("ALTER TABLE game_answers ADD COLUMN reviewed BOOLEAN DEFAULT 0"))
+        _conn.execute(text("UPDATE game_answers SET visibility = 'private' WHERE visibility IS NULL"))
+        _conn.commit()
+        log.info("Migration : colonnes de modération ('visibility', 'ai_label', 'ai_reason', 'reviewed') ajoutées à game_answers.")
+    except Exception:
+        pass  # Colonnes déjà présentes
 
 # ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Media Gallery v3", docs_url=None, redoc_url=None)

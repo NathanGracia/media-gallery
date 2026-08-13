@@ -1,0 +1,22 @@
+[
+  {"text": "Moi le lundi matin en sortant du lit", "expected": "public", "note": "compréhensible par tous, inoffensif"},
+  {"text": "Quand le prof rend les copies et t'as eu 3/20", "expected": "public", "note": "situation universelle"},
+  {"text": "Personne : ... Mon frigo à 3h du matin :", "expected": "public", "note": "format meme classique, sans référence privée"},
+  {"text": "Kevin qui recommence encore avec ses conneries", "expected": "private", "note": "prénom = private joke, incompréhensible hors groupe"},
+  {"text": "Encore une wipe au raid à cause de Jean-Mi", "expected": "private", "note": "référence à une personne + événement de jeu précis, non générique"},
+  {"text": "asdkjfh ptdrrr mdrrrr", "expected": "private", "note": "incompréhensible / pas de sens"},
+  {"text": "elle a plus de vie que ta mère", "expected": "private", "note": "insulte ciblée"},
+  {"text": "j'aimerais bien la finir ce soir si tu vois ce que je veux dire", "expected": "private", "note": "sous-entendu sexuel"},
+  {"text": "T'façon on va tous mourir un jour autant en rire", "expected": "public", "note": "humour noir léger mais générique, pas choquant"},
+  {"text": "Ce mec ressemble à mon patron j'ai eu un flash", "expected": "private", "note": "référence personnelle (mon patron), pas généralisable"},
+  {"text": "Chat qui regarde son propriétaire ouvrir une boîte de conserve", "expected": "public", "note": "descriptif simple, humour universel"},
+  {"text": "va te faire foutre connard", "expected": "private", "note": "vulgaire/insultant"},
+  {"text": "Moi expliquant à ma mère pourquoi j'ai encore raté le bus", "expected": "public", "note": "situation générique (\"ma mère\" générique, pas une personne identifiable du groupe)"},
+  {"text": "referenceauraid2023quandpotato_a_troll", "expected": "private", "note": "jargon/pseudo interne au groupe, incompréhensible"},
+  {"text": "Bordel de merde j'ai encore perdu", "expected": "public", "note": "juron courant familier, pas insultant ni sexuel — limite à calibrer selon votre tolérance"},
+  {"text": "Quand tu comprends enfin la blague 10 minutes après tout le monde", "expected": "public", "note": "situation universelle"},
+  {"text": "Nique sa mère ce PNJ il m'a tué", "expected": "private", "note": "vulgarité assez forte ('nique sa mère'), à la limite — testez votre seuil ici"},
+  {"text": "Ce mème mais avec le visage de ta copine", "expected": "private", "note": "s'adresse à une personne précise du groupe (\"ta copine\"), pas générique"},
+  {"text": "Le silence dans la salle après une blague qui tombe à plat", "expected": "public", "note": "situation universelle, aucune vulgarité"},
+  {"text": "on est vendredi et j'ai déjà bu 3 bières avant midi mdr", "expected": "public", "note": "auto-dérision légère, rien de choquant — à calibrer si vous voulez être plus strict sur l'alcool"}
+]

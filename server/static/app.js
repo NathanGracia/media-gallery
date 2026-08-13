@@ -645,10 +645,58 @@ async function loadMemossHistory(uuid, highlightId = null) {
                 </svg>
               </button>
             </div>
+            ${isAdmin() ? legendModerationBar(c, uuid) : ''}
           </div>`;
         }).join('')}
       </div>`;
   } catch (_) {}
+}
+
+// ── Modération des légendes (admin uniquement, voir server/legend_moderation.py) ──
+function legendModerationBar(c, mediaUuid) {
+  const isPublic = c.visibility === 'public';
+  const badgeTitle = c.reviewed
+    ? 'Statut confirmé manuellement'
+    : (isPublic ? 'Classée publique par l\'IA — pas encore relue' : 'Privée (par défaut ou classée par l\'IA) — pas encore relue');
+  return `
+    <div class="memoss-mod-bar">
+      <span class="memoss-mod-badge memoss-mod-badge--${c.visibility}" title="${esc(badgeTitle)}">
+        ${isPublic ? 'Public' : 'Privé'}${c.reviewed ? '' : ' ⏳'}
+      </span>
+      <button class="btn-mod-action" onclick="toggleLegendVisibility(event,${c.id},'${isPublic ? 'private' : 'public'}','${esc(mediaUuid)}')" title="${isPublic ? 'Rendre privée' : 'Rendre publique'}">
+        ${isPublic ? '🔒 Rendre privée' : '🌐 Rendre publique'}
+      </button>
+      <button class="btn-mod-action btn-mod-action--danger" onclick="deleteLegendEntry(event,${c.id},'${esc(mediaUuid)}')" title="Supprimer définitivement">🗑️ Supprimer</button>
+    </div>`;
+}
+
+async function toggleLegendVisibility(event, id, newVisibility, mediaUuid) {
+  event.stopPropagation();
+  try {
+    const res = await fetch(`/game/api/legends/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility: newVisibility }),
+    });
+    if (!res.ok) throw new Error();
+    showToast(newVisibility === 'public' ? 'Légende rendue publique' : 'Légende rendue privée');
+    loadMemossHistory(mediaUuid);
+  } catch {
+    showToast('Échec de la mise à jour');
+  }
+}
+
+async function deleteLegendEntry(event, id, mediaUuid) {
+  event.stopPropagation();
+  if (!confirm('Supprimer définitivement cette légende ?')) return;
+  try {
+    const res = await fetch(`/game/api/legends/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    showToast('Légende supprimée');
+    loadMemossHistory(mediaUuid);
+  } catch {
+    showToast('Échec de la suppression');
+  }
 }
 
 let _toastTimer = null;

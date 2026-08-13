@@ -16,6 +16,7 @@ from sqlalchemy import func
 from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote
 from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
 from shardoss_client import fetch_pinned_cards, notify_shardoss
+from legend_moderation import classify_legends_batch
 
 log            = logging.getLogger(__name__)
 router         = APIRouter()
@@ -24,17 +25,26 @@ _Media         = None
 _shared_secret = ""
 _shardoss_base_url    = ""
 _shardoss_webhook_key = ""
+_gemini_api_key = ""
+_gemini_model   = ""
 
 TOTAL_ROUNDS = 3
 
 
-def init(engine, MediaModel, shared_secret: str = "", shardoss_base_url: str = "", shardoss_webhook_key: str = ""):
+def init(
+    engine, MediaModel, shared_secret: str = "",
+    shardoss_base_url: str = "", shardoss_webhook_key: str = "",
+    gemini_api_key: str = "", gemini_model: str = "",
+):
     global _engine, _Media, _shared_secret, _shardoss_base_url, _shardoss_webhook_key
+    global _gemini_api_key, _gemini_model
     _engine        = engine
     _Media         = MediaModel
     _shared_secret = shared_secret
     _shardoss_base_url    = shardoss_base_url
     _shardoss_webhook_key = shardoss_webhook_key
+    _gemini_api_key = gemini_api_key
+    _gemini_model   = gemini_model
     SQLModel.metadata.create_all(_engine)
     log.info("Game router initialisé.")
 
@@ -59,6 +69,18 @@ def require_admin_or_habitue(request: Request):
     claims = get_account_claims(request)
     if not claims or not (claims.get("isAdmin") or claims.get("isHabitue")):
         raise HTTPException(401, "Réservé aux admins et habitués")
+
+
+def require_admin(request: Request):
+    """
+    Gate stricte pour les actions de modération des légendes (update/delete/
+    classify) — contrairement à require_admin_or_habitue ci-dessus, les
+    habitués ont un accès lecture mais pas d'action de modération, cohérent
+    avec delete/tag/crop qui restent isAdmin uniquement (voir CLAUDE.md).
+    """
+    claims = get_account_claims(request)
+    if not claims or not claims.get("isAdmin"):
+        raise HTTPException(401, "Réservé aux admins")
 
 
 # ── Connection Manager ─────────────────────────────────────────────────────────
@@ -297,6 +319,8 @@ async def get_timeline(days: int = 7):
                 GameAnswer.total_stars,
                 GameAnswer.vote_count,
                 GameAnswer.reveal_order,
+                GameAnswer.visibility,
+                GameAnswer.reviewed,
                 GameRound.round_num,
                 GameRound.played_at,
                 GameRoom.created_at,
@@ -324,6 +348,7 @@ async def get_timeline(days: int = 7):
 
         return [
             {
+                "id":          r.id,
                 "pseudo":      r.player_pseudo,
                 "text":        r.text,
                 "total_stars": r.total_stars,
@@ -332,6 +357,8 @@ async def get_timeline(days: int = 7):
                 "media_uuid":  r.media_uuid,
                 "url":         url_map.get(r.media_uuid),
                 "thumb":       f"/thumbnail/{r.media_uuid}.jpg",
+                "visibility":  r.visibility,
+                "reviewed":    r.reviewed,
                 "game_date":   (r.played_at or r.created_at).isoformat(),
             }
             for r in rows
@@ -355,9 +382,161 @@ async def get_history(media_uuid: str):
                 "total_stars": a.total_stars,
                 "vote_count":  a.vote_count,
                 "avg":         round(a.total_stars / a.vote_count, 1) if a.vote_count else 0,
+                "visibility":  a.visibility,
+                "reviewed":    a.reviewed,
             }
             for a in answers
         ]
+
+
+# ── Modération des légendes (public/privé) ──────────────────────────────────────
+@router.get("/game/api/legends", dependencies=[Depends(require_admin)])
+async def list_legends(
+    visibility: str | None = None,   # "public" | "private" | None (tous)
+    reviewed: bool | None = None,
+    days: int = 30,
+    limit: int = 200,
+):
+    """
+    File de modération admin : légendes récentes avec leur visibility
+    courante et la dernière classification IA (ai_label/ai_reason peuvent
+    différer de visibility si un admin a corrigé à la main depuis).
+    """
+    limit = min(max(limit, 1), 500)
+    with Session(_engine) as s:
+        stmt = (
+            select(
+                GameAnswer.id,
+                GameAnswer.player_pseudo,
+                GameAnswer.media_uuid,
+                GameAnswer.text,
+                GameAnswer.total_stars,
+                GameAnswer.vote_count,
+                GameAnswer.visibility,
+                GameAnswer.ai_label,
+                GameAnswer.ai_reason,
+                GameAnswer.reviewed,
+                GameRound.played_at,
+                GameRoom.created_at,
+            )
+            .join(GameRound, GameAnswer.round_id == GameRound.id)
+            .join(GameRoom, GameRound.room_id == GameRoom.id)
+            .where(GameAnswer.text != "")
+            .order_by(func.coalesce(GameRound.played_at, GameRoom.created_at).desc())
+            .limit(limit)
+        )
+        if days > 0:
+            since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+            stmt  = stmt.where(func.coalesce(GameRound.played_at, GameRoom.created_at) >= since)
+        if visibility in ("public", "private"):
+            stmt = stmt.where(GameAnswer.visibility == visibility)
+        if reviewed is not None:
+            stmt = stmt.where(GameAnswer.reviewed == reviewed)
+        rows = s.exec(stmt).all()
+
+        return [
+            {
+                "id":          r.id,
+                "pseudo":      r.player_pseudo,
+                "text":        r.text,
+                "total_stars": r.total_stars,
+                "vote_count":  r.vote_count,
+                "avg":         round(r.total_stars / r.vote_count, 1) if r.vote_count else 0,
+                "media_uuid":  r.media_uuid,
+                "thumb":       f"/thumbnail/{r.media_uuid}.jpg",
+                "visibility":  r.visibility,
+                "ai_label":    r.ai_label,
+                "ai_reason":   r.ai_reason,
+                "reviewed":    r.reviewed,
+                "game_date":   (r.played_at or r.created_at).isoformat(),
+            }
+            for r in rows
+        ]
+
+
+@router.patch("/game/api/legends/{legend_id}", dependencies=[Depends(require_admin)])
+async def update_legend(legend_id: int, body: dict):
+    """
+    Correction manuelle admin : visibility et/ou texte. Marque toujours
+    reviewed=True — cette légende ne sera plus jamais touchée par un futur
+    passage de classify_legends (voir POST .../classify ci-dessous).
+    """
+    visibility = body.get("visibility")
+    new_text   = body.get("text")
+    if visibility is not None and visibility not in ("public", "private"):
+        raise HTTPException(400, "visibility doit être 'public' ou 'private'")
+
+    with Session(_engine) as s:
+        answer = s.get(GameAnswer, legend_id)
+        if not answer:
+            raise HTTPException(404, "Légende introuvable")
+        if visibility is not None:
+            answer.visibility = visibility
+        if isinstance(new_text, str) and new_text.strip():
+            answer.text = new_text.strip()
+        answer.reviewed = True
+        s.add(answer)
+        s.commit()
+        return {"ok": True, "id": legend_id, "visibility": answer.visibility}
+
+
+@router.delete("/game/api/legends/{legend_id}", dependencies=[Depends(require_admin)])
+async def delete_legend(legend_id: int):
+    with Session(_engine) as s:
+        answer = s.get(GameAnswer, legend_id)
+        if not answer:
+            raise HTTPException(404, "Légende introuvable")
+        # Les votes associés ne sont jamais réexposés une fois la légende
+        # parente supprimée (rien ne les requête indépendamment — total_stars/
+        # vote_count sont déjà dénormalisés sur GameAnswer), mais on les
+        # nettoie quand même pour éviter une accumulation d'orphelins.
+        for vote in s.exec(select(GameVote).where(GameVote.answer_id == legend_id)).all():
+            s.delete(vote)
+        s.delete(answer)
+        s.commit()
+        return {"ok": True}
+
+
+@router.post("/game/api/legends/classify", dependencies=[Depends(require_admin)])
+async def classify_legends(body: dict | None = None):
+    """
+    Lance une classification Gemini (chunkée, voir legend_moderation.py) sur
+    les légendes pas encore `reviewed` — une décision manuelle n'est jamais
+    écrasée. Met à jour visibility directement (effective immédiatement) ainsi
+    qu'ai_label/ai_reason pour la relecture admin ; reviewed reste False tant
+    qu'un admin n'a pas confirmé/corrigé via PATCH, pour que la file de
+    modération sache ce qui a déjà été vérifié par un humain.
+    """
+    if not _gemini_api_key:
+        raise HTTPException(503, "Classification IA non configurée (gemini_api_key vide dans config.yaml)")
+
+    limit = min(max(int((body or {}).get("limit", 200)), 1), 500)
+    with Session(_engine) as s:
+        pending = s.exec(
+            select(GameAnswer)
+            .where(GameAnswer.reviewed == False)  # noqa: E712 — comparaison SQL, pas `is False`
+            .where(GameAnswer.text != "")
+            .order_by(GameAnswer.id.desc())
+            .limit(limit)
+        ).all()
+        if not pending:
+            return {"classified": 0, "public": 0, "private": 0, "skipped": 0}
+
+        items   = [{"id": a.id, "text": a.text} for a in pending]
+        results = await classify_legends_batch(items, _gemini_api_key, _gemini_model)
+
+        counts = {"public": 0, "private": 0}
+        for answer in pending:
+            result = results.get(answer.id)
+            if not result:
+                continue  # échec de classification pour cet item — laissé tel quel, reviewed reste False
+            answer.visibility = result["label"]
+            answer.ai_label   = result["label"]
+            answer.ai_reason  = result["reason"]
+            counts[result["label"]] += 1
+            s.add(answer)
+        s.commit()
+        return {"classified": sum(counts.values()), **counts, "skipped": len(pending) - sum(counts.values())}
 
 
 # ── WebSocket ──────────────────────────────────────────────────────────────────

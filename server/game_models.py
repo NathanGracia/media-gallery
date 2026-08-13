@@ -58,6 +58,17 @@ class GameAnswer(SQLModel, table=True):
     # Même uid cooloss que GamePlayer.account_uid, dupliqué ici pour pouvoir
     # requêter "légendes de tel compte" sans jointure. NULL pour un invité.
     account_uid:   Optional[int] = Field(default=None)
+    # Modération (voir legend_moderation.py) : visibility est le flag
+    # autoritaire consulté partout où une légende est exposée publiquement.
+    # Défaut "private" — rien n'est exposé tant que non revu (par l'IA ou un
+    # admin). ai_label/ai_reason gardent la dernière classification Gemini
+    # pour affichage admin, séparément de visibility qui peut avoir été
+    # ensuite corrigée à la main. reviewed=True dès qu'un admin a tranché
+    # manuellement, pour que la classification batch ne l'écrase plus.
+    visibility:    str            = Field(default="private")  # "public" | "private"
+    ai_label:      Optional[str]  = Field(default=None)       # "public" | "private" | None (pas encore classifié)
+    ai_reason:     Optional[str]  = Field(default=None)
+    reviewed:      bool           = Field(default=False)
 
 
 class GameVote(SQLModel, table=True):

@@ -1227,6 +1227,33 @@ main {
 }
 .btn-caption-share:active { transform: scale(0.9); }
 
+/* ── Modération des légendes (admin, voir server/legend_moderation.py) ──────── */
+.memoss-mod-bar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 4px; padding-top: 8px;
+  border-top: 1px solid var(--gb);
+}
+.memoss-mod-badge {
+  font-size: 0.62rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 99px;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.memoss-mod-badge--public  { background: rgba(74,222,128,0.15); color: #4ade80; }
+.memoss-mod-badge--private { background: rgba(255,255,255,0.08); color: var(--text-dim); }
+.btn-mod-action {
+  font-size: 0.65rem; font-weight: 600;
+  padding: 3px 9px; border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-mod-action:hover { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.3); color: var(--accent); }
+.btn-mod-action--danger:hover { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3); color: var(--red); }
+
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   header { padding: 0 14px; }

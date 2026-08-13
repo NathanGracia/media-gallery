@@ -37,3 +37,10 @@ shared_session_secret: ""
 # IDENTIQUE à memoss_webhook_key dans le config.yaml de Shardoss.
 shardoss_base_url: ""
 shardoss_webhook_key: ""
+
+# Classification IA des légendes (public/privé) — voir server/legend_moderation.py
+# et POST /game/api/legends/classify. Laisser gemini_api_key vide pour
+# désactiver silencieusement (les légendes restent "private" par défaut,
+# modération manuelle uniquement).
+gemini_api_key: ""
+gemini_model: "gemini-2.5-flash"
