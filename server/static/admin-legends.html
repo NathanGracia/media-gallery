@@ -63,7 +63,7 @@
       width: 56px; height: 40px; object-fit: cover; border-radius: 5px;
       background: rgba(255,255,255,0.04); display: block; flex-shrink: 0;
     }
-    .cell-text { max-width: 340px; }
+    .cell-text { max-width: 340px; text-align: right; }
     .legend-text { font-weight: 500; line-height: 1.35; color: var(--text); }
     .legend-reason { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
     .cell-pseudo { color: #94a3b8; font-weight: 600; white-space: nowrap; }
@@ -150,10 +150,10 @@
       <thead>
         <tr>
           <th></th>
-          <th>Légende</th>
+          <th style="text-align:right">Légende</th>
+          <th>Visibilité</th>
           <th>Auteur</th>
           <th>Score</th>
-          <th>Visibilité</th>
           <th>Revue</th>
           <th></th>
         </tr>
@@ -234,9 +234,9 @@ function render() {
           <div class="legend-text">${esc(r.text)}</div>
           ${r.ai_reason ? `<div class="legend-reason">IA (${esc(r.ai_label)}) : ${esc(r.ai_reason)}</div>` : ''}
         </td>
+        <td><span class="badge badge--${r.visibility}">${isPublic ? 'Public' : 'Privé'}</span></td>
         <td class="cell-pseudo">@${esc(r.pseudo)}</td>
         <td class="cell-score ${scoreCls}">${r.vote_count ? r.avg : '—'}</td>
-        <td><span class="badge badge--${r.visibility}">${isPublic ? 'Public' : 'Privé'}</span></td>
         <td><span class="badge-reviewed ${r.reviewed ? 'badge-reviewed--yes' : ''}">${r.reviewed ? '✓ revue' : '⏳ non revue'}</span></td>
         <td>
           <div class="row-actions">
