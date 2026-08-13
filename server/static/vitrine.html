@@ -184,8 +184,11 @@ function avatarHtml(ex) {
 
 function authorHtml(ex) {
   const inner = `${avatarHtml(ex)}<span class="example-pseudo">${esc(ex.pseudo)}</span>`;
-  return ex.account_uid
-    ? `<button type="button" class="example-author" onclick="event.preventDefault(); event.stopPropagation(); location.href='/vitrine/u/${esc(ex.account_uid)}'">${inner}</button>`
+  // Préfère le username (stable, URL-safe) ; repli sur l'id numérique si le
+  // profil n'a pas encore été mis en cache (voir remember_account côté API).
+  const target = ex.username || ex.account_uid;
+  return target
+    ? `<button type="button" class="example-author" onclick="event.preventDefault(); event.stopPropagation(); location.href='/vitrine/u/${esc(target)}'">${inner}</button>`
     : `<span class="example-author">${inner}</span>`;
 }
 

@@ -82,6 +82,11 @@ class AccountProfile(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     account_uid: int                       = Field(primary_key=True)
     pseudo:      str                       = Field(default="")
+    # username cooloss (stable, unique, URL-safe) — sert d'identifiant dans
+    # les liens de vitrine partagés (/vitrine/u/<username>) plutôt que le
+    # pseudo (mutable, peut contenir espaces/accents) ou l'id numérique
+    # (moche à partager). Vide pour les comptes vus avant l'ajout de ce champ.
+    username:    str                       = Field(default="")
     avatar_file: Optional[str]             = Field(default=None)
     updated_at:  datetime.datetime         = Field(default_factory=datetime.datetime.utcnow)
 

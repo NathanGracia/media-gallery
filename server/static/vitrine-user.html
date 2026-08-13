@@ -166,7 +166,7 @@
 <script>SiteNav.mount('site-nav', 'vitrine-public');</script>
 <script src="/account-widget.js?v=3"></script>
 <script>
-const ACCOUNT_UID = location.pathname.split('/').filter(Boolean).pop();
+const IDENTIFIER = location.pathname.split('/').filter(Boolean).pop();
 let _page = 1;
 let _total = 0;
 let _loaded = 0;
@@ -216,7 +216,7 @@ function renderProfile(profile) {
 
 async function fetchPage(page) {
   const sort = document.getElementById('f-sort').value;
-  const res = await fetch(`/api/legends/user/${encodeURIComponent(ACCOUNT_UID)}?sort=${sort}&page=${page}&per_page=${PER_PAGE}`);
+  const res = await fetch(`/api/legends/user/${encodeURIComponent(IDENTIFIER)}?sort=${sort}&page=${page}&per_page=${PER_PAGE}`);
   if (!res.ok) throw new Error();
   return res.json();
 }

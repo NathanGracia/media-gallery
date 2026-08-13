@@ -152,6 +152,16 @@ with engine.connect() as _conn:
     except Exception:
         pass  # Colonnes déjà présentes
 
+# Migration : ajoute username à account_profiles (créée après ce champ) —
+# sert d'identifiant dans les liens de vitrine partagés (/vitrine/u/<username>).
+with engine.connect() as _conn:
+    try:
+        _conn.execute(text("ALTER TABLE account_profiles ADD COLUMN username VARCHAR DEFAULT ''"))
+        _conn.commit()
+        log.info("Migration : colonne 'username' ajoutée à account_profiles.")
+    except Exception:
+        pass  # Colonne déjà présente
+
 # ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Media Gallery v3", docs_url=None, redoc_url=None)
 
@@ -728,11 +738,12 @@ async def vitrine_perso_page():
     return FileResponse("static/vitrine-perso.html")
 
 
-@app.get("/vitrine/u/{account_uid}")
-async def vitrine_user_page(account_uid: int):
-    # account_uid n'est utilisé que côté client (JS lit location.pathname) —
-    # ce handler sert juste le HTML statique, la vraie donnée vient de
-    # GET /api/legends/user/{uid} (voir game_router.py).
+@app.get("/vitrine/u/{identifier}")
+async def vitrine_user_page(identifier: str):
+    # identifier (username, ou id numérique en repli) n'est utilisé que côté
+    # client (JS lit location.pathname) — ce handler sert juste le HTML
+    # statique, la vraie donnée vient de GET /api/legends/user/{identifier}
+    # (voir game_router.py).
     return FileResponse("static/vitrine-user.html")
 
 # Static game SPA — servi sur /game. Jusqu'en août 2026 c'était aussi la

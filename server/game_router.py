@@ -107,27 +107,29 @@ def remember_account(claims: dict | None):
     """
     if not claims or not claims.get("uid"):
         return
-    pseudo = claims.get("displayName") or claims.get("username") or ""
-    avatar = claims.get("avatarFile")
+    pseudo   = claims.get("displayName") or claims.get("username") or ""
+    username = claims.get("username") or ""
+    avatar   = claims.get("avatarFile")
     with Session(_engine) as s:
         row = s.get(AccountProfile, claims["uid"])
         if row:
             row.pseudo      = pseudo
+            row.username    = username
             row.avatar_file = avatar
             row.updated_at  = datetime.datetime.utcnow()
         else:
-            row = AccountProfile(account_uid=claims["uid"], pseudo=pseudo, avatar_file=avatar)
+            row = AccountProfile(account_uid=claims["uid"], pseudo=pseudo, username=username, avatar_file=avatar)
         s.add(row)
         s.commit()
 
 
-def _avatar_map(s: Session, answers: list) -> dict:
-    """uid -> avatar_file pour une liste de GameAnswer, via le cache AccountProfile."""
+def _profile_map(s: Session, answers: list) -> dict:
+    """uid -> AccountProfile pour une liste de GameAnswer, via le cache local."""
     uids = {a.account_uid for a in answers if a.account_uid}
     if not uids:
         return {}
     profiles = s.exec(select(AccountProfile).where(AccountProfile.account_uid.in_(uids))).all()
-    return {p.account_uid: p.avatar_file for p in profiles}
+    return {p.account_uid: p for p in profiles}
 
 
 # ── Connection Manager ─────────────────────────────────────────────────────────
@@ -464,16 +466,17 @@ async def featured_legends(limit: int = 6):
         pool   = sorted(recent, key=lambda a: a.total_stars / a.vote_count, reverse=True)[:30]
         picked = random.sample(pool, min(limit, len(pool)))
 
-        uuids   = list({a.media_uuid for a in picked})
-        medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
-        info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
-        avatars = _avatar_map(s, picked)
+        uuids    = list({a.media_uuid for a in picked})
+        medias   = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
+        info     = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+        profiles = _profile_map(s, picked)
 
         return [
             {
                 "text":        a.text,
                 "pseudo":      a.player_pseudo,
-                "avatar_file": avatars.get(a.account_uid),
+                "avatar_file": profiles[a.account_uid].avatar_file if a.account_uid in profiles else None,
+                "username":    (profiles[a.account_uid].username or None) if a.account_uid in profiles else None,
                 "account_uid": a.account_uid,
                 "avg":         round(a.total_stars / a.vote_count, 1),
                 "vote_count":  a.vote_count,
@@ -536,10 +539,10 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort:
             .limit(per_page)
         ).all()
 
-        uuids   = list({a.media_uuid for a in rows})
-        medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
-        info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
-        avatars = _avatar_map(s, rows)
+        uuids    = list({a.media_uuid for a in rows})
+        medias   = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
+        info     = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+        profiles = _profile_map(s, rows)
 
         return {
             "total":    total,
@@ -549,7 +552,8 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort:
                 {
                     "text":        a.text,
                     "pseudo":      a.player_pseudo,
-                    "avatar_file": avatars.get(a.account_uid),
+                    "avatar_file": profiles[a.account_uid].avatar_file if a.account_uid in profiles else None,
+                    "username":    (profiles[a.account_uid].username or None) if a.account_uid in profiles else None,
                     "account_uid": a.account_uid,
                     "avg":         round(a.total_stars / a.vote_count, 1),
                     "vote_count":  a.vote_count,
@@ -563,20 +567,32 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort:
         }
 
 
-@router.get("/api/legends/user/{account_uid}")
-async def user_legends(account_uid: int, page: int = 1, per_page: int = 24, sort: str = "score"):
+@router.get("/api/legends/user/{identifier}")
+async def user_legends(identifier: str, page: int = 1, per_page: int = 24, sort: str = "score"):
     """
-    Sans auth — vitrine publique d'un seul compte (/vitrine/u/{uid}),
+    Sans auth — vitrine publique d'un seul compte (/vitrine/u/{username}),
     pensée pour être partagée à quelqu'un qui n'a pas de compte. Mêmes
     filtres que public_legends (visibility=public, reviewed=True) mais
     restreints à un seul account_uid.
+
+    identifier est le username cooloss (stable, unique, URL-safe — voir
+    AccountProfile.username) dans le cas normal. On accepte aussi un id
+    numérique pour ne pas casser les tout premiers liens /vitrine/u/<id>
+    partagés avant l'ajout du username.
     """
     per_page = min(max(per_page, 1), 60)
     page     = max(page, 1)
     if sort not in ("score", "date"):
         sort = "score"
     with Session(_engine) as s:
-        profile = s.get(AccountProfile, account_uid)
+        if identifier.isdigit():
+            profile     = s.get(AccountProfile, int(identifier))
+            account_uid = int(identifier)
+        else:
+            profile     = s.exec(select(AccountProfile).where(AccountProfile.username == identifier)).first()
+            if not profile:
+                raise HTTPException(404, "Utilisateur introuvable")
+            account_uid = profile.account_uid
 
         base = (
             select(GameAnswer)
@@ -600,7 +616,7 @@ async def user_legends(account_uid: int, page: int = 1, per_page: int = 24, sort
 
         if total == 0:
             return {
-                "profile":  {"pseudo": pseudo, "avatar_file": profile.avatar_file if profile else None},
+                "profile":  {"pseudo": pseudo, "avatar_file": profile.avatar_file if profile else None, "username": profile.username if profile else None},
                 "total":    0,
                 "page":     page,
                 "per_page": per_page,
@@ -628,7 +644,7 @@ async def user_legends(account_uid: int, page: int = 1, per_page: int = 24, sort
         info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
 
         return {
-            "profile":  {"pseudo": pseudo, "avatar_file": profile.avatar_file if profile else None},
+            "profile":  {"pseudo": pseudo, "avatar_file": profile.avatar_file if profile else None, "username": profile.username if profile else None},
             "total":    total,
             "page":     page,
             "per_page": per_page,

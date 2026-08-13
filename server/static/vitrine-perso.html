@@ -260,7 +260,7 @@ async function fetchPage(page) {
 }
 
 async function shareLink() {
-  const url = `${location.origin}/vitrine/u/${AccountWidget.session.uid}`;
+  const url = `${location.origin}/vitrine/u/${AccountWidget.session.username}`;
   const btn = document.getElementById('btn-share');
   try {
     await navigator.clipboard.writeText(url);
@@ -282,7 +282,7 @@ async function reload() {
     shareBtn.style.display = 'none';
     return;
   }
-  shareBtn.style.display = AccountWidget.session.uid ? 'block' : 'none';
+  shareBtn.style.display = AccountWidget.session.username ? 'block' : 'none';
 
   grid.innerHTML = '<div class="examples-empty">Chargement…</div>';
   document.getElementById('load-more-row').style.display = 'none';
