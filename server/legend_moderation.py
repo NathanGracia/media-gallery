@@ -11,6 +11,7 @@ POST /game/api/legends/classify que pour les légendes pas encore `reviewed`
 (voir game_router.py) — une décision manuelle n'est jamais écrasée par un
 nouveau passage de classification.
 """
+import asyncio
 import json
 import logging
 
@@ -21,6 +22,7 @@ log = logging.getLogger(__name__)
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 CHUNK_SIZE = 25   # légendes par appel Gemini — réduit le nombre de requêtes, pas le coût en tokens
 TIMEOUT_S  = 20.0
+MAX_CONCURRENT_CHUNKS = 4   # lots en parallèle — un lot de 200 (8 appels) séquentiels dépassait la minute
 
 PROMPT_INSTRUCTIONS = """Tu es un modérateur de contenu pour Memoss, un jeu où des joueurs inventent des légendes (captions) pour des mèmes, en français.
 
@@ -62,10 +64,17 @@ async def classify_legends_batch(items: list[dict], api_key: str, model: str) ->
     if not api_key or not items:
         return {}
 
+    chunks = [items[i:i + CHUNK_SIZE] for i in range(0, len(items), CHUNK_SIZE)]
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_CHUNKS)
+
+    async def _bounded(chunk: list[dict]) -> dict[int, dict]:
+        async with semaphore:
+            return await _classify_chunk(chunk, api_key, model)
+
+    chunk_results = await asyncio.gather(*(_bounded(c) for c in chunks))
     results: dict[int, dict] = {}
-    for i in range(0, len(items), CHUNK_SIZE):
-        chunk = items[i:i + CHUNK_SIZE]
-        results.update(await _classify_chunk(chunk, api_key, model))
+    for r in chunk_results:
+        results.update(r)
     return results
 
 

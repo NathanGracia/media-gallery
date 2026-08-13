@@ -677,16 +677,26 @@ async function runClassify() {
   const btn = document.getElementById('btn-classify');
   const prevLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = 'Classification en cours…';
+  btn.textContent = '⏳ Classification en cours…';
+  // Feedback immédiat : avec un gros lot en attente, la réponse peut prendre
+  // 20-40s (plusieurs appels Gemini) — sans ce toast, le bouton qui se
+  // contente de changer de texte passe facilement inaperçu.
+  showToast('Classification lancée — jusqu\'à ~30-40s pour un gros lot, patiente…');
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90_000);
   try {
-    const res = await fetch('/game/api/legends/classify', { method: 'POST' });
+    const res = await fetch('/game/api/legends/classify', { method: 'POST', signal: controller.signal });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Erreur');
     showToast(`${data.classified} classée(s) (${data.public} publique(s), ${data.private} privée(s))`);
     reload();
   } catch (e) {
-    showToast(e.message || 'Échec de la classification');
+    showToast(e.name === 'AbortError'
+      ? 'Ça prend trop de temps (>90s) — réessaie, ou vérifie les logs serveur'
+      : (e.message || 'Échec de la classification'));
   } finally {
+    clearTimeout(timeoutId);
     btn.disabled = false;
     btn.textContent = prevLabel;
   }
