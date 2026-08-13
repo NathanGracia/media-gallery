@@ -691,6 +691,11 @@ async def admin_legends_page():
 async def credits_page():
     return FileResponse("static/credits.html")
 
+
+@app.get("/vitrine")
+async def vitrine_page():
+    return FileResponse("static/vitrine.html")
+
 # Static game SPA — servi sur /game. Jusqu'en août 2026 c'était aussi la
 # page d'accueil ("/") ; remplacé par une vraie landing page de présentation
 # (static/landing.html) qui renvoie vers /game via un CTA "Jouer".

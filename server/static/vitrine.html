@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitrine — Memoss</title>
+<meta name="description" content="Les meilleures légendes publiques de Memoss.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.5'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='url(%23g)' opacity='0.9'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/nav.css?v=1">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  :root {
+    --bg:          #06060f;
+    --glass:       rgba(255, 255, 255, 0.04);
+    --glass-md:    rgba(255, 255, 255, 0.06);
+    --gb:          rgba(255, 255, 255, 0.08);
+    --accent:      #22d3ee;
+    --accent-dim:  rgba(34, 211, 238, 0.15);
+    --indigo:      #6366f1;
+    --cinema:      #4ade80;
+    --text:        #f1f5f9;
+    --text-dim:    #64748b;
+    --text-muted:  #334155;
+    --radius:      16px;
+    --radius-sm:   9px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Figtree', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-wallpaper { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -3; }
+  .page-wallpaper-scrim {
+    position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(6, 6, 15, 0.4) 0%, rgba(6, 6, 15, 0.8) 55%, rgba(6, 6, 15, 0.95) 100%),
+      linear-gradient(160deg, rgba(20, 12, 40, 0.6), rgba(6, 6, 15, 0.82));
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(110px); opacity: 0.14; pointer-events: none; z-index: 0; animation: drift 22s ease-in-out infinite alternate; }
+  .orb-1 { width: 640px; height: 640px; background: var(--accent); top: -200px; left: -180px; }
+  .orb-2 { width: 420px; height: 420px; background: var(--indigo); bottom: -80px; right: -120px; animation-duration: 18s; }
+  @keyframes drift { to { transform: translate(25px, 18px); } }
+
+  header {
+    position: sticky; top: 0; z-index: 200;
+    background: rgba(6, 6, 15, 0.7);
+    border-bottom: 1px solid var(--gb);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    padding: 0 24px;
+  }
+  .header-inner { display: flex; align-items: center; gap: 24px; padding: 14px 0 10px; }
+  #account-widget { margin-left: auto; flex-shrink: 0; }
+
+  .account-widget-login { padding: 5px 11px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; color: var(--text-dim); text-decoration: none; border: 1px solid transparent; transition: all 0.2s; }
+  .account-widget-login:hover { color: var(--text); border-color: var(--gb); background: var(--glass); }
+  .account-widget { position: relative; }
+  .account-widget-trigger { display: flex; align-items: center; gap: 7px; padding: 4px 9px 4px 4px; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-dim); font-family: 'Figtree', sans-serif; font-size: 0.78rem; font-weight: 600; transition: all 0.2s; }
+  .account-widget-trigger:hover { border-color: var(--gb); background: var(--glass); }
+  .account-widget-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .account-widget-avatar--fallback { display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); font-size: 0.65rem; font-weight: 700; }
+  .account-widget-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .account-widget-chevron { color: var(--text-muted); flex-shrink: 0; }
+  .account-widget-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 300; min-width: 190px; padding: 6px; background: #0d1420; border: 1px solid var(--gb); border-radius: var(--radius-sm); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+  .account-widget-badge { padding: 4px 10px; margin-bottom: 4px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-dim); border-radius: var(--radius-sm); text-align: center; }
+  .account-widget-menu a { display: block; padding: 8px 10px; border-radius: var(--radius-sm); color: var(--text-dim); text-decoration: none; font-size: 0.82rem; transition: background 0.15s, color 0.15s; }
+  .account-widget-menu a:hover { background: var(--glass); color: var(--text); }
+
+  main { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1.75rem; }
+  .page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 3.5vw, 1.9rem); margin-right: auto; }
+  .toolbar-label { font-size: 0.78rem; color: var(--text-dim); }
+  select {
+    appearance: none; -webkit-appearance: none;
+    background: var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+    border: 1px solid var(--gb); border-radius: var(--radius-sm);
+    color: var(--text); font-family: inherit; font-size: 0.82rem; font-weight: 600;
+    padding: 0.35rem 1.8rem 0.35rem 0.65rem; cursor: pointer;
+  }
+  select option { background: #0f172a; }
+
+  /* — Cartes (repris de landing.html) — */
+  .examples-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  a.example-card {
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
+    overflow: hidden; display: flex; flex-direction: column;
+    text-decoration: none; color: inherit;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  a.example-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
+  .example-thumb { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: rgba(255,255,255,0.03); }
+  .example-body { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
+  .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; color: var(--text); }
+  .example-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
+  .example-pseudo { color: #94a3b8; font-weight: 600; }
+  .example-score { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
+  .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 3rem; grid-column: 1 / -1; }
+  .rank-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 2;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.7rem;
+    background: rgba(6,6,15,0.75); color: var(--accent);
+    border: 1px solid rgba(34,211,238,0.3); border-radius: 999px;
+    padding: 2px 8px;
+  }
+  .example-thumb-wrap { position: relative; }
+
+  .load-more-row { text-align: center; margin-top: 2rem; }
+  .btn-load-more {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    padding: 0.65rem 1.4rem; border-radius: 999px;
+    border: 1px solid var(--gb); background: var(--glass); color: var(--text);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-load-more:hover:not(:disabled) { border-color: rgba(34,211,238,0.35); background: var(--glass-md); }
+  .btn-load-more:disabled { opacity: 0.5; cursor: default; }
+
+  @media (max-width: 900px) { .examples-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) {
+    header { padding: 0 14px; }
+    .header-inner { gap: 10px; padding: 10px 0 8px; }
+    #site-nav { flex: 1; min-width: 0; }
+    .examples-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<video class="page-wallpaper" src="/wallpaper.mp4?v=1" autoplay muted loop playsinline></video>
+<div class="page-wallpaper-scrim"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header>
+  <div class="header-inner">
+    <div id="site-nav"></div>
+    <div id="account-widget"></div>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <h1 class="page-title">Vitrine</h1>
+    <span class="toolbar-label">Période&nbsp;:</span>
+    <select id="f-days" onchange="reload()">
+      <option value="0">Tout</option>
+      <option value="30">1 mois</option>
+      <option value="7">7 jours</option>
+    </select>
+  </div>
+
+  <div class="examples-grid" id="grid">
+    <div class="examples-empty">Chargement…</div>
+  </div>
+
+  <div class="load-more-row" id="load-more-row" style="display:none">
+    <button class="btn-load-more" id="btn-load-more" onclick="loadMore()">Charger plus</button>
+  </div>
+</main>
+
+<script src="/nav.js?v=1"></script>
+<script>SiteNav.mount('site-nav', 'vitrine');</script>
+<script src="/account-widget.js?v=3"></script>
+<script>
+let _page = 1;
+let _total = 0;
+let _loaded = 0;
+const PER_PAGE = 24;
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function cardHtml(ex, rank) {
+  return `
+    <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}">
+      <div class="example-thumb-wrap">
+        <span class="rank-badge">#${rank}</span>
+        ${ex.media_type === 'video' && ex.url
+          ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
+          : `<img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`}
+      </div>
+      <div class="example-body">
+        <div class="example-text">${esc(ex.text)}</div>
+        <div class="example-meta">
+          <span class="example-pseudo">@${esc(ex.pseudo)}</span>
+          <span class="example-score">${ex.avg}<span style="opacity:.6;font-weight:600"> /100</span></span>
+        </div>
+      </div>
+    </a>`;
+}
+
+function observeVideos(root) {
+  const obs = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) e.target.play().catch(() => {});
+      else e.target.pause();
+    }
+  }, { threshold: 0.3 });
+  root.querySelectorAll('.example-anim').forEach(v => obs.observe(v));
+}
+
+async function fetchPage(page) {
+  const days = document.getElementById('f-days').value;
+  const res = await fetch(`/api/legends/public?days=${days}&page=${page}&per_page=${PER_PAGE}`);
+  if (!res.ok) throw new Error();
+  return res.json();
+}
+
+async function reload() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<div class="examples-empty">Chargement…</div>';
+  document.getElementById('load-more-row').style.display = 'none';
+  _page = 1;
+  _loaded = 0;
+  try {
+    const data = await fetchPage(1);
+    _total = data.total;
+    if (!data.items.length) {
+      grid.innerHTML = '<div class="examples-empty">Pas encore de légendes publiques validées pour cette période.</div>';
+      return;
+    }
+    grid.innerHTML = data.items.map((ex, i) => cardHtml(ex, i + 1)).join('');
+    _loaded = data.items.length;
+    observeVideos(grid);
+    document.getElementById('load-more-row').style.display = _loaded < _total ? 'block' : 'none';
+  } catch {
+    grid.innerHTML = '<div class="examples-empty">Impossible de charger la vitrine pour le moment.</div>';
+  }
+}
+
+async function loadMore() {
+  const btn = document.getElementById('btn-load-more');
+  btn.disabled = true;
+  btn.textContent = 'Chargement…';
+  try {
+    _page += 1;
+    const data = await fetchPage(_page);
+    const grid = document.getElementById('grid');
+    const startRank = _loaded + 1;
+    grid.insertAdjacentHTML('beforeend', data.items.map((ex, i) => cardHtml(ex, startRank + i)).join(''));
+    _loaded += data.items.length;
+    observeVideos(grid);
+    document.getElementById('load-more-row').style.display = _loaded < _total ? 'block' : 'none';
+  } catch {
+    _page -= 1;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Charger plus';
+  }
+}
+
+(async () => { await AccountWidget.load(); AccountWidget.mount('account-widget'); })();
+reload();
+</script>
+
+</body>
+</html>

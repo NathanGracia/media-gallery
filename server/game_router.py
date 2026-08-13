@@ -434,6 +434,64 @@ async def featured_legends(limit: int = 6):
         ]
 
 
+@router.get("/api/legends/public")
+async def public_legends(days: int = 0, page: int = 1, per_page: int = 24):
+    """
+    Sans auth — page vitrine (/vitrine). Uniquement visibility='public' ET
+    reviewed=True (voir featured_legends ci-dessus pour le même principe).
+    Triées par note décroissante, paginées — contrairement à
+    featured_legends qui pioche un petit échantillon aléatoire, celle-ci
+    sert un vrai classement parcourable en entier.
+    """
+    per_page = min(max(per_page, 1), 60)
+    page     = max(page, 1)
+    with Session(_engine) as s:
+        base = (
+            select(GameAnswer)
+            .join(GameRound, GameAnswer.round_id == GameRound.id)
+            .join(GameRoom, GameRound.room_id == GameRoom.id)
+            .where(GameAnswer.visibility == "public")
+            .where(GameAnswer.reviewed == True)  # noqa: E712
+            .where(GameAnswer.text != "")
+            .where(GameAnswer.vote_count > 0)
+        )
+        if days > 0:
+            since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+            base  = base.where(func.coalesce(GameRound.played_at, GameRoom.created_at) >= since)
+
+        total = s.exec(select(func.count()).select_from(base.subquery())).one()
+
+        rows = s.exec(
+            base
+            .order_by((GameAnswer.total_stars * 1.0 / GameAnswer.vote_count).desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        ).all()
+
+        uuids   = list({a.media_uuid for a in rows})
+        medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
+        info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+
+        return {
+            "total":    total,
+            "page":     page,
+            "per_page": per_page,
+            "items": [
+                {
+                    "text":        a.text,
+                    "pseudo":      a.player_pseudo,
+                    "avg":         round(a.total_stars / a.vote_count, 1),
+                    "vote_count":  a.vote_count,
+                    "media_uuid":  a.media_uuid,
+                    "thumb":       f"/thumbnail/{a.media_uuid}.jpg",
+                    "url":         info.get(a.media_uuid, {}).get("url"),
+                    "media_type":  info.get(a.media_uuid, {}).get("type"),
+                }
+                for a in rows
+            ],
+        }
+
+
 # ── Modération des légendes (public/privé) ──────────────────────────────────────
 @router.get("/game/api/legends", dependencies=[Depends(require_admin)])
 async def list_legends(
