@@ -270,7 +270,7 @@ function avatarHtml(ex) {
 function authorHtml(ex) {
   const inner = `${avatarHtml(ex)}<span class="example-pseudo">${esc(ex.pseudo)}</span>`;
   return ex.account_uid
-    ? `<button type="button" class="example-author" onclick="event.stopPropagation(); location.href='/vitrine/u/${esc(ex.account_uid)}'">${inner}</button>`
+    ? `<button type="button" class="example-author" onclick="event.preventDefault(); event.stopPropagation(); location.href='/vitrine/u/${esc(ex.account_uid)}'">${inner}</button>`
     : `<span class="example-author">${inner}</span>`;
 }
 
