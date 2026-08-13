@@ -11,7 +11,7 @@ import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Request, Depends
 from sqlmodel import Session, select, SQLModel
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote
 from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
@@ -448,16 +448,18 @@ async def featured_legends(limit: int = 6):
 
 
 @router.get("/api/legends/public")
-async def public_legends(days: int = 0, page: int = 1, per_page: int = 24):
+async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort: str = "score"):
     """
     Sans auth — page vitrine (/vitrine). Uniquement visibility='public' ET
     reviewed=True (voir featured_legends ci-dessus pour le même principe).
-    Triées par note décroissante, paginées — contrairement à
-    featured_legends qui pioche un petit échantillon aléatoire, celle-ci
-    sert un vrai classement parcourable en entier.
+    Paginées — contrairement à featured_legends qui pioche un petit
+    échantillon aléatoire, celle-ci sert un vrai classement parcourable en
+    entier. sort="score" (défaut) ou "date".
     """
     per_page = min(max(per_page, 1), 60)
     page     = max(page, 1)
+    if sort not in ("score", "date"):
+        sort = "score"
     with Session(_engine) as s:
         base = (
             select(GameAnswer)
@@ -474,20 +476,23 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24):
 
         total = s.exec(select(func.count()).select_from(base.subquery())).one()
 
-        rows = s.exec(
-            base
-            .order_by(
-                # Sans tri secondaire, l'ordre entre ex-aequo (ex: plusieurs
-                # 100/100) est indéterminé côté SQLite — ça peut même casser
-                # la pagination (un item vu deux fois ou sauté entre deux
-                # "Charger plus" si l'ordre change entre requêtes). Un
-                # meilleur score gagne d'abord ; à score égal, plus de votes
-                # = jugement plus fiable ; à égalité totale, id décroissant
-                # (le plus récent) pour un ordre 100% stable.
+        # Sans tri secondaire, l'ordre entre ex-aequo (ex: plusieurs
+        # 100/100, ou même date) est indéterminé côté SQLite — ça peut
+        # casser la pagination (un item vu deux fois ou sauté entre deux
+        # "Charger plus" si l'ordre change entre requêtes). id décroissant
+        # en dernier recours garantit un ordre 100% stable dans les deux tris.
+        if sort == "date":
+            order = (GameAnswer.id.desc(),)
+        else:
+            order = (
                 (GameAnswer.total_stars * 1.0 / GameAnswer.vote_count).desc(),
                 GameAnswer.vote_count.desc(),
                 GameAnswer.id.desc(),
             )
+
+        rows = s.exec(
+            base
+            .order_by(*order)
             .offset((page - 1) * per_page)
             .limit(per_page)
         ).all()
@@ -517,16 +522,19 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24):
 
 
 @router.get("/api/legends/mine")
-async def my_legends(claims: dict = Depends(require_login), page: int = 1, per_page: int = 24):
+async def my_legends(claims: dict = Depends(require_login), page: int = 1, per_page: int = 24, sort: str = "date"):
     """
     Historique personnel — connexion requise, aucune restriction de
     visibility/reviewed (c'est le contenu de l'auteur, il voit tout ce
-    qu'il a écrit, y compris ce qui est resté privé). Triée par récence
-    (id desc), pas par note — c'est un historique, pas un classement.
+    qu'il a écrit, y compris ce qui est resté privé). sort="date" (défaut,
+    par récence) ou "score" (les non notées, vote_count=0, passent en
+    dernier plutôt qu'en tête).
     """
     per_page = min(max(per_page, 1), 60)
     page     = max(page, 1)
     account_uid = claims["uid"]
+    if sort not in ("date", "score"):
+        sort = "date"
 
     with Session(_engine) as s:
         base = (
@@ -537,9 +545,21 @@ async def my_legends(claims: dict = Depends(require_login), page: int = 1, per_p
 
         total = s.exec(select(func.count()).select_from(base.subquery())).one()
 
+        if sort == "score":
+            order = (
+                case(
+                    (GameAnswer.vote_count > 0, GameAnswer.total_stars * 1.0 / GameAnswer.vote_count),
+                    else_=-1,
+                ).desc(),
+                GameAnswer.vote_count.desc(),
+                GameAnswer.id.desc(),
+            )
+        else:
+            order = (GameAnswer.id.desc(),)
+
         rows = s.exec(
             base
-            .order_by(GameAnswer.id.desc())
+            .order_by(*order)
             .offset((page - 1) * per_page)
             .limit(per_page)
         ).all()

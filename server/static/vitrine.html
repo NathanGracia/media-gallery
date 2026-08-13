@@ -133,6 +133,11 @@
 <main>
   <div class="toolbar">
     <h1 class="page-title">Vitrine publique</h1>
+    <span class="toolbar-label">Trier par&nbsp;:</span>
+    <select id="f-sort" onchange="reload()">
+      <option value="score">Meilleur score</option>
+      <option value="date">Plus récent</option>
+    </select>
     <span class="toolbar-label">Période&nbsp;:</span>
     <select id="f-days" onchange="reload()">
       <option value="0">Tout</option>
@@ -191,7 +196,8 @@ function observeVideos(root) {
 
 async function fetchPage(page) {
   const days = document.getElementById('f-days').value;
-  const res = await fetch(`/api/legends/public?days=${days}&page=${page}&per_page=${PER_PAGE}`);
+  const sort = document.getElementById('f-sort').value;
+  const res = await fetch(`/api/legends/public?days=${days}&sort=${sort}&page=${page}&per_page=${PER_PAGE}`);
   if (!res.ok) throw new Error();
   return res.json();
 }
