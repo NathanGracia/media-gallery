@@ -5,6 +5,29 @@
    chacune. #site-nav (l'id du conteneur monté par SiteNav.mount) sert de
    racine pour ne rien faire fuiter sur le reste de la page. */
 
+/* Conteneur <header> commun à toutes les pages : avant, chaque page
+   copiait-collait ses propres règles header/.header-inner (avec des
+   divergences non-voulues, ex: max-width: 1100px sur une seule page qui
+   centrait la navbar au lieu de l'étirer comme partout ailleurs). Défini
+   une seule fois ici pour que ça ne puisse plus diverger. */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(6, 6, 15, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  padding: 0 24px;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 0 10px;
+}
+
 #site-nav {
   display: flex;
   align-items: center;
@@ -92,7 +115,9 @@
 #site-nav .nav-dropdown-menu a.active { color: #22d3ee; background: rgba(34, 211, 238, 0.15); }
 
 @media (max-width: 600px) {
-  #site-nav { gap: 14px; }
+  header { padding: 0 14px; }
+  .header-inner { gap: 10px; padding: 10px 0 8px; }
+  #site-nav { flex: 1; min-width: 0; gap: 14px; }
   #site-nav .brand-name { font-size: 1.05rem; }
   #site-nav .brand-logo { width: 24px; height: 24px; }
   #site-nav .nav-links {
