@@ -23,7 +23,6 @@
     --accent-dim:  rgba(34, 211, 238, 0.15);
     --indigo:      #6366f1;
     --cinema:      #4ade80;
-    --cinema-dim:  rgba(74, 222, 128, 0.15);
     --text:        #f1f5f9;
     --text-dim:    #64748b;
     --text-muted:  #334155;
@@ -109,25 +108,24 @@
 
   main { position: relative; z-index: 2; }
 
-  /* — Hero — */
+  /* — Hero (compact : logo, titre, boutons, rien d'autre) — */
   .hero {
-    max-width: 780px; margin: 0 auto; padding: 5rem 1.5rem 4rem;
+    max-width: 720px; margin: 0 auto; padding: 3.5rem 1.5rem 2.5rem;
     text-align: center;
   }
   .hero-kicker {
     display: inline-flex; align-items: center; gap: 6px;
     font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(34,211,238,0.25);
-    border-radius: 999px; padding: 0.35rem 0.9rem; margin-bottom: 1.5rem;
+    border-radius: 999px; padding: 0.35rem 0.9rem; margin-bottom: 1.2rem;
   }
   .hero-title {
     font-family: 'Syne', sans-serif; font-weight: 800; letter-spacing: -0.02em;
-    font-size: clamp(2.1rem, 6vw, 3.4rem); line-height: 1.08;
+    font-size: clamp(1.9rem, 5.5vw, 3rem); line-height: 1.1;
     background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    margin-bottom: 1.1rem;
+    margin-bottom: 1.6rem;
   }
-  .hero-sub { font-size: 1.05rem; color: #cbd5e1; max-width: 560px; margin: 0 auto 2.2rem; }
   .hero-ctas { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
   .btn-cta {
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem;
@@ -146,63 +144,59 @@
   .btn-cta--secondary:hover { border-color: rgba(34,211,238,0.35); background: var(--glass-md); }
 
   /* — Sections — */
-  section.block { max-width: 1100px; margin: 0 auto; padding: 3.5rem 1.5rem; }
-  .block-head { text-align: center; max-width: 560px; margin: 0 auto 2.5rem; }
-  .block-kicker { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
-  .block-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.5rem, 3.5vw, 2rem); letter-spacing: -0.01em; margin-bottom: 0.6rem; }
-  .block-sub { color: var(--text-dim); font-size: 0.95rem; }
-
-  /* — Principe : 3 étapes — */
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
-  .step {
-    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
-    padding: 1.6rem 1.4rem; position: relative;
-  }
-  .step-num {
-    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem;
-    color: var(--accent); opacity: 0.5; margin-bottom: 0.6rem;
-  }
-  .step-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.02rem; margin-bottom: 0.4rem; }
-  .step-text { color: var(--text-dim); font-size: 0.87rem; line-height: 1.55; }
-  .block-cta { text-align: center; margin-top: 2rem; }
+  section.block { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+  .block-head { text-align: center; margin-bottom: 1.5rem; }
+  .block-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.3rem, 3vw, 1.7rem); letter-spacing: -0.01em; }
+  .block-cta { text-align: center; margin-top: 1.5rem; }
   .link-more {
     font-size: 0.85rem; font-weight: 600; color: var(--accent); text-decoration: none;
     border-bottom: 1px solid rgba(34,211,238,0.3);
   }
   .link-more:hover { border-color: var(--accent); }
 
-  /* — Bibliothèque teaser — */
-  .lib-grid {
-    display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.6rem;
-    margin-bottom: 1.75rem;
-  }
-  .lib-thumb {
-    aspect-ratio: 1; border-radius: 10px; overflow: hidden;
-    background: var(--glass); border: 1px solid var(--gb);
-  }
-  .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-  /* — Exemples récents — */
+  /* — Exemples récents (en premier, medias animés) — */
   .examples-grid {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
   }
-  .example-card {
+  a.example-card {
     background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
     overflow: hidden; display: flex; flex-direction: column;
+    text-decoration: none; color: inherit;
     transition: border-color 0.15s, transform 0.15s;
   }
-  .example-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
+  a.example-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
   .example-thumb { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: rgba(255,255,255,0.03); }
-  .example-body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
-  .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; }
+  .example-body { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
+  .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; color: var(--text); }
   .example-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
   .example-pseudo { color: #94a3b8; font-weight: 600; }
   .example-score { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
   .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 2rem; grid-column: 1 / -1; }
 
-  /* — Closing CTA — */
-  .closing { text-align: center; padding: 4rem 1.5rem 6rem; }
-  .closing-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 3vw, 1.9rem); margin-bottom: 1.6rem; }
+  /* — Principe : 3 étapes, très condensé — */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .step {
+    background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
+    padding: 1.1rem 1.2rem; display: flex; align-items: center; gap: 0.8rem;
+  }
+  .step-num {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem;
+    color: var(--accent); opacity: 0.5; flex-shrink: 0;
+  }
+  .step-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.92rem; }
+
+  /* — Bibliothèque teaser — */
+  .lib-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.6rem;
+  }
+  .lib-thumb {
+    aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+    background: var(--glass); border: 1px solid var(--gb); display: block;
+  }
+  .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* — Closing — */
+  .closing { text-align: center; padding: 2.5rem 1.5rem 5rem; }
 
   @media (max-width: 720px) {
     header { padding: 0 14px; }
@@ -235,7 +229,6 @@
   <div class="hero">
     <span class="hero-kicker">🎬 Le jeu + la bibliothèque de la bande</span>
     <h1 class="hero-title">Un mème apparaît.<br>Vous inventez la légende.</h1>
-    <p class="hero-sub">Memoss, c'est un jeu de légendes en équipe et une bibliothèque de mèmes qui grossit toute seule. Les meilleures répliques restent, votées par la bande.</p>
     <div class="hero-ctas">
       <a class="btn-cta btn-cta--primary" href="/game">Jouer maintenant →</a>
       <a class="btn-cta btn-cta--secondary" href="/gallery">Voir la bibliothèque</a>
@@ -243,27 +236,16 @@
   </div>
 
   <section class="block">
-    <div class="block-head">
-      <div class="block-kicker">Le principe</div>
-      <h2 class="block-title">Trois manches, une seule règle : faire rire</h2>
-      <p class="block-sub">Une partie se joue à plusieurs, en trois manches.</p>
+    <div class="examples-grid" id="examples-grid">
+      <div class="examples-empty">Chargement…</div>
     </div>
+  </section>
+
+  <section class="block">
     <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-title">Un mème s'affiche</div>
-        <div class="step-text">Tiré de la bibliothèque commune, alimentée en continu par toute la bande.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-title">Chacun invente sa légende</div>
-        <div class="step-text">Même mème, autant de légendes que de joueurs — le décalage fait le jeu.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-title">On vote, les meilleures gagnent</div>
-        <div class="step-text">Chaque légende reçoit des étoiles. Les mieux notées restent dans l'historique.</div>
-      </div>
+      <div class="step"><span class="step-num">01</span><span class="step-title">Un mème s'affiche</span></div>
+      <div class="step"><span class="step-num">02</span><span class="step-title">Chacun invente sa légende</span></div>
+      <div class="step"><span class="step-num">03</span><span class="step-title">On vote, la meilleure gagne</span></div>
     </div>
     <div class="block-cta">
       <a class="link-more" href="/how-it-works.html">Comment ça marche en détail →</a>
@@ -272,9 +254,7 @@
 
   <section class="block">
     <div class="block-head">
-      <div class="block-kicker">La bibliothèque</div>
-      <h2 class="block-title">Tous les mèmes de la bande, au même endroit</h2>
-      <p class="block-sub">Un feeder récupère les fichiers partagés automatiquement — la collection grossit sans effort.</p>
+      <h2 class="block-title">La bibliothèque</h2>
     </div>
     <div class="lib-grid" id="lib-grid"></div>
     <div class="block-cta">
@@ -282,19 +262,7 @@
     </div>
   </section>
 
-  <section class="block">
-    <div class="block-head">
-      <div class="block-kicker">Exemples récents</div>
-      <h2 class="block-title">Ça, c'est déjà sorti en partie</h2>
-      <p class="block-sub">Une sélection au hasard parmi les légendes les mieux notées.</p>
-    </div>
-    <div class="examples-grid" id="examples-grid">
-      <div class="examples-empty">Chargement…</div>
-    </div>
-  </section>
-
   <div class="closing">
-    <h2 class="closing-title">Prêt à tenter ta légende ?</h2>
     <div class="hero-ctas">
       <a class="btn-cta btn-cta--primary" href="/game">Jouer maintenant →</a>
     </div>
@@ -337,9 +305,12 @@ async function loadFeaturedExamples() {
       grid.innerHTML = '<div class="examples-empty">Pas encore assez de légendes publiques validées — reviens bientôt !</div>';
       return;
     }
+    // Vidéo = lue en boucle façon gif (muted/loop/playsinline) ; image = statique.
     grid.innerHTML = items.map(ex => `
       <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}">
-        <img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">
+        ${ex.media_type === 'video' && ex.url
+          ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
+          : `<img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`}
         <div class="example-body">
           <div class="example-text">${esc(ex.text)}</div>
           <div class="example-meta">
@@ -348,6 +319,15 @@ async function loadFeaturedExamples() {
           </div>
         </div>
       </a>`).join('');
+
+    // Ne joue que les vidéos visibles à l'écran (perf, évite N lectures en simultané).
+    const obs = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) e.target.play().catch(() => {});
+        else e.target.pause();
+      }
+    }, { threshold: 0.3 });
+    grid.querySelectorAll('.example-anim').forEach(v => obs.observe(v));
   } catch {
     grid.innerHTML = '<div class="examples-empty">Impossible de charger les exemples pour le moment.</div>';
   }
