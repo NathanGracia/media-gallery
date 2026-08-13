@@ -131,6 +131,14 @@
   .btn-load-more:hover:not(:disabled) { border-color: rgba(34,211,238,0.35); background: var(--glass-md); }
   .btn-load-more:disabled { opacity: 0.5; cursor: default; }
 
+  .btn-share {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.78rem;
+    padding: 0.4rem 0.85rem; border-radius: 999px;
+    border: 1px solid rgba(34,211,238,0.3); background: var(--accent-dim); color: var(--accent);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-share:hover { background: rgba(34,211,238,0.25); }
+
   @media (max-width: 900px) { .examples-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 600px) {
     .examples-grid { grid-template-columns: 1fr; }
@@ -165,6 +173,7 @@
       <option value="score">Meilleur score</option>
     </select>
     <span class="count-label" id="count-label"></span>
+    <button type="button" class="btn-share" id="btn-share" onclick="shareLink()" style="display:none">🔗 Partager ma vitrine</button>
   </div>
 
   <div class="examples-grid" id="grid">
@@ -250,14 +259,30 @@ async function fetchPage(page) {
   return res.json();
 }
 
+async function shareLink() {
+  const url = `${location.origin}/vitrine/u/${AccountWidget.session.uid}`;
+  const btn = document.getElementById('btn-share');
+  try {
+    await navigator.clipboard.writeText(url);
+    const original = btn.textContent;
+    btn.textContent = '✅ Lien copié !';
+    setTimeout(() => { btn.textContent = original; }, 1800);
+  } catch {
+    prompt('Copie ce lien :', url);
+  }
+}
+
 async function reload() {
   const grid = document.getElementById('grid');
+  const shareBtn = document.getElementById('btn-share');
 
   if (!isLoggedIn()) {
     grid.innerHTML = `<div class="examples-empty">Connecte-toi (bouton en haut de page) pour voir ton historique de légendes.</div>`;
     document.getElementById('count-label').textContent = '';
+    shareBtn.style.display = 'none';
     return;
   }
+  shareBtn.style.display = AccountWidget.session.uid ? 'block' : 'none';
 
   grid.innerHTML = '<div class="examples-empty">Chargement…</div>';
   document.getElementById('load-more-row').style.display = 'none';

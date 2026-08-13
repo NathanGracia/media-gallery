@@ -155,7 +155,10 @@
   .example-body { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
   .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; color: var(--text); }
   .example-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
-  .example-pseudo { color: #94a3b8; font-weight: 600; }
+  .example-author { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .example-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .example-avatar--fallback { display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); font-size: 0.6rem; font-weight: 700; }
+  .example-pseudo { color: #94a3b8; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .example-score { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
   .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 2rem; grid-column: 1 / -1; }
 
@@ -253,6 +256,12 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function avatarHtml(ex) {
+  return ex.avatar_file
+    ? `<img class="example-avatar" src="${esc(ex.avatar_file)}" alt="" loading="lazy">`
+    : `<span class="example-avatar example-avatar--fallback">${esc(ex.pseudo).slice(0, 2).toUpperCase()}</span>`;
+}
+
 async function loadLibraryTeaser() {
   const grid = document.getElementById('lib-grid');
   try {
@@ -288,7 +297,10 @@ async function loadFeaturedExamples() {
         <div class="example-body">
           <div class="example-text">${esc(ex.text)}</div>
           <div class="example-meta">
-            <span class="example-pseudo">@${esc(ex.pseudo)}</span>
+            <span class="example-author">
+              ${avatarHtml(ex)}
+              <span class="example-pseudo">${esc(ex.pseudo)}</span>
+            </span>
             <span class="example-score">${ex.avg}<span style="opacity:.6;font-weight:600"> /100</span></span>
           </div>
         </div>

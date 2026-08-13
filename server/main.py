@@ -226,6 +226,7 @@ def whoami(request: Request):
         return {"loggedIn": False}
     return {
         "loggedIn": True,
+        "uid": claims["uid"],
         "username": claims["username"],
         "displayName": claims.get("displayName"),
         "isAdmin": bool(claims.get("isAdmin")),
@@ -720,6 +721,14 @@ async def vitrine_page():
 @app.get("/vitrine/perso")
 async def vitrine_perso_page():
     return FileResponse("static/vitrine-perso.html")
+
+
+@app.get("/vitrine/u/{account_uid}")
+async def vitrine_user_page(account_uid: int):
+    # account_uid n'est utilisé que côté client (JS lit location.pathname) —
+    # ce handler sert juste le HTML statique, la vraie donnée vient de
+    # GET /api/legends/user/{uid} (voir game_router.py).
+    return FileResponse("static/vitrine-user.html")
 
 # Static game SPA — servi sur /game. Jusqu'en août 2026 c'était aussi la
 # page d'accueil ("/") ; remplacé par une vraie landing page de présentation

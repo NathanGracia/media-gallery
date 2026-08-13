@@ -13,7 +13,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Re
 from sqlmodel import Session, select, SQLModel
 from sqlalchemy import func, case
 
-from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote
+from game_models import GameRoom, GamePlayer, GameRound, GameAnswer, GameVote, AccountProfile
 from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
 from shardoss_client import fetch_pinned_cards, notify_shardoss
 from legend_moderation import classify_legends_batch
@@ -93,7 +93,41 @@ def require_login(request: Request) -> dict:
     claims = get_account_claims(request)
     if not claims:
         raise HTTPException(401, "Connexion requise")
+    _remember_account(claims)
     return claims
+
+
+def _remember_account(claims: dict | None):
+    """
+    Met à jour le cache local AccountProfile (uid -> pseudo/avatar) à partir
+    de claims cooloss vus en passant. Appelé à chaque point où on a de toute
+    façon déjà vérifié une session valide (pas d'appel réseau dédié à
+    cooloss) — permet d'afficher pseudo+avatar à jour sur les vitrines
+    publiques même pour des comptes qu'on n'a pas vus depuis longtemps.
+    """
+    if not claims or not claims.get("uid"):
+        return
+    pseudo = claims.get("displayName") or claims.get("username") or ""
+    avatar = claims.get("avatarFile")
+    with Session(_engine) as s:
+        row = s.get(AccountProfile, claims["uid"])
+        if row:
+            row.pseudo      = pseudo
+            row.avatar_file = avatar
+            row.updated_at  = datetime.datetime.utcnow()
+        else:
+            row = AccountProfile(account_uid=claims["uid"], pseudo=pseudo, avatar_file=avatar)
+        s.add(row)
+        s.commit()
+
+
+def _avatar_map(s: Session, answers: list) -> dict:
+    """uid -> avatar_file pour une liste de GameAnswer, via le cache AccountProfile."""
+    uids = {a.account_uid for a in answers if a.account_uid}
+    if not uids:
+        return {}
+    profiles = s.exec(select(AccountProfile).where(AccountProfile.account_uid.in_(uids))).all()
+    return {p.account_uid: p.avatar_file for p in profiles}
 
 
 # ── Connection Manager ─────────────────────────────────────────────────────────
@@ -197,6 +231,7 @@ async def create_room(request: Request, body: dict):
     claims = get_account_claims(request)
     if claims:
         pseudo, account_uid = (claims.get("displayName") or claims["username"]), claims["uid"]
+        _remember_account(claims)
     else:
         pseudo = body.get("pseudo", "").strip()[:20]
         account_uid = None
@@ -229,6 +264,7 @@ async def join_room(request: Request, code: str, body: dict):
     claims = get_account_claims(request)
     if claims:
         pseudo, account_uid = (claims.get("displayName") or claims["username"]), claims["uid"]
+        _remember_account(claims)
     else:
         pseudo = body.get("pseudo", "").strip()[:20]
         account_uid = None
@@ -431,11 +467,13 @@ async def featured_legends(limit: int = 6):
         uuids   = list({a.media_uuid for a in picked})
         medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
         info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+        avatars = _avatar_map(s, picked)
 
         return [
             {
                 "text":        a.text,
                 "pseudo":      a.player_pseudo,
+                "avatar_file": avatars.get(a.account_uid),
                 "avg":         round(a.total_stars / a.vote_count, 1),
                 "vote_count":  a.vote_count,
                 "media_uuid":  a.media_uuid,
@@ -500,6 +538,7 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort:
         uuids   = list({a.media_uuid for a in rows})
         medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
         info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+        avatars = _avatar_map(s, rows)
 
         return {
             "total":    total,
@@ -509,6 +548,91 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort:
                 {
                     "text":        a.text,
                     "pseudo":      a.player_pseudo,
+                    "avatar_file": avatars.get(a.account_uid),
+                    "avg":         round(a.total_stars / a.vote_count, 1),
+                    "vote_count":  a.vote_count,
+                    "media_uuid":  a.media_uuid,
+                    "thumb":       f"/thumbnail/{a.media_uuid}.jpg",
+                    "url":         info.get(a.media_uuid, {}).get("url"),
+                    "media_type":  info.get(a.media_uuid, {}).get("type"),
+                }
+                for a in rows
+            ],
+        }
+
+
+@router.get("/api/legends/user/{account_uid}")
+async def user_legends(account_uid: int, page: int = 1, per_page: int = 24, sort: str = "score"):
+    """
+    Sans auth — vitrine publique d'un seul compte (/vitrine/u/{uid}),
+    pensée pour être partagée à quelqu'un qui n'a pas de compte. Mêmes
+    filtres que public_legends (visibility=public, reviewed=True) mais
+    restreints à un seul account_uid.
+    """
+    per_page = min(max(per_page, 1), 60)
+    page     = max(page, 1)
+    if sort not in ("score", "date"):
+        sort = "score"
+    with Session(_engine) as s:
+        profile = s.get(AccountProfile, account_uid)
+
+        base = (
+            select(GameAnswer)
+            .where(GameAnswer.account_uid == account_uid)
+            .where(GameAnswer.visibility == "public")
+            .where(GameAnswer.reviewed == True)  # noqa: E712
+            .where(GameAnswer.text != "")
+            .where(GameAnswer.vote_count > 0)
+        )
+
+        total = s.exec(select(func.count()).select_from(base.subquery())).one()
+
+        # Pseudo de repli si le compte n'a encore jamais déclenché
+        # _remember_account (ex: n'a joué qu'avant l'ajout du cache) — on
+        # prend le pseudo de sa légende publique la plus récente plutôt que
+        # de laisser le nom vide.
+        pseudo = profile.pseudo if profile else None
+        if not pseudo:
+            fallback = s.exec(base.order_by(GameAnswer.id.desc()).limit(1)).first()
+            pseudo = fallback.player_pseudo if fallback else "Ce joueur"
+
+        if total == 0:
+            return {
+                "profile":  {"pseudo": pseudo, "avatar_file": profile.avatar_file if profile else None},
+                "total":    0,
+                "page":     page,
+                "per_page": per_page,
+                "items":    [],
+            }
+
+        if sort == "date":
+            order = (GameAnswer.id.desc(),)
+        else:
+            order = (
+                (GameAnswer.total_stars * 1.0 / GameAnswer.vote_count).desc(),
+                GameAnswer.vote_count.desc(),
+                GameAnswer.id.desc(),
+            )
+
+        rows = s.exec(
+            base
+            .order_by(*order)
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        ).all()
+
+        uuids   = list({a.media_uuid for a in rows})
+        medias  = s.exec(select(_Media).where(_Media.uuid.in_(uuids))).all() if uuids else []
+        info    = {m.uuid: {"url": f"/media/{m.filename}", "type": m.media_type} for m in medias}
+
+        return {
+            "profile":  {"pseudo": pseudo, "avatar_file": profile.avatar_file if profile else None},
+            "total":    total,
+            "page":     page,
+            "per_page": per_page,
+            "items": [
+                {
+                    "text":        a.text,
                     "avg":         round(a.total_stars / a.vote_count, 1),
                     "vote_count":  a.vote_count,
                     "media_uuid":  a.media_uuid,

@@ -71,6 +71,21 @@ class GameAnswer(SQLModel, table=True):
     reviewed:      bool           = Field(default=False)
 
 
+class AccountProfile(SQLModel, table=True):
+    """
+    Petit cache local (uid cooloss -> pseudo/avatar) alimenté en passant
+    chaque fois qu'on voit des claims cooloss valides (création/join de
+    room, endpoints authentifiés) — permet d'afficher pseudo+avatar à jour
+    sur les vitrines publiques sans appel réseau à cooloss à chaque requête.
+    """
+    __tablename__  = "account_profiles"
+    __table_args__ = {"extend_existing": True}
+    account_uid: int                       = Field(primary_key=True)
+    pseudo:      str                       = Field(default="")
+    avatar_file: Optional[str]             = Field(default=None)
+    updated_at:  datetime.datetime         = Field(default_factory=datetime.datetime.utcnow)
+
+
 class GameVote(SQLModel, table=True):
     __tablename__  = "game_votes"
     __table_args__ = {"extend_existing": True}

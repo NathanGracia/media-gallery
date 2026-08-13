@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vitrine publique — Memoss</title>
-<meta name="description" content="Les meilleures légendes publiques de Memoss.">
+<title>Vitrine — Memoss</title>
+<meta name="description" content="Les meilleures légendes publiques de ce joueur sur Memoss.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -72,9 +72,18 @@
 
   main { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
 
-  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1.75rem; }
-  .page-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 3.5vw, 1.9rem); margin-right: auto; }
+  /* — Profil — */
+  .profile-header { display: flex; align-items: center; gap: 14px; margin-bottom: 0.4rem; }
+  .profile-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--gb); }
+  .profile-avatar--fallback { display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); font-size: 1.1rem; font-weight: 800; }
+  .profile-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(1.3rem, 3.2vw, 1.7rem); }
+  .profile-subtitle { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
+  .profile-subtitle a { color: var(--accent); text-decoration: none; }
+  .profile-subtitle a:hover { text-decoration: underline; }
+
+  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 1.75rem 0; }
   .toolbar-label { font-size: 0.78rem; color: var(--text-dim); }
+  .count-label { font-size: 0.78rem; color: var(--text-dim); margin-left: auto; }
   select {
     appearance: none; -webkit-appearance: none;
     background: var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
@@ -84,7 +93,7 @@
   }
   select option { background: #0f172a; }
 
-  /* — Cartes (repris de landing.html) — */
+  /* — Cartes (repris de vitrine.html) — */
   .examples-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
   a.example-card {
     background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
@@ -97,12 +106,9 @@
   .example-body { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
   .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; color: var(--text); }
   .example-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
-  .example-author { display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .example-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-  .example-avatar--fallback { display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); font-size: 0.6rem; font-weight: 700; }
-  .example-pseudo { color: #94a3b8; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .example-score { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cinema); }
   .examples-empty { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 3rem; grid-column: 1 / -1; }
+  .examples-empty a { color: var(--accent); }
   .load-more-row { text-align: center; margin-top: 2rem; }
   .btn-load-more {
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
@@ -134,19 +140,17 @@
 </header>
 
 <main>
+  <div class="profile-header" id="profile-header">
+    <div class="examples-empty" style="padding:0">Chargement…</div>
+  </div>
+
   <div class="toolbar">
-    <h1 class="page-title">Vitrine publique</h1>
     <span class="toolbar-label">Trier par&nbsp;:</span>
     <select id="f-sort" onchange="reload()">
       <option value="score">Meilleur score</option>
       <option value="date">Plus récent</option>
     </select>
-    <span class="toolbar-label">Période&nbsp;:</span>
-    <select id="f-days" onchange="reload()">
-      <option value="0">Tout</option>
-      <option value="30">1 mois</option>
-      <option value="7">7 jours</option>
-    </select>
+    <span class="count-label" id="count-label"></span>
   </div>
 
   <div class="examples-grid" id="grid">
@@ -162,6 +166,7 @@
 <script>SiteNav.mount('site-nav', 'vitrine-public');</script>
 <script src="/account-widget.js?v=3"></script>
 <script>
+const ACCOUNT_UID = location.pathname.split('/').filter(Boolean).pop();
 let _page = 1;
 let _total = 0;
 let _loaded = 0;
@@ -169,12 +174,6 @@ const PER_PAGE = 24;
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function avatarHtml(ex) {
-  return ex.avatar_file
-    ? `<img class="example-avatar" src="${esc(ex.avatar_file)}" alt="" loading="lazy">`
-    : `<span class="example-avatar example-avatar--fallback">${esc(ex.pseudo).slice(0, 2).toUpperCase()}</span>`;
 }
 
 function cardHtml(ex) {
@@ -186,10 +185,6 @@ function cardHtml(ex) {
       <div class="example-body">
         <div class="example-text">${esc(ex.text)}</div>
         <div class="example-meta">
-          <span class="example-author">
-            ${avatarHtml(ex)}
-            <span class="example-pseudo">${esc(ex.pseudo)}</span>
-          </span>
           <span class="example-score">${ex.avg}<span style="opacity:.6;font-weight:600"> /100</span></span>
         </div>
       </div>
@@ -206,10 +201,22 @@ function observeVideos(root) {
   root.querySelectorAll('.example-anim').forEach(v => obs.observe(v));
 }
 
+function renderProfile(profile) {
+  const initials = esc(profile.pseudo || '?').slice(0, 2).toUpperCase();
+  const avatar = profile.avatar_file
+    ? `<img class="profile-avatar" src="${esc(profile.avatar_file)}" alt="">`
+    : `<span class="profile-avatar profile-avatar--fallback">${initials}</span>`;
+  document.getElementById('profile-header').innerHTML = `
+    ${avatar}
+    <div>
+      <h1 class="profile-title">Légendes de ${esc(profile.pseudo)}</h1>
+      <div class="profile-subtitle">Partagées depuis <a href="/">Memoss</a> — voir aussi la <a href="/vitrine">vitrine publique</a></div>
+    </div>`;
+}
+
 async function fetchPage(page) {
-  const days = document.getElementById('f-days').value;
   const sort = document.getElementById('f-sort').value;
-  const res = await fetch(`/api/legends/public?days=${days}&sort=${sort}&page=${page}&per_page=${PER_PAGE}`);
+  const res = await fetch(`/api/legends/user/${encodeURIComponent(ACCOUNT_UID)}?sort=${sort}&page=${page}&per_page=${PER_PAGE}`);
   if (!res.ok) throw new Error();
   return res.json();
 }
@@ -223,8 +230,10 @@ async function reload() {
   try {
     const data = await fetchPage(1);
     _total = data.total;
+    renderProfile(data.profile);
+    document.getElementById('count-label').textContent = `${_total} légende${_total > 1 ? 's' : ''}`;
     if (!data.items.length) {
-      grid.innerHTML = '<div class="examples-empty">Pas encore de légendes publiques validées pour cette période.</div>';
+      grid.innerHTML = '<div class="examples-empty">Pas encore de légende publique par ici.</div>';
       return;
     }
     grid.innerHTML = data.items.map(ex => cardHtml(ex)).join('');
@@ -232,7 +241,7 @@ async function reload() {
     observeVideos(grid);
     document.getElementById('load-more-row').style.display = _loaded < _total ? 'block' : 'none';
   } catch {
-    grid.innerHTML = '<div class="examples-empty">Impossible de charger la vitrine pour le moment.</div>';
+    grid.innerHTML = '<div class="examples-empty">Impossible de charger cette vitrine pour le moment.</div>';
   }
 }
 
