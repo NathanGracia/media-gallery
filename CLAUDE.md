@@ -24,6 +24,8 @@ Ne pas committer `server/db.sqlite`, `server/media/`, `server/thumbnails/`, `ser
 - **Feeder** : Python (watchdog + requests), compilable en .exe via PyInstaller
 - **Deploy** : Docker Compose sur VPS Ubuntu, CI/CD via GitHub Actions (push main → auto-deploy)
 
+**⚠️ `server/Dockerfile` copie chaque fichier `.py` de la racine explicitement** (`COPY game_router.py .`, etc.), pas de `COPY *.py .` global. Tout nouveau module Python à la racine de `server/` (ex. `legend_moderation.py`) doit être ajouté à la liste des `COPY` du Dockerfile, sinon le conteneur crashe au démarrage avec un `ModuleNotFoundError` — malgré une image qui build sans erreur (c'est un `COPY` manquant, pas une erreur de syntaxe). Vécu le 2026-08-13 : le module ajouté par la modération des légendes avait été oublié, déploiement en crash loop jusqu'au correctif. `scripts/` et `static/` sont copiés en bloc (`COPY scripts/ scripts/`), donc pas concernés par ce piège.
+
 ## Tags
 
 Trois tags valides : `todo` (défaut), `cinema`, `osef`.  
