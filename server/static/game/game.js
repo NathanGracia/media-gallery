@@ -2,10 +2,6 @@
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const TOTAL_ROUNDS = 3;
-// Nombre d'emplacements de la vitrine Shardoss affichés dans le choix de
-// mème — même valeur que MAX_PINNED_CARDS/MAX_PINNED_SLOTS côté Shardoss,
-// dupliquée ici pour afficher les emplacements vides sans aller-retour.
-const SHARDOSS_BONUS_SLOTS = 3;
 
 const S = {
   screen:       'home',   // home|lobby|picking|waiting|revealing|round_end|game_end
@@ -287,22 +283,6 @@ function renderPicking() {
 
       <div class="meme-pick-grid">
         ${S.memes.map((m, i) => m._bonus ? '' : renderMemeTile(m, i)).join('')}
-      </div>
-
-      <div class="meme-pick-bonus">
-        <p class="meme-pick-bonus-label">
-          VITRINE SHARDOSS
-          <span class="info-icon" tabindex="0"
-            data-tooltip="Les cartes que vous avez épinglées dans votre vitrine sur Shardoss apparaissent ici en bonus, en plus des mèmes tirés au hasard. Connectez-vous et épinglez jusqu'à 3 cartes complétées sur shardoss.nathangracia.com pour en profiter à votre prochaine manche.">ⓘ</span>
-        </p>
-        <div class="meme-pick-grid meme-pick-grid--bonus">
-          ${S.memes.map((m, i) => m._bonus ? renderMemeTile(m, i) : '').join('')}
-          ${Array.from({ length: Math.max(0, SHARDOSS_BONUS_SLOTS - S.memes.filter(m => m._bonus).length) }).map(() => `
-            <div class="meme-pick-card meme-pick-card--empty">
-              <div class="meme-pick-thumb meme-pick-thumb--empty">EMPLACEMENT VIDE</div>
-            </div>
-          `).join('')}
-        </div>
       </div>
 
       ${S.selectedMeme ? `
