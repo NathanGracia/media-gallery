@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 
-# ffmpeg pour les thumbnails vidéo
+# ffmpeg pour les thumbnails vidéo, fonts-dejavu-core pour le bandeau meme (drawtext)
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg \
+ && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

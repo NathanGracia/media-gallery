@@ -1,6 +1,8 @@
 import os
 import sys
 import uuid
+import shutil
+import textwrap
 import datetime
 import subprocess
 import logging
@@ -15,6 +17,7 @@ from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Q
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.background import BackgroundTask
 from sqlmodel import SQLModel, Field, Session, create_engine, select, col
 from sqlalchemy import text, func
 from game_models import GameAnswer
@@ -665,6 +668,90 @@ def crop_media(
 
     log.info(f"Crop: {media_uuid} → {new_uuid} top={top_pct}% bottom={bottom_pct}%")
     return {"ok": True, "id": new_uuid}
+
+
+MEME_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+MEME_TMP_DIR = Path("/tmp/gallery_meme")
+
+
+@app.get("/api/media/{media_uuid}/meme-download")
+def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_length=300)):
+    """
+    Ajoute un bandeau blanc en haut de la vidéo avec la légende en majuscules
+    (format "meme d'internet"), rendu à la volée et jamais persisté en DB —
+    contrairement au crop, pas de nouvelle entrée Media, juste un fichier
+    éphémère nettoyé après l'envoi de la réponse.
+    """
+    with Session(engine) as session:
+        media = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
+        if not media:
+            raise HTTPException(404, "Media introuvable")
+        if media.media_type != "video":
+            raise HTTPException(400, "Disponible uniquement pour les vidéos")
+        src_filename  = media.filename
+        src_extension = media.extension
+        src_original  = media.original_name
+
+    src_path = MEDIA_DIR / src_filename
+
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0", str(src_path)],
+        capture_output=True, text=True, timeout=15,
+    )
+    if probe.returncode != 0 or not probe.stdout.strip():
+        raise HTTPException(500, "Impossible de lire les dimensions de la vidéo")
+    try:
+        w, h = map(int, probe.stdout.strip().split(","))
+    except ValueError:
+        raise HTTPException(500, "Dimensions invalides")
+
+    font_size    = max(22, w // 20)
+    avg_char_w   = font_size * 0.58
+    chars_per_line = max(8, int(w * 0.92 / avg_char_w))
+    all_lines    = textwrap.wrap(text.strip().upper(), width=chars_per_line) or [""]
+    lines        = all_lines[:4]
+    if len(all_lines) > 4:
+        tail = lines[-1]
+        lines[-1] = (tail[:-3].rstrip() + "...") if len(tail) > 3 else (tail + "...")
+
+    line_height = int(font_size * 1.25)
+    pad_y       = int(font_size * 0.55)
+    bar_h       = pad_y * 2 + line_height * len(lines)
+    if bar_h % 2:
+        bar_h += 1
+
+    job_dir = MEME_TMP_DIR / uuid.uuid4().hex
+    job_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        filters = [f"pad=w={w}:h={h + bar_h}:x=0:y={bar_h}:color=white"]
+        for i, line in enumerate(lines):
+            line_file = job_dir / f"line_{i}.txt"
+            line_file.write_bytes(line.encode("utf-8"))
+            escaped_path = str(line_file).replace("\\", "\\\\").replace(":", "\\:")
+            y = pad_y + i * line_height
+            filters.append(
+                f"drawtext=fontfile={MEME_FONT}:textfile={escaped_path}:"
+                f"fontcolor=black:fontsize={font_size}:x=(w-text_w)/2:y={y}"
+            )
+        vf = ",".join(filters)
+
+        out_path = job_dir / f"out{src_extension}"
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-i", str(src_path), "-vf", vf, "-c:a", "copy", str(out_path)],
+            capture_output=True, timeout=300,
+        )
+        if r.returncode != 0 or not out_path.exists():
+            raise HTTPException(500, f"FFmpeg échoué: {r.stderr[-300:].decode(errors='replace')}")
+
+        dl_name = Path(src_original).stem + f"_meme{src_extension}"
+        return FileResponse(
+            out_path, filename=dl_name,
+            background=BackgroundTask(shutil.rmtree, job_dir, ignore_errors=True),
+        )
+    except Exception:
+        shutil.rmtree(job_dir, ignore_errors=True)
+        raise
 
 
 @app.delete("/api/media/{media_uuid}")

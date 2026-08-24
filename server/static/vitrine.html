@@ -212,7 +212,7 @@
           <span id="lightbox-author"></span>
           <div class="lightbox-actions">
             <button type="button" class="lightbox-btn" id="lightbox-share" onclick="shareLightbox()">Partager</button>
-            <a class="lightbox-btn" id="lightbox-dl" download>Télécharger</a>
+            <a class="lightbox-btn" id="lightbox-dl" download onclick="return downloadMeme(event)">Télécharger</a>
           </div>
         </div>
       </div>
@@ -234,7 +234,9 @@ function esc(s) {
 }
 
 // ── Lightbox (aperçu média sans quitter la page) ────────────────────────────
-let _lightboxUuid = '';
+let _lightboxUuid    = '';
+let _lightboxCaption = '';
+let _lightboxType    = '';
 
 function openLightbox(evt, el) {
   if (evt.ctrlKey || evt.metaKey || evt.shiftKey || evt.button === 1) return true;
@@ -266,9 +268,49 @@ function openLightbox(evt, el) {
   const dl  = document.getElementById('lightbox-dl');
   dl.href = url; dl.download = uuid ? `${uuid}.${ext}` : '';
 
-  _lightboxUuid = uuid || '';
+  _lightboxUuid    = uuid || '';
+  _lightboxCaption = caption || '';
+  _lightboxType    = type || '';
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
+  return false;
+}
+
+function triggerBlobDownload(url, filename) {
+  const a = document.createElement('a');
+  a.href = url; a.download = filename || '';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function downloadMeme(evt) {
+  evt.preventDefault();
+  const btn = evt.currentTarget;
+  if (btn.dataset.busy === '1') return false;
+
+  // Pas de légende ou pas une vidéo (rare, memoss n'a que des vidéos) : téléchargement brut
+  if (_lightboxType !== 'video' || !_lightboxCaption) {
+    triggerBlobDownload(btn.href, btn.download);
+    return false;
+  }
+
+  btn.dataset.busy = '1';
+  const prevText = btn.textContent;
+  btn.textContent = '…';
+  try {
+    const res = await fetch(`/api/media/${_lightboxUuid}/meme-download?text=${encodeURIComponent(_lightboxCaption)}`);
+    if (!res.ok) throw new Error();
+    const blob   = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    triggerBlobDownload(objUrl, `${_lightboxUuid}_meme${btn.download.includes('.') ? '.' + btn.download.split('.').pop() : ''}`);
+    URL.revokeObjectURL(objUrl);
+  } catch (_) {
+    triggerBlobDownload(btn.href, btn.download);
+  } finally {
+    btn.textContent = prevText;
+    btn.dataset.busy = '0';
+  }
   return false;
 }
 
