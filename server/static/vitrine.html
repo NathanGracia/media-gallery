@@ -127,9 +127,13 @@
   .lightbox { display: none; position: fixed; inset: 0; z-index: 200; align-items: center; justify-content: center; padding: 2rem; }
   .lightbox.open { display: flex; }
   .lightbox-backdrop { position: absolute; inset: 0; background: rgba(2,2,10,0.88); backdrop-filter: blur(4px); }
-  .lightbox-panel { position: relative; max-width: min(90vw, 900px); max-height: 90vh; display: flex; flex-direction: column; gap: 0.75rem; }
-  .lightbox-media { display: flex; align-items: center; justify-content: center; max-height: 78vh; }
-  .lightbox-media img, .lightbox-media video { max-width: 100%; max-height: 78vh; border-radius: var(--radius); display: block; }
+  .lightbox-panel { position: relative; max-width: min(90vw, 900px); max-height: 90vh; }
+  .lightbox-card {
+    background: rgba(10,10,22,0.96); border: 1px solid var(--gb); border-radius: var(--radius);
+    overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;
+  }
+  .lightbox-media { background: #000; display: flex; align-items: center; justify-content: center; }
+  .lightbox-media img, .lightbox-media video { max-width: 100%; max-height: 65vh; display: block; }
   .lightbox-close {
     position: absolute; top: -14px; right: -14px; width: 34px; height: 34px; border-radius: 50%;
     background: var(--glass-md); border: 1px solid var(--gb); color: var(--text);
@@ -137,10 +141,24 @@
     transition: all 0.15s; z-index: 1;
   }
   .lightbox-close:hover { border-color: rgba(248,113,113,0.4); color: #f87171; }
-  .lightbox-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-dim); font-size: 0.8rem; }
-  .lightbox-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lightbox-dl { color: var(--accent); text-decoration: none; font-weight: 600; flex-shrink: 0; }
-  .lightbox-dl:hover { text-decoration: underline; }
+  .lightbox-info { padding: 1rem 1.2rem 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; overflow-y: auto; }
+  .lightbox-text { font-size: 0.95rem; font-weight: 500; line-height: 1.4; color: var(--text); }
+  .lightbox-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  a.lightbox-author, span.lightbox-author { display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; }
+  a.lightbox-author:hover .lightbox-pseudo { color: var(--text); text-decoration: underline; }
+  .lightbox-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .lightbox-avatar--fallback { display: flex; align-items: center; justify-content: center; background: var(--accent-dim); color: var(--accent); font-size: 0.6rem; font-weight: 700; }
+  .lightbox-pseudo { color: #94a3b8; font-weight: 600; font-size: 0.8rem; }
+  .lightbox-actions { display: flex; gap: 8px; margin-left: auto; }
+  .lightbox-btn {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.78rem;
+    padding: 0.45rem 0.9rem; border-radius: 999px;
+    border: 1px solid var(--gb); background: var(--glass); color: var(--text);
+    cursor: pointer; text-decoration: none; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .lightbox-btn:hover { border-color: rgba(34,211,238,0.35); background: var(--glass-md); }
+  .lightbox-btn.copied { border-color: rgba(74,222,128,0.4); color: #4ade80; }
 </style>
 </head>
 <body>
@@ -186,10 +204,18 @@
   <div class="lightbox-backdrop" onclick="closeLightbox()"></div>
   <div class="lightbox-panel">
     <button class="lightbox-close" onclick="closeLightbox()" aria-label="Fermer">✕</button>
-    <div class="lightbox-media" id="lightbox-media"></div>
-    <div class="lightbox-footer">
-      <span class="lightbox-name" id="lightbox-name"></span>
-      <a class="lightbox-dl" id="lightbox-dl" download>Télécharger</a>
+    <div class="lightbox-card">
+      <div class="lightbox-media" id="lightbox-media"></div>
+      <div class="lightbox-info">
+        <div class="lightbox-text" id="lightbox-text"></div>
+        <div class="lightbox-meta-row">
+          <span id="lightbox-author"></span>
+          <div class="lightbox-actions">
+            <button type="button" class="lightbox-btn" id="lightbox-share" onclick="shareLightbox()">Partager</button>
+            <a class="lightbox-btn" id="lightbox-dl" download>Télécharger</a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -208,20 +234,54 @@ function esc(s) {
 }
 
 // ── Lightbox (aperçu média sans quitter la page) ────────────────────────────
+let _lightboxUuid = '';
+
 function openLightbox(evt, el) {
   if (evt.ctrlKey || evt.metaKey || evt.shiftKey || evt.button === 1) return true;
   evt.preventDefault();
-  const { type, url, name } = el.dataset;
+  const { type, url, uuid, caption, pseudo, avatar, username, accountUid } = el.dataset;
   if (!url) { location.href = el.href; return false; }
   document.getElementById('lightbox-media').innerHTML = type === 'video'
     ? `<video src="${esc(url)}" controls autoplay playsinline></video>`
     : `<img src="${esc(url)}" alt="">`;
-  document.getElementById('lightbox-name').textContent = name || '';
-  const dl = document.getElementById('lightbox-dl');
-  dl.href = url; dl.download = name || '';
+
+  const textEl = document.getElementById('lightbox-text');
+  textEl.textContent   = caption || '';
+  textEl.style.display = caption ? '' : 'none';
+
+  const authorEl = document.getElementById('lightbox-author');
+  if (pseudo) {
+    const avatarHtml = avatar
+      ? `<img class="lightbox-avatar" src="${esc(avatar)}" alt="">`
+      : `<span class="lightbox-avatar lightbox-avatar--fallback">${esc(pseudo).slice(0, 2).toUpperCase()}</span>`;
+    const target = username || accountUid;
+    authorEl.innerHTML = target
+      ? `<a class="lightbox-author" href="/vitrine/u/${esc(target)}">${avatarHtml}<span class="lightbox-pseudo">${esc(pseudo)}</span></a>`
+      : `<span class="lightbox-author">${avatarHtml}<span class="lightbox-pseudo">${esc(pseudo)}</span></span>`;
+  } else {
+    authorEl.innerHTML = '';
+  }
+
+  const ext = (url.split('.').pop() || '').split('?')[0];
+  const dl  = document.getElementById('lightbox-dl');
+  dl.href = url; dl.download = uuid ? `${uuid}.${ext}` : '';
+
+  _lightboxUuid = uuid || '';
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
   return false;
+}
+
+function shareLightbox() {
+  if (!_lightboxUuid) return;
+  const full = `${location.origin}/gallery?m=${_lightboxUuid}`;
+  navigator.clipboard.writeText(full).then(() => {
+    const btn  = document.getElementById('lightbox-share');
+    const prev = btn.textContent;
+    btn.textContent = '✓ Copié !';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 1800);
+  });
 }
 
 function closeLightbox() {
@@ -251,7 +311,8 @@ function authorHtml(ex) {
 function cardHtml(ex) {
   return `
     <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}"
-       data-type="${esc(ex.media_type || '')}" data-url="${esc(ex.url || '')}" data-name="${esc(ex.text || '')}"
+       data-uuid="${esc(ex.media_uuid)}" data-type="${esc(ex.media_type || '')}" data-url="${esc(ex.url || '')}" data-caption="${esc(ex.text || '')}"
+       data-pseudo="${esc(ex.pseudo || '')}" data-avatar="${esc(ex.avatar_file || '')}" data-username="${esc(ex.username || '')}" data-account-uid="${esc(ex.account_uid || '')}"
        onclick="return openLightbox(event, this)">
       ${ex.media_type === 'video' && ex.url
         ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
