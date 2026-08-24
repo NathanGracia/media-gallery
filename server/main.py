@@ -2,7 +2,6 @@ import os
 import sys
 import uuid
 import shutil
-import textwrap
 import datetime
 import subprocess
 import logging
@@ -21,7 +20,7 @@ from starlette.background import BackgroundTask
 from sqlmodel import SQLModel, Field, Session, create_engine, select, col
 from sqlalchemy import text, func
 from game_models import GameAnswer
-from PIL import Image
+from PIL import Image, ImageFont
 from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
 
 # ── Logging ────────────────────────────────────────────────────────────────────
@@ -674,6 +673,30 @@ MEME_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 MEME_TMP_DIR = Path("/tmp/gallery_meme")
 
 
+def _wrap_meme_lines(text: str, font: "ImageFont.FreeTypeFont", max_width: float, max_lines: int) -> list[str]:
+    """Découpe sur la largeur réellement mesurée par la police (pas une estimation
+    caractères/pixels) — un texte trop long sinon débordait des deux côtés du cadre."""
+    words = text.split()
+    if not words:
+        return [""]
+    lines, current = [], words[0]
+    for word in words[1:]:
+        trial = f"{current} {word}"
+        if font.getlength(trial) <= max_width:
+            current = trial
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        last = lines[-1]
+        while " " in last and font.getlength(last + "...") > max_width:
+            last = last.rsplit(" ", 1)[0]
+        lines[-1] = last + "..."
+    return lines
+
+
 @app.get("/api/media/{media_uuid}/meme-download")
 def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_length=300)):
     """
@@ -706,14 +729,9 @@ def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_leng
     except ValueError:
         raise HTTPException(500, "Dimensions invalides")
 
-    font_size    = max(22, w // 20)
-    avg_char_w   = font_size * 0.58
-    chars_per_line = max(8, int(w * 0.92 / avg_char_w))
-    all_lines    = textwrap.wrap(text.strip().upper(), width=chars_per_line) or [""]
-    lines        = all_lines[:4]
-    if len(all_lines) > 4:
-        tail = lines[-1]
-        lines[-1] = (tail[:-3].rstrip() + "...") if len(tail) > 3 else (tail + "...")
+    font_size = max(22, w // 20)
+    font      = ImageFont.truetype(MEME_FONT, font_size)
+    lines     = _wrap_meme_lines(text.strip().upper(), font, max_width=w * 0.94, max_lines=4)
 
     line_height = int(font_size * 1.25)
     pad_y       = int(font_size * 0.55)
@@ -731,7 +749,7 @@ def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_leng
             escaped_path = str(line_file).replace("\\", "\\\\").replace(":", "\\:")
             y = pad_y + i * line_height
             filters.append(
-                f"drawtext=fontfile={MEME_FONT}:textfile={escaped_path}:"
+                f"drawtext=fontfile={MEME_FONT}:textfile={escaped_path}:expansion=none:"
                 f"fontcolor=black:fontsize={font_size}:x=(w-text_w)/2:y={y}"
             )
         vf = ",".join(filters)
