@@ -122,6 +122,25 @@
   @media (max-width: 600px) {
     .examples-grid { grid-template-columns: 1fr; }
   }
+
+  /* — Lightbox (aperçu média sans quitter la page) — */
+  .lightbox { display: none; position: fixed; inset: 0; z-index: 200; align-items: center; justify-content: center; padding: 2rem; }
+  .lightbox.open { display: flex; }
+  .lightbox-backdrop { position: absolute; inset: 0; background: rgba(2,2,10,0.88); backdrop-filter: blur(4px); }
+  .lightbox-panel { position: relative; max-width: min(90vw, 900px); max-height: 90vh; display: flex; flex-direction: column; gap: 0.75rem; }
+  .lightbox-media { display: flex; align-items: center; justify-content: center; max-height: 78vh; }
+  .lightbox-media img, .lightbox-media video { max-width: 100%; max-height: 78vh; border-radius: var(--radius); display: block; }
+  .lightbox-close {
+    position: absolute; top: -14px; right: -14px; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--glass-md); border: 1px solid var(--gb); color: var(--text);
+    font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; z-index: 1;
+  }
+  .lightbox-close:hover { border-color: rgba(248,113,113,0.4); color: #f87171; }
+  .lightbox-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-dim); font-size: 0.8rem; }
+  .lightbox-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lightbox-dl { color: var(--accent); text-decoration: none; font-weight: 600; flex-shrink: 0; }
+  .lightbox-dl:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -163,6 +182,18 @@
   </div>
 </main>
 
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <div class="lightbox-backdrop" onclick="closeLightbox()"></div>
+  <div class="lightbox-panel">
+    <button class="lightbox-close" onclick="closeLightbox()" aria-label="Fermer">✕</button>
+    <div class="lightbox-media" id="lightbox-media"></div>
+    <div class="lightbox-footer">
+      <span class="lightbox-name" id="lightbox-name"></span>
+      <a class="lightbox-dl" id="lightbox-dl" download>Télécharger</a>
+    </div>
+  </div>
+</div>
+
 <script src="/nav.js?v=2"></script>
 <script>SiteNav.mount('site-nav', 'vitrine-public');</script>
 <script src="/account-widget.js?v=3"></script>
@@ -175,6 +206,31 @@ const PER_PAGE = 24;
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Lightbox (aperçu média sans quitter la page) ────────────────────────────
+function openLightbox(evt, el) {
+  if (evt.ctrlKey || evt.metaKey || evt.shiftKey || evt.button === 1) return true;
+  evt.preventDefault();
+  const { type, url, name } = el.dataset;
+  if (!url) { location.href = el.href; return false; }
+  document.getElementById('lightbox-media').innerHTML = type === 'video'
+    ? `<video src="${esc(url)}" controls autoplay playsinline></video>`
+    : `<img src="${esc(url)}" alt="">`;
+  document.getElementById('lightbox-name').textContent = name || '';
+  const dl = document.getElementById('lightbox-dl');
+  dl.href = url; dl.download = name || '';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  return false;
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-media').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 function avatarHtml(ex) {
   return ex.avatar_file
@@ -194,7 +250,9 @@ function authorHtml(ex) {
 
 function cardHtml(ex) {
   return `
-    <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}">
+    <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}"
+       data-type="${esc(ex.media_type || '')}" data-url="${esc(ex.url || '')}" data-name="${esc(ex.text || '')}"
+       onclick="return openLightbox(event, this)">
       ${ex.media_type === 'video' && ex.url
         ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
         : `<img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`}
