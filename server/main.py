@@ -652,8 +652,12 @@ def crop_media(
             extension     = src_extension,
             size_bytes    = new_path.stat().st_size,
             feeder_name   = src_feeder,
-            tag           = "osef",
+            tag           = "cinema",
         ))
+        original = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
+        if original:
+            original.tag = "osef"
+            session.add(original)
         session.commit()
 
     thumb_path = THUMB_DIR / f"{new_uuid}.jpg"
