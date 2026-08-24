@@ -586,8 +586,8 @@ def list_feeders():
 @app.post("/api/media/{media_uuid}/crop")
 def crop_media(
     media_uuid: str,
-    top_pct:    float = Query(0, ge=0, lt=50),
-    bottom_pct: float = Query(0, ge=0, lt=50),
+    top_pct:    float = Query(0, ge=0, lt=100),
+    bottom_pct: float = Query(0, ge=0, lt=100),
     _: None = Depends(require_admin_or_api_key),
 ):
     if top_pct + bottom_pct == 0:

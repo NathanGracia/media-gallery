@@ -93,8 +93,8 @@
     </div>
     <div class="crop-bar" id="crop-bar">
       <span class="crop-bar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></span>
-      <label class="crop-field">Haut <input type="number" id="crop-top" min="0" max="49" value="0" step="1" oninput="updateCropPreview()">%</label>
-      <label class="crop-field">Bas <input type="number" id="crop-bottom" min="0" max="49" value="0" step="1" oninput="updateCropPreview()">%</label>
+      <label class="crop-field">Haut <input type="number" id="crop-top" min="0" max="99" value="0" step="1" oninput="updateCropPreview()">%</label>
+      <label class="crop-field">Bas <input type="number" id="crop-bottom" min="0" max="99" value="0" step="1" oninput="updateCropPreview()">%</label>
       <button class="btn-crop-apply" id="btn-crop" onclick="cropVideo()">Sauvegarder</button>
       <button class="btn-crop-cancel" onclick="toggleCropBar()">Annuler</button>
     </div>
@@ -137,6 +137,6 @@
 <script src="nav.js?v=2"></script>
 <script>SiteNav.mount('site-nav', 'gallery');</script>
 <script src="account-widget.js?v=3"></script>
-<script src="app.js?v=43"></script>
+<script src="app.js?v=44"></script>
 </body>
 </html>

@@ -81,7 +81,7 @@ Depuis juillet 2026, Memoss notifie un service séparé, **Shardoss** (repo `Nat
 
 ## Crop vidéo
 
-- Endpoint : `POST /api/media/{uuid}/crop?top_pct=X&bottom_pct=Y` (X, Y en %, 0-49)
+- Endpoint : `POST /api/media/{uuid}/crop?top_pct=X&bottom_pct=Y` (X, Y en %, 0-99 chacun, la somme doit rester < 100 sinon 400 "Zone de crop invalide")
 - Utilise `ffprobe` pour les dimensions, `ffmpeg` pour le crop
 - Crée un **nouveau** fichier + nouvelle entrée DB (l'original est conservé)
 - Retourne `{"ok": true, "id": new_uuid}`

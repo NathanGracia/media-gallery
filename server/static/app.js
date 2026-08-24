@@ -387,8 +387,8 @@ function toggleCropBar() {
 }
 
 function updateCropPreview() {
-  const top = Math.min(49, Math.max(0, parseInt(document.getElementById('crop-top').value)    || 0));
-  const bot = Math.min(49, Math.max(0, parseInt(document.getElementById('crop-bottom').value) || 0));
+  const top = Math.min(99, Math.max(0, parseInt(document.getElementById('crop-top').value)    || 0));
+  const bot = Math.min(99, Math.max(0, parseInt(document.getElementById('crop-bottom').value) || 0));
   document.getElementById('crop-overlay-top').style.height = top + '%';
   document.getElementById('crop-overlay-bot').style.height = bot + '%';
 }
