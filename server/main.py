@@ -700,10 +700,12 @@ def _wrap_meme_lines(text: str, font: "ImageFont.FreeTypeFont", max_width: float
 @app.get("/api/media/{media_uuid}/meme-download")
 def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_length=300)):
     """
-    Ajoute un bandeau blanc en haut de la vidéo avec la légende en majuscules
+    Ajoute un bandeau en haut de la vidéo avec la légende en majuscules
     (format "meme d'internet"), rendu à la volée et jamais persisté en DB —
     contrairement au crop, pas de nouvelle entrée Media, juste un fichier
-    éphémère nettoyé après l'envoi de la réponse.
+    éphémère nettoyé après l'envoi de la réponse. Palette calquée sur le
+    thème sombre du site (--bg/--text/--accent dans vitrine.html) plutôt
+    que le blanc/noir classique du format meme.
     """
     with Session(engine) as session:
         media = session.exec(select(Media).where(Media.uuid == media_uuid)).first()
@@ -742,7 +744,7 @@ def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_leng
     job_dir = MEME_TMP_DIR / uuid.uuid4().hex
     job_dir.mkdir(parents=True, exist_ok=True)
     try:
-        filters = [f"pad=w={w}:h={h + bar_h}:x=0:y={bar_h}:color=white"]
+        filters = [f"pad=w={w}:h={h + bar_h}:x=0:y={bar_h}:color=0x06060f"]
         for i, line in enumerate(lines):
             line_file = job_dir / f"line_{i}.txt"
             line_file.write_bytes(line.encode("utf-8"))
@@ -750,8 +752,10 @@ def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_leng
             y = pad_y + i * line_height
             filters.append(
                 f"drawtext=fontfile={MEME_FONT}:textfile={escaped_path}:expansion=none:"
-                f"fontcolor=black:fontsize={font_size}:x=(w-text_w)/2:y={y}"
+                f"fontcolor=0xf1f5f9:fontsize={font_size}:x=(w-text_w)/2:y={y}"
             )
+        accent_h = max(2, font_size // 24)
+        filters.append(f"drawbox=x=0:y={bar_h - accent_h}:w={w}:h={accent_h}:color=0x22d3ee:t=fill")
         vf = ",".join(filters)
 
         out_path = job_dir / f"out{src_extension}"

@@ -69,7 +69,7 @@ Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://
 | `POST` | `/game/api/rooms/{code}/join` | non (identité optionnelle via cookie) | Rejoindre une partie |
 | `GET` | `/game/api/my-room` | non (identité optionnelle via cookie) | Room active du compte connecté, pour reprise auto |
 | `GET` | `/api/shardoss/stats` | `x-api-key` (clé dédiée Shardoss) | Population complète des médias tag=cinema/vidéo (popularité/qualité/durée), pour le recalcul quotidien de Shardoss |
-| `GET` | `/api/media/{uuid}/meme-download?text=` | non | Vidéos uniquement. Génère à la volée une copie avec bandeau blanc/texte noir majuscule en haut (format meme), jamais persistée en DB — fichier éphémère dans `/tmp/gallery_meme`, nettoyé après l'envoi |
+| `GET` | `/api/media/{uuid}/meme-download?text=` | non | Vidéos uniquement. Génère à la volée une copie avec bandeau (fond sombre `--bg`, texte blanc majuscule, liseré cyan `--accent` — palette du site, pas le blanc/noir classique) en haut, jamais persistée en DB — fichier éphémère dans `/tmp/gallery_meme`, nettoyé après l'envoi |
 
 ## Shardoss (jeu idle connecté)
 
