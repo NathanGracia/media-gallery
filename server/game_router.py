@@ -305,10 +305,13 @@ async def my_room(request: Request):
         return {"room_code": None}
 
     uid = claims["uid"]
+    match = None
     for code, state in game_states.items():
         for pid, p in state["players"].items():
             if p.get("account_uid") == uid:
-                return {"room_code": code, "player_id": pid}
+                match = (code, pid)  # dict en ordre d'insertion : le dernier trouvé est la room la plus récente
+    if match:
+        return {"room_code": match[0], "player_id": match[1]}
     return {"room_code": None}
 
 

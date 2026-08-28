@@ -1051,10 +1051,15 @@ async function loadEndScreenPreview() {
     return;
   }
 
-  if (await tryResumeActiveRoom()) return;
+  const _joinParam = new URLSearchParams(location.search).get('join');
+
+  // Un lien d'invitation explicite prime sur la reprise auto : sinon un compte
+  // connecté qui a déjà une room active (jamais nettoyée côté serveur, voir
+  // /game/api/my-room) se fait recoller dans son ancienne partie au lieu de
+  // rejoindre celle du lien.
+  if (!_joinParam && await tryResumeActiveRoom()) return;
 
   render();
 
-  const _joinParam = new URLSearchParams(location.search).get('join');
   if (_joinParam) showInviteModal(_joinParam.toUpperCase());
 })();
