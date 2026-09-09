@@ -87,12 +87,19 @@
   /* — Cartes (repris de landing.html) — */
   .examples-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
   a.example-card {
+    position: relative;
     background: var(--glass); border: 1px solid var(--gb); border-radius: var(--radius);
     overflow: hidden; display: flex; flex-direction: column;
     text-decoration: none; color: inherit;
     transition: border-color 0.15s, transform 0.15s;
   }
   a.example-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
+  .example-private-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 1;
+    padding: 3px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.04em; color: #fca5a5; background: rgba(127,29,29,0.55);
+    border: 1px solid rgba(248,113,113,0.35); backdrop-filter: blur(2px);
+  }
   .example-thumb { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: rgba(255,255,255,0.03); }
   .example-body { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
   .example-text { font-size: 0.9rem; font-weight: 500; line-height: 1.4; color: var(--text); }
@@ -197,6 +204,9 @@
       <option value="30">1 mois</option>
       <option value="7">7 jours</option>
     </select>
+    <label class="toolbar-label" id="admin-private-wrap" style="display:none; align-items:center; gap:5px; cursor:pointer;">
+      <input type="checkbox" id="f-private" onchange="reload()"> Inclure les privées
+    </label>
   </div>
 
   <div class="examples-grid" id="grid">
@@ -230,7 +240,7 @@
 
 <script src="/nav.js?v=2"></script>
 <script>SiteNav.mount('site-nav', 'vitrine-public');</script>
-<script src="/account-widget.js?v=3"></script>
+<script src="/account-widget.js?v=4"></script>
 <script>
 let _page = 1;
 let _total = 0;
@@ -248,6 +258,20 @@ let _lightboxType    = '';
 let _lightboxPseudo  = '';
 let _lightboxAvatar  = '';
 
+// Même clés sessionStorage que le jeu (game.js) et la galerie (app.js) —
+// pour que le volume choisi n'importe où sur le site s'applique ici aussi,
+// plutôt que de repartir du volume par défaut du navigateur (souvent 100%).
+function applySavedVolume(video) {
+  const savedVolume = sessionStorage.getItem('plyr-volume');
+  const savedMuted  = sessionStorage.getItem('plyr-muted');
+  video.volume = savedVolume !== null ? parseFloat(savedVolume) : 1;
+  video.muted  = savedMuted === 'true';
+  video.addEventListener('volumechange', () => {
+    sessionStorage.setItem('plyr-volume', video.volume);
+    sessionStorage.setItem('plyr-muted',  video.muted);
+  });
+}
+
 function openLightbox(evt, el) {
   if (evt.ctrlKey || evt.metaKey || evt.shiftKey || evt.button === 1) return true;
   evt.preventDefault();
@@ -256,6 +280,7 @@ function openLightbox(evt, el) {
   document.getElementById('lightbox-media').innerHTML = type === 'video'
     ? `<video src="${esc(url)}" controls autoplay playsinline></video>`
     : `<img src="${esc(url)}" alt="">`;
+  if (type === 'video') applySavedVolume(document.querySelector('#lightbox-media video'));
 
   const textEl = document.getElementById('lightbox-text');
   textEl.textContent   = caption || '';
@@ -373,6 +398,7 @@ function cardHtml(ex) {
       ${ex.media_type === 'video' && ex.url
         ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
         : `<img class="example-thumb" src="${esc(ex.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`}
+      ${ex.visibility === 'private' ? '<span class="example-private-badge">Privé</span>' : ''}
       <div class="example-body">
         <div class="example-text">${esc(ex.text)}</div>
         <div class="example-meta">
@@ -394,9 +420,11 @@ function observeVideos(root) {
 }
 
 async function fetchPage(page) {
-  const days = document.getElementById('f-days').value;
-  const sort = document.getElementById('f-sort').value;
-  const res = await fetch(`/api/legends/public?days=${days}&sort=${sort}&page=${page}&per_page=${PER_PAGE}`);
+  const days    = document.getElementById('f-days').value;
+  const sort    = document.getElementById('f-sort').value;
+  const privEl  = document.getElementById('f-private');
+  const all     = privEl && privEl.checked ? '&all_visibility=1' : '';
+  const res = await fetch(`/api/legends/public?days=${days}&sort=${sort}&page=${page}&per_page=${PER_PAGE}${all}`);
   if (!res.ok) throw new Error();
   return res.json();
 }
@@ -443,8 +471,14 @@ async function loadMore() {
   }
 }
 
-(async () => { await AccountWidget.load(); AccountWidget.mount('account-widget'); })();
-reload();
+(async () => {
+  await AccountWidget.load();
+  AccountWidget.mount('account-widget');
+  if (AccountWidget.session.isAdmin) {
+    document.getElementById('admin-private-wrap').style.display = 'inline-flex';
+  }
+  reload();
+})();
 </script>
 
 </body>

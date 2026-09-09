@@ -494,28 +494,40 @@ async def featured_legends(limit: int = 6):
 
 
 @router.get("/api/legends/public")
-async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort: str = "score"):
+async def public_legends(
+    request: Request, days: int = 0, page: int = 1, per_page: int = 24,
+    sort: str = "score", all_visibility: bool = False,
+):
     """
-    Sans auth — page vitrine (/vitrine). Uniquement visibility='public'
-    (voir featured_legends ci-dessus pour le même principe : reviewed n'est
-    plus une condition d'affichage). Paginées — contrairement à
+    Sans auth — page vitrine (/vitrine). Uniquement visibility='public' par
+    défaut (voir featured_legends ci-dessus pour le même principe : reviewed
+    n'est plus une condition d'affichage). Paginées — contrairement à
     featured_legends qui pioche un petit échantillon aléatoire, celle-ci
     sert un vrai classement parcourable en entier. sort="score" (défaut) ou
     "date".
+
+    all_visibility=true lève le filtre visibility='public' (historique
+    complet, y compris privé) — n'a d'effet que pour un compte admin, vérifié
+    ici côté serveur (claims du cookie), jamais sur la simple présence du
+    paramètre : un non-admin qui le passe retombe silencieusement sur le
+    filtre public normal plutôt que 401, pour rester un endpoint "sans auth".
     """
     per_page = min(max(per_page, 1), 60)
     page     = max(page, 1)
     if sort not in ("score", "date"):
         sort = "score"
+    claims       = get_account_claims(request)
+    show_private = all_visibility and bool(claims and claims.get("isAdmin"))
     with Session(_engine) as s:
         base = (
             select(GameAnswer)
             .join(GameRound, GameAnswer.round_id == GameRound.id)
             .join(GameRoom, GameRound.room_id == GameRoom.id)
-            .where(GameAnswer.visibility == "public")
             .where(GameAnswer.text != "")
             .where(GameAnswer.vote_count > 0)
         )
+        if not show_private:
+            base = base.where(GameAnswer.visibility == "public")
         if days > 0:
             since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
             base  = base.where(func.coalesce(GameRound.played_at, GameRoom.created_at) >= since)
@@ -565,6 +577,7 @@ async def public_legends(days: int = 0, page: int = 1, per_page: int = 24, sort:
                     "thumb":       f"/thumbnail/{a.media_uuid}.jpg",
                     "url":         info.get(a.media_uuid, {}).get("url"),
                     "media_type":  info.get(a.media_uuid, {}).get("type"),
+                    "visibility":  a.visibility if show_private else "public",
                 }
                 for a in rows
             ],

@@ -229,7 +229,7 @@
 
 <script src="/nav.js?v=2"></script>
 <script>SiteNav.mount('site-nav', 'vitrine-public');</script>
-<script src="/account-widget.js?v=3"></script>
+<script src="/account-widget.js?v=4"></script>
 <script>
 const IDENTIFIER = location.pathname.split('/').filter(Boolean).pop();
 let _profilePseudo = '';
@@ -250,6 +250,20 @@ let _lightboxType    = '';
 let _lightboxPseudo  = '';
 let _lightboxAvatar  = '';
 
+// Même clés sessionStorage que le jeu (game.js) et la galerie (app.js) —
+// pour que le volume choisi n'importe où sur le site s'applique ici aussi,
+// plutôt que de repartir du volume par défaut du navigateur (souvent 100%).
+function applySavedVolume(video) {
+  const savedVolume = sessionStorage.getItem('plyr-volume');
+  const savedMuted  = sessionStorage.getItem('plyr-muted');
+  video.volume = savedVolume !== null ? parseFloat(savedVolume) : 1;
+  video.muted  = savedMuted === 'true';
+  video.addEventListener('volumechange', () => {
+    sessionStorage.setItem('plyr-volume', video.volume);
+    sessionStorage.setItem('plyr-muted',  video.muted);
+  });
+}
+
 function openLightbox(evt, el) {
   if (evt.ctrlKey || evt.metaKey || evt.shiftKey || evt.button === 1) return true;
   evt.preventDefault();
@@ -258,6 +272,7 @@ function openLightbox(evt, el) {
   document.getElementById('lightbox-media').innerHTML = type === 'video'
     ? `<video src="${esc(url)}" controls autoplay playsinline></video>`
     : `<img src="${esc(url)}" alt="">`;
+  if (type === 'video') applySavedVolume(document.querySelector('#lightbox-media video'));
 
   const textEl = document.getElementById('lightbox-text');
   textEl.textContent   = caption || '';
