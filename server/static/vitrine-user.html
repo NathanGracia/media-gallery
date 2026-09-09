@@ -160,6 +160,14 @@
   }
   .lightbox-btn:hover { border-color: rgba(34,211,238,0.35); background: var(--glass-md); }
   .lightbox-btn.copied { border-color: rgba(74,222,128,0.4); color: #4ade80; }
+  .lightbox-btn.loading { pointer-events: none; color: transparent; position: relative; }
+  .lightbox-btn.loading::after {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 13px; height: 13px; margin: -7px 0 0 -7px;
+    border-radius: 50%; border: 2px solid rgba(255,255,255,0.25);
+    border-top-color: var(--accent); animation: btn-spin 0.6s linear infinite;
+  }
+  @keyframes btn-spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -224,6 +232,8 @@
 <script src="/account-widget.js?v=3"></script>
 <script>
 const IDENTIFIER = location.pathname.split('/').filter(Boolean).pop();
+let _profilePseudo = '';
+let _profileAvatar = '';
 let _page = 1;
 let _total = 0;
 let _loaded = 0;
@@ -237,11 +247,13 @@ function esc(s) {
 let _lightboxUuid    = '';
 let _lightboxCaption = '';
 let _lightboxType    = '';
+let _lightboxPseudo  = '';
+let _lightboxAvatar  = '';
 
 function openLightbox(evt, el) {
   if (evt.ctrlKey || evt.metaKey || evt.shiftKey || evt.button === 1) return true;
   evt.preventDefault();
-  const { type, url, uuid, caption } = el.dataset;
+  const { type, url, uuid, caption, pseudo, avatar } = el.dataset;
   if (!url) { location.href = el.href; return false; }
   document.getElementById('lightbox-media').innerHTML = type === 'video'
     ? `<video src="${esc(url)}" controls autoplay playsinline></video>`
@@ -259,6 +271,8 @@ function openLightbox(evt, el) {
   _lightboxUuid    = uuid || '';
   _lightboxCaption = caption || '';
   _lightboxType    = type || '';
+  _lightboxPseudo  = pseudo || '';
+  _lightboxAvatar  = avatar || '';
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
   return false;
@@ -283,10 +297,12 @@ async function downloadMeme(evt) {
   }
 
   btn.dataset.busy = '1';
-  const prevText = btn.textContent;
-  btn.textContent = '…';
+  btn.classList.add('loading');
   try {
-    const res = await fetch(`/api/media/${_lightboxUuid}/meme-download?text=${encodeURIComponent(_lightboxCaption)}`);
+    const params = new URLSearchParams({ text: _lightboxCaption });
+    if (_lightboxPseudo) params.set('pseudo', _lightboxPseudo);
+    if (_lightboxAvatar) params.set('avatar', _lightboxAvatar);
+    const res = await fetch(`/api/media/${_lightboxUuid}/meme-download?${params}`);
     if (!res.ok) throw new Error();
     const blob   = await res.blob();
     const objUrl = URL.createObjectURL(blob);
@@ -295,7 +311,7 @@ async function downloadMeme(evt) {
   } catch (_) {
     triggerBlobDownload(btn.href, btn.download);
   } finally {
-    btn.textContent = prevText;
+    btn.classList.remove('loading');
     btn.dataset.busy = '0';
   }
   return false;
@@ -325,6 +341,7 @@ function cardHtml(ex) {
   return `
     <a class="example-card" href="/gallery?m=${esc(ex.media_uuid)}"
        data-uuid="${esc(ex.media_uuid)}" data-type="${esc(ex.media_type || '')}" data-url="${esc(ex.url || '')}" data-caption="${esc(ex.text || '')}"
+       data-pseudo="${esc(_profilePseudo)}" data-avatar="${esc(_profileAvatar)}"
        onclick="return openLightbox(event, this)">
       ${ex.media_type === 'video' && ex.url
         ? `<video class="example-thumb example-anim" src="${esc(ex.url)}" poster="${esc(ex.thumb)}" muted loop playsinline preload="metadata"></video>`
@@ -349,6 +366,8 @@ function observeVideos(root) {
 }
 
 function renderProfile(profile) {
+  _profilePseudo = profile.pseudo || '';
+  _profileAvatar = profile.avatar_file || '';
   const initials = esc(profile.pseudo || '?').slice(0, 2).toUpperCase();
   const avatar = profile.avatar_file
     ? `<img class="profile-avatar" src="${esc(profile.avatar_file)}" alt="">`

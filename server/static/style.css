@@ -236,8 +236,8 @@ body.admin-mode .overlay-tag-bar.admin-only { display: flex !important; }
 
 /* Storage */
 .storage-widget {
-  flex: 1;
-  max-width: 280px;
+  width: 180px;
+  flex-shrink: 0;
 }
 
 .storage-label {

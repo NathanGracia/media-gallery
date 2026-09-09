@@ -69,7 +69,7 @@ Depuis juillet 2026, Memoss reconnaît les comptes du hub **cooloss** (`https://
 | `POST` | `/game/api/rooms/{code}/join` | non (identité optionnelle via cookie) | Rejoindre une partie |
 | `GET` | `/game/api/my-room` | non (identité optionnelle via cookie) | Room active du compte connecté, pour reprise auto |
 | `GET` | `/api/shardoss/stats` | `x-api-key` (clé dédiée Shardoss) | Population complète des médias tag=cinema/vidéo (popularité/qualité/durée), pour le recalcul quotidien de Shardoss |
-| `GET` | `/api/media/{uuid}/meme-download?text=` | non | Vidéos uniquement. Génère à la volée une copie avec bandeau (fond sombre `--bg`, texte blanc majuscule, liseré cyan `--accent` — palette du site, pas le blanc/noir classique) en haut, jamais persistée en DB — fichier éphémère dans `/tmp/gallery_meme`, nettoyé après l'envoi |
+| `GET` | `/api/media/{uuid}/meme-download?text=&pseudo=&avatar=` | non | Vidéos uniquement. Génère à la volée une copie avec bandeau (fond sombre `--bg`, texte blanc casse d'origine, liseré cyan `--accent`) en haut, avatar circulaire+pseudo optionnels au-dessus de la légende ; `avatar` doit pointer vers `cooloss.nathangracia.com` (garde anti-SSRF), sinon ignoré. Jamais persistée en DB — fichier éphémère dans `/tmp/gallery_meme`, nettoyé après l'envoi |
 
 ## Shardoss (jeu idle connecté)
 
@@ -99,3 +99,38 @@ Depuis juillet 2026, Memoss notifie un service séparé, **Shardoss** (repo `Nat
 
 Le serveur applique les migrations au démarrage via `ALTER TABLE` dans un try/except.  
 Ajouter toute nouvelle colonne dans ce bloc. Penser aussi à migrer les données existantes si besoin (ex: renommage de valeurs de tag).
+
+## Contraintes de prod (VPS) — impératif
+
+Le VPS héberge ~24 conteneurs sur 8 Go de RAM, avec un ratio d'engagement mémoire déjà à
+~400 % et très peu de marge réelle.
+
+**Panne du 25/08/2026** : un test de la feature ffmpeg a saturé la mémoire. L'OOM killer
+n'est jamais intervenu — le noyau est parti en réclamation continue et a étranglé DNS,
+sshd, journald et containerd. `systemd-networkd` a lâché l'interface `ens16` sur un timeout
+netlink (`Could not set route: Connection timed out`) : le serveur tournait toujours mais
+n'était plus joignable. **13 h d'indisponibilité de TOUS les services hébergés**, réparées
+seulement par un reboot depuis le panel OVH. Cause directe : `crop_media` et
+`meme_download` sont des endpoints `def` synchrones, donc exécutés dans le threadpool
+FastAPI (40 threads) — rien ne bornait le nombre de `ffmpeg` concurrents.
+
+**Correctifs appliqués le 25/08/2026** (à ne pas retirer) :
+- `FFMPEG_SEM = threading.Semaphore(2)` dans `main.py`, utilisé autour des 3 appels
+  ffmpeg (thumbnail, crop, meme). Toute nouvelle fonctionnalité qui lance `ffmpeg` doit
+  passer par ce même sémaphore (ou l'augmenter en connaissance de cause, pas le contourner).
+- Flags `-threads 2 -nostats -loglevel error` sur ces 3 appels.
+- `mem_limit: 1g` sur le service `gallery` dans `docker-compose.yml` — un débordement
+  tue le conteneur au lieu d'emporter l'hôte. Reproduire ce `mem_limit` sur tout nouveau
+  service ajouté ici.
+- Swap de 4 Go (`/swapfile`, swappiness 10, persistant dans `/etc/fstab`) au niveau de
+  l'hôte — transforme une future saturation en ralentissement plutôt qu'en panne réseau
+  totale. **Ce swap a fait passer le disque `/` de 85 % à 91 % d'usage (~6,8 Go libres)** :
+  surveiller l'espace disque avant d'ajouter des fichiers volumineux.
+
+Règles à respecter pour toute évolution :
+- **Aucun appel ffmpeg sans passer par `FFMPEG_SEM`.**
+- **Vérifier le disque avant toute feature qui écrit des vidéos** (`df -h /`). L'endpoint
+  crop crée un fichier vidéo complet par édition sans supprimer l'original (juste retaggé
+  `cinema`/osef) — surveiller sa contribution à la croissance du disque.
+- **Ne jamais tester une feature média lourde directement en prod** (voir avertissement
+  Workflow ci-dessus). Il n'existe pas de console de secours hors panel OVH.

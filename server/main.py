@@ -1,12 +1,15 @@
 import os
 import sys
+import io
 import uuid
 import shutil
 import datetime
 import subprocess
 import logging
+import threading
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 import yaml
 import requests as req
@@ -20,7 +23,7 @@ from starlette.background import BackgroundTask
 from sqlmodel import SQLModel, Field, Session, create_engine, select, col
 from sqlalchemy import text, func
 from game_models import GameAnswer
-from PIL import Image, ImageFont
+from PIL import Image, ImageFont, ImageDraw, ImageOps
 from shared_auth import SHARED_SESSION_COOKIE, verify_shared_token
 
 # ── Logging ────────────────────────────────────────────────────────────────────
@@ -33,6 +36,11 @@ logging.basicConfig(
     ],
 )
 log = logging.getLogger(__name__)
+
+# Borne le nombre de ffmpeg concurrents. Les endpoints qui l'utilisent sont des `def`
+# synchrones exécutés dans le threadpool FastAPI (jusqu'à 40 threads) : sans ce sémaphore,
+# rien n'empêche 40 réencodages simultanés de saturer la RAM (voir panne du 25/08/2026).
+FFMPEG_SEM = threading.Semaphore(2)
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 CONFIG_PATH = Path("config.yaml")
@@ -310,11 +318,13 @@ def check_storage_alert():
 # ── Thumbnail generation ───────────────────────────────────────────────────────
 def gen_video_thumb(src: Path, dst: Path) -> bool:
     try:
-        r = subprocess.run(
-            ["ffmpeg", "-y", "-i", str(src), "-ss", "00:00:02",
-             "-vframes", "1", "-vf", "scale=480:-1", str(dst)],
-            capture_output=True, timeout=30,
-        )
+        with FFMPEG_SEM:
+            r = subprocess.run(
+                ["ffmpeg", "-y", "-threads", "2", "-nostats", "-loglevel", "error",
+                 "-i", str(src), "-ss", "00:00:02",
+                 "-vframes", "1", "-vf", "scale=480:-1", str(dst)],
+                capture_output=True, timeout=30,
+            )
         return dst.exists()
     except Exception as e:
         log.warning(f"ffmpeg thumb échoué pour {src.name}: {e}")
@@ -634,12 +644,14 @@ def crop_media(
     new_filename = f"{new_uuid}{src_extension}"
     new_path     = MEDIA_DIR / new_filename
 
-    r = subprocess.run(
-        ["ffmpeg", "-y", "-i", str(src_path),
-         "-vf", f"crop={w}:{new_h}:0:{top_px}",
-         "-c:a", "copy", str(new_path)],
-        capture_output=True, timeout=300,
-    )
+    with FFMPEG_SEM:
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-threads", "2", "-nostats", "-loglevel", "error",
+             "-i", str(src_path),
+             "-vf", f"crop={w}:{new_h}:0:{top_px}",
+             "-c:a", "copy", str(new_path)],
+            capture_output=True, timeout=300,
+        )
     if r.returncode != 0 or not new_path.exists():
         new_path.unlink(missing_ok=True)
         raise HTTPException(500, f"FFmpeg échoué: {r.stderr[-300:].decode(errors='replace')}")
@@ -671,6 +683,11 @@ def crop_media(
 
 MEME_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 MEME_TMP_DIR = Path("/tmp/gallery_meme")
+# avatarFile vient d'un query param fourni par le client (repris tel quel depuis
+# le cache local AccountProfile) et déclenche un fetch serveur → seul cooloss
+# (unique hébergeur d'avatars légitime, voir shared_auth.py) est autorisé,
+# pour ne pas transformer ce endpoint en SSRF vers le réseau interne du VPS.
+MEME_AVATAR_ALLOWED_HOST = "cooloss.nathangracia.com"
 
 
 def _wrap_meme_lines(text: str, font: "ImageFont.FreeTypeFont", max_width: float, max_lines: int) -> list[str]:
@@ -697,12 +714,39 @@ def _wrap_meme_lines(text: str, font: "ImageFont.FreeTypeFont", max_width: float
     return lines
 
 
+def _fetch_circular_avatar(url: str, size: int) -> Optional[Image.Image]:
+    """Télécharge et découpe l'avatar en cercle. Best-effort : renvoie None sur
+    n'importe quel souci (host non autorisé, timeout, image invalide, trop lourde)
+    plutôt que de faire échouer toute la génération du meme pour un avatar cassé."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.hostname != MEME_AVATAR_ALLOWED_HOST:
+        return None
+    try:
+        resp = req.get(url, timeout=5)
+        if not resp.ok or len(resp.content) > 5_000_000:
+            return None
+        img = Image.open(io.BytesIO(resp.content)).convert("RGBA")
+        img = ImageOps.fit(img, (size, size), Image.LANCZOS)
+        mask = Image.new("L", (size, size), 0)
+        ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
+        img.putalpha(mask)
+        return img
+    except Exception:
+        return None
+
+
 @app.get("/api/media/{media_uuid}/meme-download")
-def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_length=300)):
+def meme_download(
+    media_uuid: str,
+    text: str = Query(..., min_length=1, max_length=300),
+    pseudo: Optional[str] = Query(None, max_length=60),
+    avatar: Optional[str] = Query(None, max_length=500),
+):
     """
-    Ajoute un bandeau en haut de la vidéo avec la légende en majuscules
-    (format "meme d'internet"), rendu à la volée et jamais persisté en DB —
-    contrairement au crop, pas de nouvelle entrée Media, juste un fichier
+    Ajoute un bandeau en haut de la vidéo avec la légende (casse d'origine,
+    plus de forçage en majuscules) et, si fournis, l'avatar + pseudo de
+    l'auteur au-dessus — rendu à la volée et jamais persisté en DB,
+    contrairement au crop : pas de nouvelle entrée Media, juste un fichier
     éphémère nettoyé après l'envoi de la réponse. Palette calquée sur le
     thème sombre du site (--bg/--text/--accent dans vitrine.html) plutôt
     que le blanc/noir classique du format meme.
@@ -733,36 +777,85 @@ def meme_download(media_uuid: str, text: str = Query(..., min_length=1, max_leng
 
     font_size = max(22, w // 20)
     font      = ImageFont.truetype(MEME_FONT, font_size)
-    lines     = _wrap_meme_lines(text.strip().upper(), font, max_width=w * 0.94, max_lines=4)
+    lines     = _wrap_meme_lines(text.strip(), font, max_width=w * 0.94, max_lines=4)
 
     line_height = int(font_size * 1.25)
     pad_y       = int(font_size * 0.55)
-    bar_h       = pad_y * 2 + line_height * len(lines)
+    margin_x    = int(w * 0.035)
+
+    pseudo_clean     = (pseudo or "").strip()
+    author_font_size = max(16, font_size // 2)
+    author_font      = ImageFont.truetype(MEME_FONT, author_font_size)
+    avatar_d         = int(author_font_size * 1.8)
+    has_avatar_input = bool((avatar or "").strip())
+    has_author       = bool(pseudo_clean) or has_avatar_input
+    author_row_h     = max(avatar_d if has_avatar_input else 0, int(author_font_size * 1.3)) if has_author else 0
+    author_gap       = int(font_size * 0.4) if has_author else 0
+
+    bar_h = pad_y * 2 + author_row_h + author_gap + line_height * len(lines)
     if bar_h % 2:
         bar_h += 1
 
     job_dir = MEME_TMP_DIR / uuid.uuid4().hex
     job_dir.mkdir(parents=True, exist_ok=True)
     try:
+        avatar_img_path = None
+        if has_avatar_input:
+            circ = _fetch_circular_avatar(avatar.strip(), avatar_d)
+            if circ:
+                avatar_img_path = job_dir / "avatar.png"
+                circ.save(avatar_img_path)
+
+        text_x = margin_x + (avatar_d + author_gap if avatar_img_path else 0)
         filters = [f"pad=w={w}:h={h + bar_h}:x=0:y={bar_h}:color=0x06060f"]
+
+        if pseudo_clean:
+            available_w = w - text_x - margin_x
+            while pseudo_clean and author_font.getlength(pseudo_clean) > available_w:
+                pseudo_clean = pseudo_clean[:-1].rstrip()
+                if author_font.getlength(pseudo_clean + "...") <= available_w:
+                    pseudo_clean += "..."
+                    break
+            pseudo_file = job_dir / "pseudo.txt"
+            pseudo_file.write_bytes(pseudo_clean.encode("utf-8"))
+            escaped_pseudo = str(pseudo_file).replace("\\", "\\\\").replace(":", "\\:")
+            y_pseudo = pad_y + max(0, (author_row_h - author_font_size) // 2)
+            filters.append(
+                f"drawtext=fontfile={MEME_FONT}:textfile={escaped_pseudo}:expansion=none:"
+                f"fontcolor=0x94a3b8:fontsize={author_font_size}:x={text_x}:y={y_pseudo}"
+            )
+
         for i, line in enumerate(lines):
             line_file = job_dir / f"line_{i}.txt"
             line_file.write_bytes(line.encode("utf-8"))
             escaped_path = str(line_file).replace("\\", "\\\\").replace(":", "\\:")
-            y = pad_y + i * line_height
+            y = pad_y + author_row_h + author_gap + i * line_height
             filters.append(
                 f"drawtext=fontfile={MEME_FONT}:textfile={escaped_path}:expansion=none:"
                 f"fontcolor=0xf1f5f9:fontsize={font_size}:x=(w-text_w)/2:y={y}"
             )
         accent_h = max(2, font_size // 24)
         filters.append(f"drawbox=x=0:y={bar_h - accent_h}:w={w}:h={accent_h}:color=0x22d3ee:t=fill")
-        vf = ",".join(filters)
+        vf_chain = ",".join(filters)
 
         out_path = job_dir / f"out{src_extension}"
-        r = subprocess.run(
-            ["ffmpeg", "-y", "-i", str(src_path), "-vf", vf, "-c:a", "copy", str(out_path)],
-            capture_output=True, timeout=300,
-        )
+        if avatar_img_path:
+            y_avatar = pad_y + max(0, (author_row_h - avatar_d) // 2)
+            filter_complex = (
+                f"[0:v]{vf_chain}[base];[base][1:v]overlay=x={margin_x}:y={y_avatar}[outv]"
+            )
+            cmd = [
+                "ffmpeg", "-y", "-threads", "2", "-nostats", "-loglevel", "error",
+                "-i", str(src_path), "-i", str(avatar_img_path),
+                "-filter_complex", filter_complex, "-map", "[outv]", "-map", "0:a?",
+                "-c:a", "copy", str(out_path),
+            ]
+        else:
+            cmd = ["ffmpeg", "-y", "-threads", "2", "-nostats", "-loglevel", "error",
+                   "-i", str(src_path), "-vf", vf_chain, "-c:a", "copy", str(out_path)]
+
+        with FFMPEG_SEM:
+            r = subprocess.run(cmd, capture_output=True, timeout=300)
         if r.returncode != 0 or not out_path.exists():
             raise HTTPException(500, f"FFmpeg échoué: {r.stderr[-300:].decode(errors='replace')}")
 
