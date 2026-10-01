@@ -222,7 +222,7 @@ function renderLobby() {
     });
   });
   document.getElementById('btn-copy-link')?.addEventListener('click', () => {
-    const url = `${location.origin}/?join=${S.roomCode}`;
+    const url = `${location.origin}/game/?join=${S.roomCode}`;
     navigator.clipboard.writeText(url).then(() => {
       const btn = document.getElementById('btn-copy-link');
       if (btn) { btn.textContent = '✓ Lien copié !'; setTimeout(() => { if (btn) btn.textContent = 'Lien d\'invitation'; }, 2000); }
