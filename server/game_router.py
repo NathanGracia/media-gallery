@@ -8,6 +8,7 @@ import datetime
 import random
 import string
 import logging
+import time
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Request, Depends
 from sqlmodel import Session, select, SQLModel
@@ -164,6 +165,38 @@ class ConnectionManager:
 manager     = ConnectionManager()
 game_states: dict[str, dict] = {}
 
+# Une room ne disparaît jamais d'elle-même sinon (pas de TTL ni de nettoyage
+# à la fin d'une partie, voir end_game) : elle reste en mémoire jusqu'au
+# redémarrage du conteneur et un compte qui y a joué s'y fait recoller
+# indéfiniment via /game/api/my-room, même des jours après. 4h = largement
+# plus qu'une partie + temps d'attente des joueurs, donc une room encore
+# marquée active à ce stade est abandonnée, pas juste calme.
+ROOM_TTL_SECONDS = 4 * 60 * 60
+
+
+def touch(state: dict) -> None:
+    state["last_active"] = time.time()
+
+
+def prune_stale_rooms() -> None:
+    cutoff = time.time() - ROOM_TTL_SECONDS
+    for code in [c for c, s in game_states.items() if s.get("last_active", 0) < cutoff]:
+        game_states.pop(code, None)
+        manager.rooms.pop(code, None)
+
+
+async def _cleanup_loop() -> None:
+    """Filet de sécurité : purge périodique même sans trafic (create_room/
+    my_room), sinon une room abandonnée pendant une période calme du site
+    reste en mémoire jusqu'au prochain appel qui déclenche prune_stale_rooms."""
+    while True:
+        await asyncio.sleep(30 * 60)
+        prune_stale_rooms()
+
+
+def start_cleanup_task() -> None:
+    asyncio.create_task(_cleanup_loop())
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def gen_code() -> str:
@@ -224,6 +257,7 @@ def new_state(db_room_id: int, host_id: int, host_pseudo: str, host_account_uid:
         "all_answers":     [],
         "db_room_id":      db_room_id,
         "mode":            "all",
+        "last_active":     time.time(),
     }
 
 
@@ -239,6 +273,8 @@ async def create_room(request: Request, body: dict):
         account_uid = None
     if not pseudo:
         raise HTTPException(400, "Pseudo requis")
+
+    prune_stale_rooms()
 
     code = gen_code()
     while code in game_states:
@@ -262,6 +298,7 @@ async def join_room(request: Request, code: str, body: dict):
     state = game_states.get(code)
     if not state:
         raise HTTPException(404, "Room introuvable")
+    touch(state)
 
     claims = get_account_claims(request)
     if claims:
@@ -303,6 +340,8 @@ async def my_room(request: Request):
     claims = get_account_claims(request)
     if not claims:
         return {"room_code": None}
+
+    prune_stale_rooms()
 
     uid = claims["uid"]
     match = None
@@ -949,6 +988,7 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
     if not state or player_id not in state["players"]:
         await websocket.close(code=4004)
         return
+    touch(state)
 
     await manager.connect(code, player_id, websocket)
     state["players"][player_id]["connected"] = True
@@ -1028,6 +1068,7 @@ async def game_ws(websocket: WebSocket, code: str, player_id: int):
         while True:
             data  = await websocket.receive_json()
             event = data.get("type")
+            touch(state)
 
             if event == "pong":
                 pass

@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 import yaml
 import requests as req
 from pydantic import NaiveDatetime
-from game_router import router as game_router, init as init_game, remember_account
+from game_router import router as game_router, init as init_game, remember_account, start_cleanup_task as start_game_cleanup_task
 import aiofiles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -175,6 +175,12 @@ with engine.connect() as _conn:
 
 # ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Media Gallery v3", docs_url=None, redoc_url=None)
+
+
+@app.on_event("startup")
+async def _start_game_cleanup():
+    start_game_cleanup_task()
+
 
 # Shardoss (server/static/app.js) fetch() les métadonnées média cross-origin
 # (GET /api/media/{uuid}) pour construire l'URL de la vidéo — sans CORS le
