@@ -3,6 +3,7 @@ Modèles SQLModel pour le jeu de mèmes.
 """
 import datetime
 from typing import Optional
+from pydantic import NaiveDatetime
 from sqlmodel import SQLModel, Field
 
 
@@ -13,7 +14,7 @@ class GameRoom(SQLModel, table=True):
     code:        str               = Field(index=True)
     host_pseudo: str
     status:      str               = Field(default="lobby")  # lobby|playing|finished
-    created_at:  datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
+    created_at:  NaiveDatetime     = Field(default_factory=datetime.datetime.utcnow)
 
 
 class GamePlayer(SQLModel, table=True):
@@ -40,7 +41,7 @@ class GameRound(SQLModel, table=True):
     # utilisé pour regrouper la timeline par partie plutôt que par room (une
     # room peut être rejouée plusieurs fois). NULL pour les parties jouées
     # avant l'ajout de cette colonne — fallback sur GameRoom.created_at.
-    played_at: Optional[datetime.datetime]        = Field(default=None)
+    played_at: Optional[NaiveDatetime]            = Field(default=None)
 
 
 class GameAnswer(SQLModel, table=True):
@@ -88,7 +89,7 @@ class AccountProfile(SQLModel, table=True):
     # (moche à partager). Vide pour les comptes vus avant l'ajout de ce champ.
     username:    str                       = Field(default="")
     avatar_file: Optional[str]             = Field(default=None)
-    updated_at:  datetime.datetime         = Field(default_factory=datetime.datetime.utcnow)
+    updated_at:  NaiveDatetime             = Field(default_factory=datetime.datetime.utcnow)
 
 
 class GameVote(SQLModel, table=True):

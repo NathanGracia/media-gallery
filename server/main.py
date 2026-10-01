@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 import yaml
 import requests as req
+from pydantic import NaiveDatetime
 from game_router import router as game_router, init as init_game, remember_account
 import aiofiles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException, Depends, Query, Request
@@ -94,7 +95,7 @@ class Media(SQLModel, table=True):
     size_bytes:    int
     feeder_name:   str
     tag:           str                 = Field(default="todo")  # "osef" | "cinema" | "todo"
-    uploaded_at:   datetime.datetime  = Field(default_factory=datetime.datetime.utcnow)
+    uploaded_at:   NaiveDatetime      = Field(default_factory=datetime.datetime.utcnow)
     duration_seconds: Optional[float] = Field(default=None)  # vidéos uniquement — voir gen_video_duration
 
 
@@ -104,7 +105,7 @@ class SiteCredits(SQLModel, table=True):
     __tablename__ = "site_credits"
     id:         Optional[int]      = Field(default=None, primary_key=True)
     content:    str                = Field(default="")
-    updated_at: datetime.datetime  = Field(default_factory=datetime.datetime.utcnow)
+    updated_at: NaiveDatetime      = Field(default_factory=datetime.datetime.utcnow)
 
 
 SQLModel.metadata.create_all(engine)
